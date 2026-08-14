@@ -10,10 +10,10 @@ once it has loaded a first time.
 
 | Tab | Contents |
 | --- | --- |
-| **Commands** | 96 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
-| **Scenarios** | 25 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, EBS grow, credentials failing) as ordered command sequences, plus what the interviewer is actually scoring |
-| **Drills** | 21 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, SG vs NACL, on-call posture, and two behavioral/Leadership-Principle framings |
-| **Quiz** | 10-question rounds, filterable by topic and level. Mixes 30 hand-written concept questions with questions generated from the command library, so it doesn't go stale |
+| **Commands** | 120 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
+| **Scenarios** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
+| **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
+| **Quiz** | 10-question rounds, filterable by topic and level. Mixes 42 hand-written concept questions with questions generated from the command library, so it doesn't go stale |
 | **Saved** | Star anything on any tab to build your own revision list |
 
 Everything is searchable from one box at the top — command names, flags, example text, scenario
@@ -60,8 +60,11 @@ assets/js/data/
   commands-core.js             # files, text, search, text processing
   commands-system.js           # permissions, processes, disk, users, systemd, logs
   commands-net.js              # networking, SSH/transfer, archives, packages, shell, EC2
+  commands-more.js             # LVM, tracing/perf, storage plumbing, accounts, time, SSM
   scenarios.js                 # troubleshooting walkthroughs
+  scenarios-more.js            # fleet, storage, security, and AWS-side failure chains
   drills.js                    # open-ended drills + hand-written quiz bank
+  drills-more.js               # second drill set + extra quiz questions
 ```
 
 ## Adding your own material
