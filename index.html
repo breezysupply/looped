@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Linux command study guide: beginner to mid-level commands, real-world scenarios, and quizzes. Works offline on your phone.">
+<title>Linux Pocket Guide</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <h1 class="brand"><span class="prompt">$</span> Linux Pocket Guide</h1>
+    <button id="themeBtn" class="icon-btn" aria-label="Toggle color theme" title="Toggle theme">◐</button>
+  </div>
+  <div class="search-wrap">
+    <input id="search" class="search" type="search" inputmode="search" autocomplete="off"
+           placeholder="Search commands, flags, tasks…" aria-label="Search">
+    <button id="clearSearch" class="clear-btn" aria-label="Clear search" hidden>×</button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ── Commands ─────────────────────────────────────────── -->
+  <section id="view-commands" class="view active" aria-label="Commands">
+    <div class="filters">
+      <div id="catChips" class="chips" role="tablist" aria-label="Category filter"></div>
+      <div id="levelChips" class="chips levels" role="tablist" aria-label="Level filter">
+        <button class="chip active" data-level="all">All levels</button>
+        <button class="chip" data-level="beginner">Beginner</button>
+        <button class="chip" data-level="intermediate">Intermediate</button>
+      </div>
+    </div>
+    <p id="cmdCount" class="count"></p>
+    <div id="cmdList" class="list"></div>
+  </section>
+
+  <!-- ── Scenarios ────────────────────────────────────────── -->
+  <section id="view-scenarios" class="view" aria-label="Scenarios">
+    <div class="filters">
+      <div id="scenChips" class="chips" role="tablist" aria-label="Scenario filter"></div>
+    </div>
+    <p id="scenCount" class="count"></p>
+    <div id="scenList" class="list"></div>
+  </section>
+
+  <!-- ── Drills ───────────────────────────────────────────── -->
+  <section id="view-drills" class="view" aria-label="Interview drills">
+    <p class="blurb">Open-ended questions with model answers. Answer out loud first, then expand.</p>
+    <div class="filters">
+      <div id="drillChips" class="chips" role="tablist" aria-label="Drill filter"></div>
+    </div>
+    <p id="drillCount" class="count"></p>
+    <div id="drillList" class="list"></div>
+  </section>
+
+  <!-- ── Quiz ─────────────────────────────────────────────── -->
+  <section id="view-quiz" class="view" aria-label="Quiz">
+    <div id="quizStart" class="quiz-panel">
+      <h2>Test yourself</h2>
+      <p class="muted">10 questions drawn from the command library and scenarios. No timer — think it through.</p>
+      <div class="quiz-opts">
+        <label class="field">
+          <span>Difficulty</span>
+          <select id="quizLevel">
+            <option value="all">Mixed</option>
+            <option value="beginner">Beginner only</option>
+            <option value="intermediate">Intermediate only</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Topic</span>
+          <select id="quizCat"><option value="all">All topics</option></select>
+        </label>
+      </div>
+      <button id="quizStartBtn" class="btn primary">Start quiz</button>
+      <div id="quizStats" class="stats"></div>
+    </div>
+
+    <div id="quizRun" class="quiz-panel" hidden>
+      <div class="quiz-head">
+        <span id="quizProgress" class="muted"></span>
+        <button id="quizQuit" class="btn ghost small">Quit</button>
+      </div>
+      <div class="progress"><div id="quizBar" class="progress-fill"></div></div>
+      <p id="quizQ" class="quiz-q"></p>
+      <div id="quizChoices" class="choices"></div>
+      <p id="quizFeedback" class="feedback" hidden></p>
+      <button id="quizNext" class="btn primary" hidden>Next</button>
+    </div>
+
+    <div id="quizDone" class="quiz-panel" hidden>
+      <h2 id="quizScore"></h2>
+      <p id="quizVerdict" class="muted"></p>
+      <div id="quizReview" class="review"></div>
+      <button id="quizAgain" class="btn primary">Play again</button>
+    </div>
+  </section>
+
+  <!-- ── Saved ────────────────────────────────────────────── -->
+  <section id="view-saved" class="view" aria-label="Saved">
+    <p id="savedCount" class="count"></p>
+    <div id="savedList" class="list"></div>
+  </section>
+
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button class="tab active" data-view="commands" role="tab" aria-selected="true">
+    <span class="tab-ico">❯_</span><span>Commands</span>
+  </button>
+  <button class="tab" data-view="scenarios" role="tab" aria-selected="false">
+    <span class="tab-ico">◆</span><span>Scenarios</span>
+  </button>
+  <button class="tab" data-view="drills" role="tab" aria-selected="false">
+    <span class="tab-ico">✦</span><span>Drills</span>
+  </button>
+  <button class="tab" data-view="quiz" role="tab" aria-selected="false">
+    <span class="tab-ico">?</span><span>Quiz</span>
+  </button>
+  <button class="tab" data-view="saved" role="tab" aria-selected="false">
+    <span class="tab-ico">★</span><span>Saved</span>
+  </button>
+</nav>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/data/commands-core.js"></script>
+<script src="assets/js/data/commands-system.js"></script>
+<script src="assets/js/data/commands-net.js"></script>
+<script src="assets/js/data/scenarios.js"></script>
+<script src="assets/js/data/drills.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
