@@ -1,11 +1,12 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'linux-pocket-guide-v2';
+var CACHE = 'linux-pocket-guide-v3';
 var ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './assets/css/style.css',
   './assets/js/app.js',
+  './assets/js/lab.js',
   './assets/js/data/commands-core.js',
   './assets/js/data/commands-system.js',
   './assets/js/data/commands-net.js',
@@ -14,6 +15,8 @@ var ASSETS = [
   './assets/js/data/scenarios-more.js',
   './assets/js/data/drills.js',
   './assets/js/data/drills-more.js',
+  './assets/js/data/labs.js',
+  './assets/js/data/labs-more.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'

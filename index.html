@@ -62,6 +62,50 @@
     <div id="drillList" class="list"></div>
   </section>
 
+
+  <!-- ── Labs ─────────────────────────────────────────────── -->
+  <section id="view-labs" class="view" aria-label="Interactive labs">
+    <p class="blurb" id="labIntro">Work a real incident in a simulated terminal. Pick the command you would run — wrong turns still execute and explain themselves. Full debrief at the end.</p>
+    <div id="labList" class="list"></div>
+
+    <div id="labRun" hidden>
+      <div class="lab-head">
+        <div>
+          <p class="lab-title" id="labTitle"></p>
+          <span class="muted" id="labStepNo"></span>
+        </div>
+        <button id="labExit" class="btn ghost small">Exit</button>
+      </div>
+      <div class="progress"><div id="labBar" class="progress-fill"></div></div>
+
+      <details id="labBriefWrap" class="brief-wrap">
+        <summary>Situation</summary>
+        <p id="labBrief" class="situation"></p>
+      </details>
+
+      <div id="labTerm" class="term" aria-label="Simulated terminal"></div>
+
+      <div class="ask-row">
+        <span id="labKind" class="step-kind cmd"></span>
+        <button id="labHintBtn" class="btn ghost small">Hint</button>
+      </div>
+      <p id="labAsk" class="quiz-q"></p>
+      <p id="labHint" class="lab-hint" hidden></p>
+      <div id="labOpts" class="choices"></div>
+      <div id="labFb" class="lab-fb" hidden></div>
+    </div>
+
+    <div id="labDone" class="quiz-panel" hidden>
+      <h2 id="labScore"></h2>
+      <p id="labVerdict" class="muted"></p>
+      <div id="labDebrief"></div>
+      <div class="done-btns">
+        <button id="labRetry" class="btn primary">Run it again</button>
+        <button id="labBack" class="btn">All labs</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Quiz ─────────────────────────────────────────────── -->
   <section id="view-quiz" class="view" aria-label="Quiz">
     <div id="quizStart" class="quiz-panel">
@@ -123,6 +167,9 @@
   <button class="tab" data-view="drills" role="tab" aria-selected="false">
     <span class="tab-ico">✦</span><span>Drills</span>
   </button>
+  <button class="tab" data-view="labs" role="tab" aria-selected="false">
+    <span class="tab-ico">▶_</span><span>Labs</span>
+  </button>
   <button class="tab" data-view="quiz" role="tab" aria-selected="false">
     <span class="tab-ico">?</span><span>Quiz</span>
   </button>
@@ -141,6 +188,9 @@
 <script src="assets/js/data/scenarios-more.js"></script>
 <script src="assets/js/data/drills.js"></script>
 <script src="assets/js/data/drills-more.js"></script>
+<script src="assets/js/data/labs.js"></script>
+<script src="assets/js/data/labs-more.js"></script>
+<script src="assets/js/lab.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

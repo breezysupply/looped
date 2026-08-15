@@ -31,6 +31,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
@@ -304,3 +305,92 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ── Labs ───────────────────────────────────────────────────── */
+.lab-card .card-head { align-items: center; }
+.lab-go { color: var(--accent); font-size: 18px; padding-left: 4px; }
+.badge.done { color: var(--accent); border-color: var(--accent); }
+
+.lab-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.lab-title { font-size: 16px; font-weight: 650; margin: 0 0 2px; }
+.lab-head .muted { font-family: var(--mono); font-size: 12px; }
+
+.brief-wrap {
+  margin: 10px 0; padding: 10px 12px;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: 10px;
+}
+.brief-wrap summary {
+  cursor: pointer; font-size: 11px; font-weight: 700;
+  letter-spacing: .6px; text-transform: uppercase; color: var(--muted);
+}
+.brief-wrap .situation { margin-top: 8px; font-size: 13.5px; }
+
+/* simulated terminal */
+.term {
+  background: #05080c; color: #d7e2ee;
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px; margin: 10px 0;
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.5;
+  max-height: 42vh; overflow-y: auto; overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+:root[data-theme="light"] .term { background: #0d1117; color: #d7e2ee; }
+.term-static { max-height: none; }
+.term-line { white-space: pre-wrap; word-break: break-word; }
+.term-prompt { color: #4ade80; }
+.term-cmd { color: #fff; font-weight: 600; }
+.term-out { white-space: pre-wrap; word-break: break-word; color: #9db2c8; margin: 0 0 8px; }
+.term-meta { color: #5d7186; font-style: italic; margin-bottom: 6px; }
+
+.ask-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.step-kind {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--bg-elev-2); border: 1px solid var(--line); color: var(--muted);
+}
+.step-kind.cmd { color: var(--accent); border-color: var(--accent); }
+.step-kind.think { color: var(--blue); border-color: var(--blue); }
+#labAsk { margin: 10px 0 12px; }
+.lab-hint {
+  margin: 0 0 12px; padding: 10px; font-size: 13px;
+  background: var(--bg-elev-2); border-left: 3px solid var(--blue); border-radius: 8px;
+}
+
+.lab-opt {
+  text-align: left; padding: 12px; min-height: var(--tap);
+  background: var(--bg-elev-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px;
+  font-family: var(--mono); font-size: 13px; line-height: 1.45;
+  cursor: pointer; word-break: break-word;
+}
+.lab-opt.think { font-family: inherit; font-size: 13.5px; }
+.opt-dollar { color: var(--accent); margin-right: 6px; }
+.lab-opt.right { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-elev-2)); }
+.lab-opt.wrong { border-color: var(--red); opacity: .75; }
+.lab-opt:disabled { cursor: default; }
+
+.lab-fb {
+  margin-top: 12px; padding: 12px; border-radius: 10px;
+  background: var(--bg-elev-2); border-left: 3px solid var(--accent);
+}
+.lab-fb.bad { border-left-color: var(--red); }
+.fb-text { margin: 0; font-size: 13.5px; line-height: 1.6; }
+.fb-retry { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.lab-fb .btn { margin-top: 12px; }
+
+.breakdown {
+  margin-top: 10px; padding: 10px;
+  background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px;
+}
+.breakdown summary {
+  cursor: pointer; font-size: 12.5px; color: var(--blue);
+  font-family: var(--mono);
+}
+.breakdown[open] summary { margin-bottom: 8px; }
+.breakdown .ex-desc { margin-top: 8px; }
+
+.steps-why { margin: 0; padding-left: 20px; }
+.steps-why li { font-size: 13.5px; line-height: 1.6; margin-bottom: 10px; }
+.interview-answer { line-height: 1.65; }
+.done-btns { display: flex; gap: 8px; margin-top: 16px; }
+.done-btns .btn { flex: 1; }

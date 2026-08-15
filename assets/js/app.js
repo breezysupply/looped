@@ -48,6 +48,10 @@
     return t.replace(rx, '<mark>$1</mark>');
   }
 
+  /* shared with lab.js */
+  window.LXUtil = { esc: esc, fmt: fmt, LS: LS, catName: catName,
+                    toast: function (m) { toast(m); } };
+
   function toast(msg) {
     var el = $('#toast');
     el.textContent = msg;
@@ -244,8 +248,12 @@
       ? 'Lifetime: ' + s.correct + '/' + s.taken + ' correct (' + Math.round(s.correct / s.taken * 100) + '%)'
       : '';
   }
+  function renderLabs() {
+    if (window.LXLab) window.LXLab.renderList(state.q);
+  }
   function renderAll() {
-    renderCommands(); renderScenarios(); renderDrills(); renderSaved(); renderStats();
+    renderCommands(); renderScenarios(); renderDrills(); renderLabs();
+    renderSaved(); renderStats();
   }
 
   /* ── View switching ───────────────────────────────────────── */
@@ -455,12 +463,12 @@
   searchEl.addEventListener('input', function () {
     state.q = searchEl.value.trim();
     $('#clearSearch').hidden = !state.q;
-    renderCommands(); renderScenarios(); renderDrills();
+    renderCommands(); renderScenarios(); renderDrills(); renderLabs();
   });
   $('#clearSearch').addEventListener('click', function () {
     searchEl.value = ''; state.q = '';
     $('#clearSearch').hidden = true;
-    renderCommands(); renderScenarios(); renderDrills();
+    renderCommands(); renderScenarios(); renderDrills(); renderLabs();
     searchEl.focus();
   });
 
