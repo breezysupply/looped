@@ -14,8 +14,8 @@ once it has loaded a first time.
 | **Scenarios** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
 | **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
 | **Labs** | 6 interactive incidents in a simulated terminal — 49 steps, 157 command choices. Pick what you would run; wrong turns execute and explain why they were wrong. Ends with a debrief: what you did and why it worked, a scripted interview answer, expandable per-argument command breakdowns, and prevention notes |
-| **Quiz** | 10-question rounds, filterable by topic and level. Mixes 42 hand-written concept questions with questions generated from the command library, so it doesn't go stale |
-| **Saved** | Star anything on any tab to build your own revision list |
+| **Quiz** | Five question styles, three modes. **Recall** (what does this do / which command), **Read the output** (a real terminal block — what does it tell you?), **Safe or not** (which command would you never run here), **Order the steps** (tap four commands into the right sequence), **Build the command** (assemble it from tokens). Modes: 10 questions, 60-second speed round, or weak-spots-only |
+| **Review** | Spaced repetition. Every miss becomes a flashcard automatically, graded Again / Hard / Good / Easy, scheduled by how well you know it. Plus day streak, per-topic mastery bars weakest-first, recent misses, and your starred items |
 
 Everything is searchable from one box at the top — command names, flags, example text, scenario
 steps, drill answers. Search matches across tabs and tells you where the other hits are.
@@ -38,7 +38,9 @@ python3 -m http.server 8000
 # then open http://<your-laptop-ip>:8000 on your phone, same Wi-Fi
 ```
 
-Preferences persist in `localStorage`: theme, saved items, last tab, and a lifetime quiz score.
+Everything persists in `localStorage` on that device: theme, starred items, last tab, quiz accuracy
+per topic, lab scores, your review deck and its schedule, and your day streak. Nothing leaves the
+phone and there is no account to create.
 
 ## Study loop that works
 
@@ -48,8 +50,11 @@ Preferences persist in `localStorage`: theme, saved items, last tab, and a lifet
    out loud, then expand and compare.
 3. **Drills for the open-ended questions.** Answer before you expand. Speaking it is the skill
    being tested, not recognising it.
-4. **Quiz on a topic you just read**, to convert recognition into recall.
-5. **Star your misses.** The Saved tab becomes your personal weak-spot list for the night before.
+4. **Quiz on a topic you just read**, to convert recognition into recall. "Read the output" is the
+   closest thing here to what a real screen-share interview feels like.
+5. **Review daily.** Anything you miss in a quiz or a lab becomes a flashcard automatically, so the
+   deck builds itself out of your actual weak spots. Two minutes a day beats an hour on Sunday.
+6. **Check the mastery bars** before the interview — they are sorted weakest-first on purpose.
 
 ## Layout
 
@@ -60,6 +65,8 @@ icons/                         # generated app icons
 assets/css/style.css           # mobile-first, dark by default, light theme toggle
 assets/js/app.js               # rendering, search/filter, quiz engine, persistence
 assets/js/lab.js               # interactive lab engine: terminal, steps, debrief
+assets/js/quiz.js              # five question styles, three modes
+assets/js/review.js            # spaced repetition, flashcards, streak, mastery stats
 assets/js/data/
   commands-core.js             # files, text, search, text processing
   commands-system.js           # permissions, processes, disk, users, systemd, logs
@@ -69,6 +76,7 @@ assets/js/data/
   scenarios-more.js            # fleet, storage, security, and AWS-side failure chains
   drills.js                    # open-ended drills + hand-written quiz bank
   drills-more.js               # second drill set + extra quiz questions
+  quiz-extra.js                # output-reading and hazard questions
   labs.js, labs-more.js        # interactive labs
 ```
 
@@ -117,5 +125,16 @@ LX.labs.push({
 
 More than one option per step may be marked `ok:true` when several approaches are genuinely
 valid. Every option needs `fb`; `parts` is what powers the expandable command reference.
+
+Two quiz styles need no authoring at all — **Order the steps** is generated from scenario and lab
+step sequences, and **Build the command** is generated from the worked examples on each command.
+Add a command or a scenario and the quiz bank grows with it. Hand-authored output-reading and
+hazard questions live in `quiz-extra.js`:
+
+```js
+LX.outputQs.push({ cat:'disk', level:'beginner', cmd:'df -h',
+  out:'…real terminal output…', q:'What does this tell you?',
+  choices:['correct first', '…'], a:0, why:'the teaching point' });
+```
 
 After changing any file, bump `CACHE` in `sw.js` so installed copies pick the update up.

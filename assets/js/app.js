@@ -67,6 +67,7 @@
     if (i === -1) { state.saved.push(id); toast('Saved'); }
     else { state.saved.splice(i, 1); toast('Removed'); }
     LS.set('lx.saved', state.saved);
+    if (window.LXReview) window.LXReview.syncSaved(id, isSaved(id));
     renderAll();
   }
 
@@ -243,10 +244,8 @@
       '<p class="empty">Tap ☆ on anything to keep it here — build your own revision list.</p>';
   }
   function renderStats() {
-    var s = state.stats;
-    $('#quizStats').textContent = s.taken
-      ? 'Lifetime: ' + s.correct + '/' + s.taken + ' correct (' + Math.round(s.correct / s.taken * 100) + '%)'
-      : '';
+    if (window.LXQuiz) window.LXQuiz.renderStats();
+    if (window.LXReview) window.LXReview.render();
   }
   function renderLabs() {
     if (window.LXLab) window.LXLab.renderList(state.q);
@@ -258,6 +257,7 @@
 
   /* ── View switching ───────────────────────────────────────── */
   function setView(v) {
+    if (!document.getElementById('view-' + v)) v = 'commands';
     state.view = v;
     LS.set('lx.view', v);
     $$('.view').forEach(function (s) { s.classList.toggle('active', s.id === 'view-' + v); });
@@ -267,144 +267,6 @@
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     window.scrollTo(0, 0);
-  }
-
-  /* ── Quiz engine ──────────────────────────────────────────── */
-  var quiz = { qs: [], i: 0, correct: 0, misses: [] };
-
-  function shuffle(a) {
-    for (var i = a.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i]; a[i] = a[j]; a[j] = t;
-    }
-    return a;
-  }
-  function sample(arr, n, exclude) {
-    return shuffle(arr.filter(function (x) { return x !== exclude; })).slice(0, n);
-  }
-
-  function generatedQuestions(cat, level) {
-    var pool = LX.commands.filter(function (c) {
-      return (cat === 'all' || c.cat === cat) && (level === 'all' || c.level === level);
-    });
-    if (pool.length < 4) return [];
-    var out = [];
-    pool.forEach(function (c) {
-      // name → purpose
-      var wrongSums = sample(pool, 3, c).map(function (x) { return x.sum; });
-      out.push({
-        q: 'What does `' + c.name + '` do?',
-        choices: [c.sum].concat(wrongSums), a: 0, cat: c.cat, level: c.level,
-        why: c.tip || c.sum
-      });
-      // purpose → name
-      var wrongNames = sample(pool, 3, c).map(function (x) { return x.name; });
-      out.push({
-        q: 'Which command: ' + c.sum,
-        choices: [c.name].concat(wrongNames), a: 0, cat: c.cat, level: c.level,
-        why: c.name + ' — ' + (c.tip || c.sum)
-      });
-      // flag meaning
-      if (c.flags && c.flags.length > 3) {
-        var f = c.flags[Math.floor(Math.random() * c.flags.length)];
-        var others = sample(c.flags.filter(function (x) { return x !== f; }), 3)
-          .map(function (x) { return x[1]; });
-        if (others.length === 3) {
-          out.push({
-            q: 'In `' + c.name + '`, what does `' + f[0] + '` do?',
-            choices: [f[1]].concat(others), a: 0, cat: c.cat, level: c.level,
-            why: c.name + ' ' + f[0] + ': ' + f[1]
-          });
-        }
-      }
-    });
-    return out;
-  }
-
-  function buildQuiz() {
-    var cat = $('#quizCat').value, level = $('#quizLevel').value;
-    var handwritten = LX.quiz.filter(function (q) {
-      return (cat === 'all' || q.cat === cat) && (level === 'all' || q.level === level);
-    });
-    var pool = shuffle(handwritten.slice()).slice(0, 6)
-      .concat(shuffle(generatedQuestions(cat, level)).slice(0, 10));
-    pool = shuffle(pool).slice(0, 10);
-    // randomise answer position per question
-    quiz.qs = pool.map(function (q) {
-      var right = q.choices[q.a];
-      var choices = shuffle(q.choices.slice());
-      return { q: q.q, choices: choices, a: choices.indexOf(right), why: q.why };
-    });
-    quiz.i = 0; quiz.correct = 0; quiz.misses = [];
-  }
-
-  function showQuestion() {
-    var q = quiz.qs[quiz.i];
-    $('#quizProgress').textContent = 'Question ' + (quiz.i + 1) + ' of ' + quiz.qs.length;
-    $('#quizBar').style.width = (quiz.i / quiz.qs.length * 100) + '%';
-    $('#quizQ').innerHTML = fmt(q.q);
-    $('#quizChoices').innerHTML = q.choices.map(function (c, i) {
-      return '<button class="choice" data-choice="' + i + '">' + esc(c) + '</button>';
-    }).join('');
-    $('#quizFeedback').hidden = true;
-    $('#quizNext').hidden = true;
-  }
-
-  function answer(pick) {
-    var q = quiz.qs[quiz.i];
-    var right = pick === q.a;
-    if (right) quiz.correct++;
-    else quiz.misses.push({ q: q.q, correct: q.choices[q.a], why: q.why });
-
-    $$('#quizChoices .choice').forEach(function (b, i) {
-      b.disabled = true;
-      if (i === q.a) b.classList.add('correct');
-      else if (i === pick) b.classList.add('wrong');
-    });
-    var fb = $('#quizFeedback');
-    fb.className = 'feedback' + (right ? '' : ' bad');
-    fb.innerHTML = fmt((right ? '✓ Correct. ' : '✗ ' + q.choices[q.a] + '. ') + q.why);
-    fb.hidden = false;
-    $('#quizNext').hidden = false;
-    $('#quizNext').textContent = quiz.i === quiz.qs.length - 1 ? 'See results' : 'Next';
-  }
-
-  function finishQuiz() {
-    var total = quiz.qs.length;
-    state.stats.taken += total;
-    state.stats.correct += quiz.correct;
-    LS.set('lx.stats', state.stats);
-    renderStats();
-
-    var pct = Math.round(quiz.correct / total * 100);
-    $('#quizScore').textContent = quiz.correct + ' / ' + total + '  (' + pct + '%)';
-    $('#quizVerdict').textContent = pct >= 90 ? 'Interview-ready on this material.'
-      : pct >= 70 ? 'Solid. Review the misses below and go again.'
-      : 'Worth another pass — read the misses, then retake.';
-    $('#quizReview').innerHTML = quiz.misses.length
-      ? '<p class="section-label">Review your misses</p>' + quiz.misses.map(function (m) {
-          return '<div class="review-item miss"><div class="rq">' + fmt(m.q) + '</div>' +
-            '<div class="ra">→ ' + esc(m.correct) + '</div>' +
-            '<div class="ra" style="margin-top:4px">' + fmt(m.why) + '</div></div>';
-        }).join('')
-      : '<div class="review-item">Clean sweep — nothing missed.</div>';
-
-    $('#quizRun').hidden = true;
-    $('#quizDone').hidden = false;
-  }
-
-  function startQuiz() {
-    buildQuiz();
-    if (!quiz.qs.length) { toast('Not enough questions for that filter'); return; }
-    $('#quizStart').hidden = true;
-    $('#quizDone').hidden = true;
-    $('#quizRun').hidden = false;
-    showQuestion();
-  }
-  function resetQuiz() {
-    $('#quizRun').hidden = true;
-    $('#quizDone').hidden = true;
-    $('#quizStart').hidden = false;
   }
 
   /* ── Events ───────────────────────────────────────────────── */
@@ -455,8 +317,6 @@
       return;
     }
 
-    var choice = t.closest('[data-choice]');
-    if (choice && !choice.disabled) { answer(Number(choice.dataset.choice)); return; }
   });
 
   var searchEl = $('#search');
@@ -480,22 +340,18 @@
     if (meta) meta.setAttribute('content', next === 'dark' ? '#0d1117' : '#f6f8fa');
   });
 
-  $('#quizStartBtn').addEventListener('click', startQuiz);
-  $('#quizAgain').addEventListener('click', resetQuiz);
-  $('#quizQuit').addEventListener('click', resetQuiz);
-  $('#quizNext').addEventListener('click', function () {
-    if (quiz.i === quiz.qs.length - 1) finishQuiz();
-    else { quiz.i++; showQuestion(); }
-  });
-
   /* ── Boot ─────────────────────────────────────────────────── */
   document.documentElement.dataset.theme = LS.get('lx.theme', 'dark');
 
-  var quizCat = $('#quizCat');
-  usedCats(LX.commands.concat(LX.quiz)).forEach(function (c) {
-    var o = document.createElement('option');
-    o.value = c; o.textContent = catName(c);
-    quizCat.appendChild(o);
+  var cats = usedCats(LX.commands.concat(LX.quiz, LX.scenarios, LX.drills));
+  ['#quizCat', '#seedCat'].forEach(function (selId) {
+    var el = $(selId);
+    if (!el) return;
+    cats.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c; o.textContent = catName(c);
+      el.appendChild(o);
+    });
   });
 
   renderAll();

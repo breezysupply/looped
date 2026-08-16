@@ -122,7 +122,16 @@
     var esc = U().esc, fmt = U().fmt;
     var ok = !!o.ok;
     if (ok && run.tried.length === 1) run.firstTry++;
-    if (!ok) run.missteps++;
+    if (!ok) {
+      run.missteps++;
+      if (window.LXReview) {
+        var right = step.opts.filter(function (x) { return x.ok; })[0];
+        if (right) {
+          window.LXReview.addLabMiss(run.lab.title, step.ask,
+            (right.c ? '$ ' + right.c : right.t), right.fb, run.lab.cat);
+        }
+      }
+    }
 
     var btns = document.querySelectorAll('#labOpts .lab-opt');
     Array.prototype.forEach.call(btns, function (b, i) {
@@ -163,6 +172,10 @@
       runs: (prev ? prev.runs : 0) + 1
     };
     save('lx.labs', store);
+    if (window.LXReview) {
+      window.LXReview.noteStudy(0, 0);
+      window.LXReview.render();
+    }
 
     var pct = Math.round(run.firstTry / total * 100);
     $('#labScore').textContent = run.firstTry + ' of ' + total + ' steps solved first try';

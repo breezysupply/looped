@@ -110,7 +110,7 @@
   <section id="view-quiz" class="view" aria-label="Quiz">
     <div id="quizStart" class="quiz-panel">
       <h2>Test yourself</h2>
-      <p class="muted">10 questions drawn from the command library and scenarios. No timer — think it through.</p>
+      <p class="muted">Five question styles, drawn from the whole library. No timer unless you pick one.</p>
       <div class="quiz-opts">
         <label class="field">
           <span>Difficulty</span>
@@ -125,18 +125,37 @@
           <select id="quizCat"><option value="all">All topics</option></select>
         </label>
       </div>
-      <button id="quizStartBtn" class="btn primary">Start quiz</button>
+
+      <p class="section-label">Question styles — tap to include</p>
+      <div id="typeChips" class="chips wrap">
+        <button class="chip active" data-type="mcq">Recall</button>
+        <button class="chip active" data-type="output">Read the output</button>
+        <button class="chip active" data-type="danger">Safe or not</button>
+        <button class="chip active" data-type="order">Order the steps</button>
+        <button class="chip active" data-type="build">Build the command</button>
+      </div>
+
+      <p class="section-label">Mode</p>
+      <div id="modeChips" class="chips wrap">
+        <button class="chip active" data-mode="standard">10 questions</button>
+        <button class="chip" data-mode="speed">Speed round · 60s</button>
+        <button class="chip" data-mode="weak">Weak spots</button>
+      </div>
+
+      <button id="quizStartBtn" class="btn primary">Start</button>
       <div id="quizStats" class="stats"></div>
     </div>
 
     <div id="quizRun" class="quiz-panel" hidden>
       <div class="quiz-head">
         <span id="quizProgress" class="muted"></span>
+        <span id="quizTimer" class="timer" hidden></span>
         <button id="quizQuit" class="btn ghost small">Quit</button>
       </div>
       <div class="progress"><div id="quizBar" class="progress-fill"></div></div>
+      <span id="quizType" class="step-kind"></span>
       <p id="quizQ" class="quiz-q"></p>
-      <div id="quizChoices" class="choices"></div>
+      <div id="quizStage"></div>
       <p id="quizFeedback" class="feedback" hidden></p>
       <button id="quizNext" class="btn primary" hidden>Next</button>
     </div>
@@ -149,10 +168,60 @@
     </div>
   </section>
 
-  <!-- ── Saved ────────────────────────────────────────────── -->
-  <section id="view-saved" class="view" aria-label="Saved">
-    <p id="savedCount" class="count"></p>
-    <div id="savedList" class="list"></div>
+  <!-- ── Review ───────────────────────────────────────────── -->
+  <section id="view-review" class="view" aria-label="Review">
+
+    <div id="revHome">
+      <div id="revStreak" class="stat-row"></div>
+      <button id="revStartBtn" class="btn primary">Review</button>
+      <p class="blurb">Cards are scheduled by how well you know them — miss one and it comes back tomorrow, know it cold and it waits weeks.</p>
+
+      <p class="section-label">Where you are weakest</p>
+      <div id="revMastery"></div>
+      <p id="revLabs" class="count"></p>
+
+      <p class="section-label">Recent misses</p>
+      <div id="revWeak" class="review"></div>
+
+      <p class="section-label">Add cards</p>
+      <div class="seed-row">
+        <select id="seedCat"><option value="all">All topics</option></select>
+        <button id="seedBtn" class="btn small">Add 20</button>
+      </div>
+      <p class="blurb">Starring anything in Commands, Scenarios, or Drills also adds it here.</p>
+
+      <p class="section-label">Starred</p>
+      <p id="savedCount" class="count"></p>
+      <div id="savedList" class="list"></div>
+
+      <p class="section-label">Deck</p>
+      <button id="deckReset" class="btn small ghost">Clear review deck</button>
+    </div>
+
+    <div id="revCard" class="quiz-panel" hidden>
+      <div class="quiz-head">
+        <span id="revProgress" class="muted"></span>
+        <button id="revQuit" class="btn ghost small">Quit</button>
+      </div>
+      <div class="progress"><div id="revBar" class="progress-fill"></div></div>
+      <div class="flash-front" id="revFront"></div>
+      <button id="revShow" class="btn primary">Show answer</button>
+      <div class="flash-back" id="revBack" hidden></div>
+      <div id="revGrades" class="grades" hidden>
+        <button class="grade again" data-grade="again">Again<span>&lt;1d</span></button>
+        <button class="grade hard" data-grade="hard">Hard<span>short</span></button>
+        <button class="grade good" data-grade="good">Good<span>normal</span></button>
+        <button class="grade easy" data-grade="easy">Easy<span>long</span></button>
+      </div>
+      <p id="revMeta" class="count"></p>
+    </div>
+
+    <div id="revDone" class="quiz-panel" hidden>
+      <h2>Session complete</h2>
+      <p id="revDoneMsg" class="muted"></p>
+      <p id="revDoneNext" class="muted"></p>
+      <button id="revDoneBack" class="btn primary">Back to review</button>
+    </div>
   </section>
 
 </main>
@@ -173,8 +242,8 @@
   <button class="tab" data-view="quiz" role="tab" aria-selected="false">
     <span class="tab-ico">?</span><span>Quiz</span>
   </button>
-  <button class="tab" data-view="saved" role="tab" aria-selected="false">
-    <span class="tab-ico">★</span><span>Saved</span>
+  <button class="tab" data-view="review" role="tab" aria-selected="false">
+    <span class="tab-ico">◈</span><span>Review</span>
   </button>
 </nav>
 
@@ -188,9 +257,12 @@
 <script src="assets/js/data/scenarios-more.js"></script>
 <script src="assets/js/data/drills.js"></script>
 <script src="assets/js/data/drills-more.js"></script>
+<script src="assets/js/data/quiz-extra.js"></script>
 <script src="assets/js/data/labs.js"></script>
 <script src="assets/js/data/labs-more.js"></script>
 <script src="assets/js/lab.js"></script>
+<script src="assets/js/quiz.js"></script>
+<script src="assets/js/review.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>
