@@ -43,13 +43,45 @@
     <div id="cmdList" class="list"></div>
   </section>
 
-  <!-- ── Scenarios ────────────────────────────────────────── -->
-  <section id="view-scenarios" class="view" aria-label="Scenarios">
-    <div class="filters">
-      <div id="scenChips" class="chips" role="tablist" aria-label="Scenario filter"></div>
+  <!-- ── Playbooks ────────────────────────────────────────── -->
+  <section id="view-playbooks" class="view" aria-label="Playbooks">
+    <p class="blurb" id="pbIntro">Decision trees for "what would you check next?". Tap a step for how and why it works, then take the next one — or expand the whole tree as a reference sheet.</p>
+    <div id="pbFilter" class="chips">
+      <button class="chip active" data-pbfilter="playbook">Playbooks</button>
+      <button class="chip" data-pbfilter="scenario">Scenarios</button>
+      <button class="chip" data-pbfilter="all">All</button>
     </div>
-    <p id="scenCount" class="count"></p>
-    <div id="scenList" class="list"></div>
+    <p id="pbCount" class="count"></p>
+    <div id="pbList" class="list"></div>
+
+    <div id="pbRun" hidden>
+      <div class="lab-head">
+        <div>
+          <p class="lab-title" id="pbTitle"></p>
+          <span class="muted" id="pbStepNo"></span>
+        </div>
+        <button id="pbExit" class="btn ghost small">Exit</button>
+      </div>
+      <div class="progress"><div id="pbBar" class="progress-fill"></div></div>
+
+      <details id="pbPromptWrap" class="brief-wrap">
+        <summary>The question</summary>
+        <p id="pbPrompt" class="situation"></p>
+      </details>
+
+      <details id="pbSayWrap" class="brief-wrap say">
+        <summary>Say this first — the 30-second talk track</summary>
+        <p id="pbSay" class="situation"></p>
+      </details>
+
+      <div class="pb-tools">
+        <button id="pbAllBtn" class="btn small ghost">Expand all</button>
+      </div>
+
+      <div id="pbSteps" class="pb-steps"></div>
+      <button id="pbNext" class="btn primary" hidden>Next step  ↓</button>
+      <div id="pbEnd" hidden></div>
+    </div>
   </section>
 
   <!-- ── Drills ───────────────────────────────────────────── -->
@@ -288,8 +320,8 @@
   <button class="tab active" data-view="commands" role="tab" aria-selected="true">
     <span class="tab-ico">❯_</span><span>Commands</span>
   </button>
-  <button class="tab" data-view="scenarios" role="tab" aria-selected="false">
-    <span class="tab-ico">◆</span><span>Scenarios</span>
+  <button class="tab" data-view="playbooks" role="tab" aria-selected="false">
+    <span class="tab-ico">◆</span><span>Playbooks</span>
   </button>
   <button class="tab" data-view="drills" role="tab" aria-selected="false">
     <span class="tab-ico">✦</span><span>Drills</span>
@@ -316,6 +348,8 @@
 <script src="assets/js/data/commands-more.js"></script>
 <script src="assets/js/data/scenarios.js"></script>
 <script src="assets/js/data/scenarios-more.js"></script>
+<script src="assets/js/data/playbooks.js"></script>
+<script src="assets/js/data/playbooks-more.js"></script>
 <script src="assets/js/data/drills.js"></script>
 <script src="assets/js/data/drills-more.js"></script>
 <script src="assets/js/data/quiz-extra.js"></script>
@@ -327,6 +361,7 @@
 <script src="assets/js/quiz.js"></script>
 <script src="assets/js/review.js"></script>
 <script src="assets/js/sandbox.js"></script>
+<script src="assets/js/playbook.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

@@ -210,7 +210,7 @@
     if (state.q) {
       var c = filteredCommands().length, s = filteredScenarios().length, d = filteredDrills().length;
       if (state.view !== 'commands' && c) bits.push(c + ' in Commands');
-      if (state.view !== 'scenarios' && s) bits.push(s + ' in Scenarios');
+      if (state.view !== 'playbooks' && s) bits.push(s + ' in Playbooks');
       if (state.view !== 'drills' && d) bits.push(d + ' in Drills');
     }
     return bits.length ? '<p class="empty">No match here. ' + bits.join(' · ') + '.</p>' : '<p class="empty">Nothing matches.</p>';
@@ -226,10 +226,8 @@
     $('#cmdList').innerHTML = list.length ? list.map(commandCard).join('') : otherHits();
   }
   function renderScenarios() {
-    buildChips($('#scenChips'), usedCats(LX.scenarios), state.scenCat, 'data-scat');
-    var list = filteredScenarios();
-    $('#scenCount').textContent = list.length + ' of ' + LX.scenarios.length + ' scenarios';
-    $('#scenList').innerHTML = list.length ? list.map(scenarioCard).join('') : otherHits();
+    /* scenarios are rendered by the playbook walker now */
+    if (window.LXPlaybook) window.LXPlaybook.renderList(state.q);
   }
   function renderDrills() {
     buildChips($('#drillChips'), usedCats(LX.drills), state.drillCat, 'data-dcat');

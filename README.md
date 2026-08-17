@@ -11,7 +11,8 @@ once it has loaded a first time.
 | Tab | Contents |
 | --- | --- |
 | **Commands** | 120 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
-| **Scenarios** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
+| **Playbooks** | 19 decision trees for "what would you check next?" — the O.N.V.A. framework (Observe → Narrow → Verify → Act) plus 18 scenario trees. Each step reveals one at a time: tap it for what it settles and how to read the output, tap **Next step** for the next one, or **Expand all** to read the whole tree as a reference sheet. 17 steps carry **branches** that fork on what you see, several jumping straight into another tree. Ends with the common trap, the one-line takeaway, likely follow-up probes, and a link into the matching Sandbox mission. The 35 scenarios render through the same walker |
+| **Scenarios (inside Playbooks)** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
 | **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
 | **Sandbox** | A simulated Linux box you **type into for real**. ~50 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, running against a virtual filesystem that changes as you act — truncate a held-open log and `df` actually drops. 6 missions with state-checked objectives (4 incidents, a log-forensics drill, a bash-scripting drill) plus free play. Tab completion, a tappable key row, command history, and reset. **Working `man` pages** built from the command library, `man -k` to find a command by what it does, and `guide <topic>` to search commands, scenarios and drills from inside the terminal — so you never have to leave the app to look something up. Hints escalate in three steps: a nudge, then the tool to reach for plus its man page, then the exact command |
 | **Labs** | 6 interactive incidents in a simulated terminal — 49 steps, 157 command choices. Pick what you would run; wrong turns execute and explain why they were wrong. Ends with a debrief: what you did and why it worked, a scripted interview answer, expandable per-argument command breakdowns, and prevention notes |
@@ -45,7 +46,9 @@ phone and there is no account to create.
 
 ## Study loop that works
 
-1. **Labs first.** Work the incident before you read about it — the wrong turns teach more than
+0. **Playbook first** when you have no idea where to start. Walk the framework tree, then the tree
+   for the symptom you were given. Read the talk track out loud before you look at the steps.
+1. **Labs next.** Work the incident before you read about it — the wrong turns teach more than
    the right ones, and you never have to type on a phone. Aim for a clean first-try run.
 1b. **Then the same incident in the Sandbox**, where you type the commands yourself. Recognising
    the right answer and producing it cold are different skills, and only the second one survives
@@ -70,6 +73,7 @@ assets/css/style.css           # mobile-first, dark by default, light theme togg
 assets/js/app.js               # rendering, search/filter, quiz engine, persistence
 assets/js/shell.js             # the simulated shell: VFS, ~50 commands, parser (no DOM)
 assets/js/sandbox.js           # sandbox UI: terminal, objectives, keypad, debrief
+assets/js/playbook.js          # playbook walker: step reveal, branches, expand all
 assets/js/lab.js               # interactive lab engine: terminal, steps, debrief
 assets/js/quiz.js              # five question styles, three modes
 assets/js/review.js            # spaced repetition, flashcards, streak, mastery stats
@@ -85,6 +89,7 @@ assets/js/data/
   quiz-extra.js                # output-reading and hazard questions
   labs.js, labs-more.js        # interactive labs
   missions.js                  # sandbox worlds + objectives
+  playbooks.js, playbooks-more.js  # decision trees
 ```
 
 ## Adding your own material
