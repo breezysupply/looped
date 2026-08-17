@@ -13,7 +13,7 @@ once it has loaded a first time.
 | **Commands** | 120 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
 | **Scenarios** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
 | **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
-| **Sandbox** | A simulated Linux box you **type into for real**. ~50 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, running against a virtual filesystem that changes as you act — truncate a held-open log and `df` actually drops. 6 missions with state-checked objectives (4 incidents, a log-forensics drill, a bash-scripting drill) plus free play. Tab completion, a tappable key row, command history, hint/reveal, and reset |
+| **Sandbox** | A simulated Linux box you **type into for real**. ~50 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, running against a virtual filesystem that changes as you act — truncate a held-open log and `df` actually drops. 6 missions with state-checked objectives (4 incidents, a log-forensics drill, a bash-scripting drill) plus free play. Tab completion, a tappable key row, command history, and reset. **Working `man` pages** built from the command library, `man -k` to find a command by what it does, and `guide <topic>` to search commands, scenarios and drills from inside the terminal — so you never have to leave the app to look something up. Hints escalate in three steps: a nudge, then the tool to reach for plus its man page, then the exact command |
 | **Labs** | 6 interactive incidents in a simulated terminal — 49 steps, 157 command choices. Pick what you would run; wrong turns execute and explain why they were wrong. Ends with a debrief: what you did and why it worked, a scripted interview answer, expandable per-argument command breakdowns, and prevention notes |
 | **Quiz** | Five question styles, three modes. **Recall** (what does this do / which command), **Read the output** (a real terminal block — what does it tell you?), **Safe or not** (which command would you never run here), **Order the steps** (tap four commands into the right sequence), **Build the command** (assemble it from tokens). Modes: 10 questions, 60-second speed round, or weak-spots-only |
 | **Review** | Spaced repetition. Every miss becomes a flashcard automatically, graded Again / Hard / Good / Easy, scheduled by how well you know it. Plus day streak, per-topic mastery bars weakest-first, recent misses, and your starred items |
@@ -163,6 +163,10 @@ LX.missions.push({
     done:function (c) { /* c.w = world, c.ran = commands, c.last = last output */ } }]
 });
 ```
+
+Every objective carries `hint` (the nudge) and `reveal` (the exact command). The middle hint is
+derived automatically — it names the commands inside `reveal` and points you at `man <cmd>` — so
+adding an objective gives you the full three-step ladder for free. Add `hint2` to override it.
 
 Objectives are checked against the world, not against strings — any command that genuinely gets
 the disk under 50% counts. `size` without `content` models a huge file (with `fake` sample lines

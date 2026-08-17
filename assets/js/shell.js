@@ -1100,13 +1100,156 @@
     return { out: '', code: r ? 0 : 1 };
   };
   CMD.help = function (w) {
-    return ok('Sandbox commands:\n' +
-      Object.keys(CMD).sort().join('  ') + '\n\n' +
-      'Also supported: pipes |, redirects > >> <, ; && ||, $VAR, $(cmd),\n' +
-      'for/while/if one-liners, and sudo.\n');
+    return ok(
+      'REFERENCE — you should never need to leave this app\n' +
+      '  man <cmd>        full page: synopsis, options, examples, the trap\n' +
+      '  man -k <word>    find a command by what it does (same as apropos)\n' +
+      '  guide <topic>    search commands, scenarios and drills together\n' +
+      '\nIMPLEMENTED HERE\n' +
+      wrap(Object.keys(CMD).sort().join('  '), 58, '  ') + '\n' +
+      '\nSHELL FEATURES\n' +
+      '  pipes |   redirects > >> <   ; && ||   $VAR   $(cmd)   globs *\n' +
+      '  for x in …; do …; done      while read …; do …; done < file\n' +
+      '  if [ -f x ]; then …; fi     sudo\n');
   };
+  /* ── man / apropos / guide: the reference, in the terminal ──── */
+  var LIB = null;
+  function lib() { return LIB || (typeof LX !== 'undefined' ? LX : null); }
+
+  function wrap(text, width, indent) {
+    width = width || 58; indent = indent || '';
+    var out = [], line = '';
+    String(text).split(/\s+/).forEach(function (word) {
+      if ((line + ' ' + word).trim().length > width) { out.push(indent + line.trim()); line = word; }
+      else line += ' ' + word;
+    });
+    if (line.trim()) out.push(indent + line.trim());
+    return out.join('\n');
+  }
+
+  function findCmd(name) {
+    var L = lib();
+    if (!L || !L.commands) return null;
+    var exact = L.commands.filter(function (c) { return c.name === name; })[0];
+    if (exact) return exact;
+    /* aliases people actually type */
+    var alias = { egrep:'grep', fgrep:'grep', vim:'vi', dnf:'yum', 'apt-get':'apt' };
+    var target = alias[name];
+    return target ? L.commands.filter(function (c) { return c.name === target; })[0] || null : null;
+  }
+
+  function manPage(c) {
+    var out = [];
+    out.push(c.name.toUpperCase() + '(1)' + '                    Linux Pocket Guide');
+    out.push('');
+    out.push('NAME');
+    out.push(wrap(c.name + ' — ' + c.sum, 56, '       '));
+    out.push('');
+    out.push('SYNOPSIS');
+    out.push('       ' + c.syntax);
+    if (c.flags && c.flags.length) {
+      out.push('');
+      out.push('OPTIONS');
+      c.flags.forEach(function (f) {
+        out.push('       ' + f[0]);
+        out.push(wrap(f[1], 52, '              '));
+      });
+    }
+    if (c.ex && c.ex.length) {
+      out.push('');
+      out.push('EXAMPLES');
+      c.ex.forEach(function (e) {
+        out.push('       $ ' + e[0]);
+        out.push(wrap(e[1], 52, '              '));
+      });
+    }
+    if (c.tip) {
+      out.push('');
+      out.push('NOTES');
+      out.push(wrap(c.tip, 56, '       '));
+    }
+    if (c.related && c.related.length) {
+      out.push('');
+      out.push('SEE ALSO');
+      out.push(wrap(c.related.join(', '), 56, '       '));
+    }
+    out.push('');
+    return out.join('\n') + '\n';
+  }
+
+  function searchLib(kw) {
+    var L = lib();
+    if (!L || !L.commands) return [];
+    var rx = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return L.commands.filter(function (c) {
+      return rx.test(c.name) || rx.test(c.sum) || rx.test(c.tip || '') ||
+        (c.flags || []).some(function (f) { return rx.test(f[1]); });
+    });
+  }
+
   CMD.man = function (w, a) {
-    return ok('No manual pages in the sandbox. Try `help`, or look the command up on the Commands tab.\n');
+    var p = flags(a), rest = p.rest;
+    if (p.f.k || a[0] === '-k') {
+      return CMD.apropos(w, rest);
+    }
+    if (!rest.length) return err('What manual page do you want?\nTry: man df   ·   man -k "disk space"   ·   guide inode');
+    var c = findCmd(rest[0]);
+    if (c) return ok(manPage(c));
+    var near = searchLib(rest[0]);
+    if (near.length) {
+      return ok('No page for "' + rest[0] + '". Related entries:\n' +
+        near.slice(0, 8).map(function (x) { return '  ' + pad(x.name, 14, true) + x.sum; }).join('\n') + '\n');
+    }
+    return err('No manual entry for ' + rest[0] + '\nTry: man -k <keyword>  to search by what it does.');
+  };
+
+  CMD.apropos = function (w, a) {
+    var kw = a.filter(function (x) { return x.charAt(0) !== '-'; }).join(' ');
+    if (!kw) return err('apropos: what should I search for?');
+    var hits = searchLib(kw);
+    if (!hits.length) return { out:'apropos: nothing appropriate for "' + kw + '"\n', code:1 };
+    return ok(hits.slice(0, 14).map(function (c) {
+      return pad(c.name, 14, true) + '- ' + c.sum;
+    }).join('\n') + '\n' + (hits.length > 14 ? '(' + (hits.length - 14) + ' more — narrow the keyword)\n' : ''));
+  };
+
+  /* guide: search the whole study library, not just commands */
+  CMD.guide = function (w, a) {
+    var L = lib();
+    var kw = a.join(' ');
+    if (!kw) return err('guide: search the whole guide — commands, scenarios, and drills.\nTry: guide inode   ·   guide "deleted file"   ·   guide oom');
+    if (!L) return err('guide: reference library not loaded');
+    var rx;
+    try { rx = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); }
+    catch (e) { return err('guide: bad search'); }
+    var out = [];
+
+    var cmds = searchLib(kw);
+    if (cmds.length) {
+      out.push('COMMANDS');
+      cmds.slice(0, 6).forEach(function (c) {
+        out.push('  ' + pad(c.name, 12, true) + c.sum);
+      });
+      out.push('  (man <name> for the full page)');
+    }
+    (L.scenarios || []).filter(function (sc) {
+      return rx.test(sc.title) || rx.test(sc.situation) || rx.test(sc.key || '') ||
+        sc.steps.some(function (t) { return rx.test(t[0]) || rx.test(t[1]); });
+    }).slice(0, 3).forEach(function (sc, i) {
+      if (i === 0) { out.push(''); out.push('SCENARIOS'); }
+      out.push('  ' + sc.title);
+      sc.steps.slice(0, 4).forEach(function (t) { out.push('      $ ' + t[0]); });
+      if (sc.key) out.push(wrap('key: ' + sc.key, 54, '      '));
+    });
+    (L.drills || []).filter(function (d) { return rx.test(d.q) || rx.test(d.a); })
+      .slice(0, 2).forEach(function (d, i) {
+        if (i === 0) { out.push(''); out.push('DRILLS'); }
+        out.push('  ' + d.q);
+        out.push(wrap(d.a, 54, '      '));
+      });
+
+    if (!out.length) return { out:'guide: nothing found for "' + kw + '"\n', code:1 };
+    return ok(out.join('\n') + '\n');
   };
   ['vi', 'vim', 'nano', 'less', 'more'].forEach(function (name) {
     CMD[name] = function (w, a) {
@@ -1184,8 +1327,26 @@
 
     var fn = (w.extra && w.extra[cmd]) || CMD[cmd];
     if (!fn) {
-      return err('bash: ' + cmd + ': command not found' +
-        (CMD[cmd.toLowerCase()] ? '' : '  (type `help` for what this sandbox supports)'));
+      var msg = 'bash: ' + cmd + ': command not found';
+      var known = findCmd(cmd);
+      if (known) {
+        msg += '\n  ' + cmd + ' is not implemented in this sandbox, but the reference is:' +
+               '\n  man ' + known.name + '   (' + known.sum + ')';
+      } else {
+        /* did you mean …? one-character-off typos are the common case */
+        var near = Object.keys(CMD).filter(function (k) {
+          if (Math.abs(k.length - cmd.length) > 2) return false;
+          var d = 0, i, j;
+          for (i = 0, j = 0; i < k.length && j < cmd.length;) {
+            if (k[i] === cmd[j]) { i++; j++; }
+            else { d++; if (k.length > cmd.length) i++; else if (k.length < cmd.length) j++; else { i++; j++; } }
+          }
+          return d + Math.abs((k.length - i) - (cmd.length - j)) <= 2;
+        }).slice(0, 4);
+        if (near.length) msg += '\n  did you mean: ' + near.join(', ') + '?';
+        msg += '\n  `help` lists what runs here · `man -k ' + cmd + '` searches by purpose';
+      }
+      return err(msg);
     }
     var res = fn(w, rest, stdin) || ok('');
 
@@ -1376,6 +1537,7 @@
   }
 
   var api = { createWorld: createWorld, run: run, exec: exec, human: human,
+              setLibrary: function (l) { LIB = l; },
               resolve: resolve, node: node, children: children, diskUsed: diskUsed,
               commands: function () { return Object.keys(CMD).sort(); } };
 

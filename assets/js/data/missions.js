@@ -12,7 +12,7 @@ LX.missions.push({
   id:'m-disk', title:'/var is 100% full', labId:'disk-full',
   cat:'disk', level:'beginner', mins:8, kind:'incident',
   brief:'02:14. DiskSpaceCritical on ip-10-0-4-118. The app has stopped writing logs. Get the filesystem under 50% without breaking the running service, then find out why rotation never kicked in.',
-  keys:['df -h', 'df -i', 'du -h -d1', '/var/log', 'find', '-size +100M', 'truncate -s 0', 'ls -lh', '|', 'sort -h'],
+  keys:['man ', 'guide ', 'df -h', 'df -i', 'du -h -d1', '/var/log', 'find', '-size +100M', 'truncate -s 0', 'ls -lh', '|', 'sort -h'],
   world:{
     user:'ec2-user', host:'ip-10-0-4-118', cwd:'/home/ec2-user',
     disks:[
@@ -71,7 +71,7 @@ LX.missions.push({
   id:'m-nginx', title:'nginx will not start after a config edit', labId:'nginx-down',
   cat:'sys', level:'beginner', mins:8, kind:'incident',
   brief:'A colleague edited nginx.conf and restarted. The site is down and they are at lunch. Get it serving again — and keep the change they meant to make.',
-  keys:['systemctl status nginx', 'journalctl -u nginx', 'nginx -t', 'diff -u', 'sed -i', '/etc/nginx/nginx.conf', 'sudo'],
+  keys:['man ', 'guide ', 'systemctl status nginx', 'journalctl -u nginx', 'nginx -t', 'diff -u', 'sed -i', '/etc/nginx/nginx.conf', 'sudo'],
   world:{
     user:'ec2-user', host:'ip-10-0-2-45',
     disks:[{ fs:'/dev/nvme0n1p1', size:30 * GB, base:9 * GB, mount:'/', inodes:1966080, iused:91002 }],
@@ -152,7 +152,7 @@ LX.missions.push({
   id:'m-bind', title:'The API answers locally but not from outside', labId:'bind-address',
   cat:'net', level:'intermediate', mins:8, kind:'incident',
   brief:'curl localhost:8080/health returns 200 on the box. From the load balancer it times out. The team says it is "a firewall thing". Find out what it really is and fix it.',
-  keys:['ss -tulpn', 'curl -s', 'http://10.0.3.77:8080/health', 'grep -rn', '/etc/myapp/config.yml', 'sed -i', 'sudo', 'systemctl restart myapp'],
+  keys:['man ', 'guide ', 'ss -tulpn', 'curl -s', 'http://10.0.3.77:8080/health', 'grep -rn', '/etc/myapp/config.yml', 'sed -i', 'sudo', 'systemctl restart myapp'],
   world:{
     user:'ec2-user', host:'ip-10-0-3-77', ip:'10.0.3.77',
     disks:[{ fs:'/dev/nvme0n1p1', size:30 * GB, base:9 * GB, mount:'/', inodes:1966080, iused:88123 }],
@@ -205,7 +205,7 @@ LX.missions.push({
   id:'m-oom', title:'The service dies every few hours with no error', labId:'oom-kill',
   cat:'procs', level:'intermediate', mins:8, kind:'incident',
   brief:'A Java service on a 3.7G instance disappears two or three times a day. The application log ends mid-line. The team blames the JVM. Find the real cause and prove it.',
-  keys:['systemctl status myapp', 'dmesg -T', 'grep -i "out of memory"', 'free -h', 'systemctl cat myapp', 'ps -eo pid,rss,cmd', '|'],
+  keys:['man ', 'guide ', 'systemctl status myapp', 'dmesg -T', 'grep -i "out of memory"', 'free -h', 'systemctl cat myapp', 'ps -eo pid,rss,cmd', '|'],
   world:{
     user:'ec2-user', host:'ip-10-0-1-52',
     mem:{ total:3829, free:148, used:2913, cache:767, available:610, swap:0 },
@@ -256,7 +256,7 @@ LX.missions.push({
 LX.missions.push({
   id:'m-pipeline', title:'Log forensics: 8 GB overnight', cat:'text', level:'beginner', mins:7, kind:'drill',
   brief:'access.log grew overnight. Answer four questions with pipelines: who is hitting us hardest, which endpoints are erroring, how many 503s, and how many bytes we served. Fields are: IP - - [time] "METHOD /path" status bytes.',
-  keys:['awk', "'{print $1}'", 'sort', 'uniq -c', 'sort -rn', 'head', 'grep -c', '|', '$7', '$6', 'wc -l'],
+  keys:['man ', 'guide ', 'awk', "'{print $1}'", 'sort', 'uniq -c', 'sort -rn', 'head', 'grep -c', '|', '$7', '$6', 'wc -l'],
   world:{
     user:'ec2-user', host:'ip-10-0-6-14', cwd:'/home/ec2-user',
     disks:[{ fs:'/dev/nvme0n1p1', size:30 * GB, base:9 * GB, mount:'/', inodes:1966080, iused:70112 }],
@@ -307,7 +307,7 @@ LX.missions.push({
 LX.missions.push({
   id:'m-bash', title:'Bash: loops, reads, and exit codes', cat:'shell', level:'beginner', mins:8, kind:'drill',
   brief:'Five small scripting tasks against fruit.txt and hosts.txt — the kind of thing you get asked to write on a shared screen. Everything runs as a one-liner.',
-  keys:['while IFS= read -r', 'do', 'done <', 'for', 'in', 'echo', '"$line"', 'if [ ', ' ]; then', 'fi', '$?', '$(', ')'],
+  keys:['man ', 'guide ', 'while IFS= read -r', 'do', 'done <', 'for', 'in', 'echo', '"$line"', 'if [ ', ' ]; then', 'fi', '$?', '$(', ')'],
   world:{
     user:'ec2-user', host:'ip-10-0-7-22', cwd:'/home/ec2-user',
     disks:[{ fs:'/dev/nvme0n1p1', size:30 * GB, base:9 * GB, mount:'/', inodes:1966080, iused:70112 }],
@@ -357,7 +357,7 @@ LX.missions.push({
 LX.missions.push({
   id:'m-free', title:'Free play — a box to poke at', cat:'files', level:'beginner', mins:0, kind:'free',
   brief:'No objectives. A populated instance with logs, config, processes, and a full-ish disk. Explore, break things, run `help` to see what is implemented. Nothing here can hurt anything.',
-  keys:['ls -lah', 'cd', 'cat', 'grep -rn', 'df -h', 'du -h -d1', 'ps aux', 'systemctl status', '|', 'help'],
+  keys:['man ', 'guide ', 'ls -lah', 'cd', 'cat', 'grep -rn', 'df -h', 'du -h -d1', 'ps aux', 'systemctl status', '|', 'help'],
   world:{
     user:'ec2-user', host:'ip-10-0-9-100', cwd:'/home/ec2-user',
     disks:[

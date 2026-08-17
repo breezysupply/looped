@@ -8,6 +8,31 @@
 
   var run = null;  // { mission, w, ran:[], last:{}, met:{}, revealed:0, hist:[], histIdx }
 
+  /* man / apropos / guide read the same library the rest of the app uses */
+  if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
+
+  var STOP = ('the a an of to in on for and or with that this it is are was do does how what which ' +
+    'you your run using use make get set find out why here there without into from at as be').split(' ');
+  function keywordOf(text) {
+    var words = String(text || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/)
+      .filter(function (x) { return x.length > 3 && STOP.indexOf(x) === -1; });
+    words.sort(function (a, b) { return b.length - a.length; });
+    return words[0] || 'linux';
+  }
+
+  /* which real commands appear in a reveal — used to build the middle hint */
+  function toolsIn(cmdStr) {
+    var impl = LXShell.commands();
+    var names = (LX.commands || []).map(function (c) { return c.name; });
+    var seen = {}, out = [];
+    String(cmdStr || '').split(/[|;&()]+|\s+/).forEach(function (t) {
+      if (!t || t === 'sudo' || seen[t]) return;
+      if (!/^[a-z][a-z0-9._-]*$/.test(t)) return;
+      if (impl.indexOf(t) !== -1 || names.indexOf(t) !== -1) { seen[t] = 1; out.push(t); }
+    });
+    return out;
+  }
+
   /* ── List ─────────────────────────────────────────────────── */
   function progress() { return U().LS.get('lx.sandbox', {}); }
 
@@ -89,6 +114,7 @@
       if (pass) { run.met[o.id] = true; changed = true; }
     });
     if (changed) {
+      $('#sbHint').textContent = 'Hint';   /* fresh objective, fresh ladder */
       paintObjectives();
       var all = m.objectives.every(function (o) { return run.met[o.id]; });
       if (all) {
@@ -177,7 +203,8 @@
     if (!m) return;
     if (run && run.finishTimer) clearTimeout(run.finishTimer);
     run = { mission: m, w: LXShell.createWorld(m.world), ran: [], last: null,
-            met: {}, revealed: 0, hist: [], histIdx: 0 };
+            met: {}, revealed: 0, hist: [], histIdx: 0, hintLevel: {} };
+    if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
 
     $('#sbList').hidden = true;
     $('#sbIntro').hidden = true;
@@ -190,14 +217,18 @@
     $('#sbObjCount').textContent = m.objectives.length ? '0 / ' + m.objectives.length : 'free play';
     if ($('#sbObjWrap')) $('#sbObjWrap').open = m.objectives.length > 0;
     $('#sbBar').style.width = '0%';
-    print('Connected to ' + U().esc(m.world.host || 'sandbox') +
-      '  ·  type <code>help</code> for supported commands', 'term-out term-meta');
+    print('Connected to ' + U().esc(m.world.host || 'sandbox'), 'term-out term-meta');
+    print('stuck? <span class="term-cmd">man &lt;cmd&gt;</span> for the full page · ' +
+      '<span class="term-cmd">man -k &lt;what it does&gt;</span> to find one · ' +
+      '<span class="term-cmd">guide &lt;topic&gt;</span> to search everything · ' +
+      '<span class="term-cmd">help</span>', 'term-out term-meta');
     paintObjectives();
 
     $('#sbKeys').innerHTML = (m.keys || []).map(function (k) {
       return '<button class="key" data-key="' + U().esc(k) + '">' + U().esc(k) + '</button>';
     }).join('');
     $('#sbInput').value = '';
+    $('#sbHint').textContent = 'Hint';
     window.scrollTo(0, 0);
   }
 
@@ -279,7 +310,31 @@
     if (t.closest('#sbHint')) {
       var o = nextUnmet();
       if (!o) { U().toast('All objectives met'); return; }
-      print('hint: ' + U().esc(o.hint || o.text), 'term-out term-hint');
+      run.hintLevel = run.hintLevel || {};
+      var level = run.hintLevel[o.id] || 0;
+
+      if (level === 0) {
+        print('hint 1/3 · ' + U().esc(o.hint || o.text), 'term-out term-hint');
+      } else if (level === 1) {
+        var tools = o.hint2 ? [] : toolsIn(o.reveal);
+        if (o.hint2) {
+          print('hint 2/3 · ' + U().esc(o.hint2), 'term-out term-hint');
+        } else if (tools.length) {
+          print('hint 2/3 · the tool' + (tools.length > 1 ? 's' : '') + ' you want: ' +
+            tools.map(function (x) { return '<span class="term-cmd">' + U().esc(x) + '</span>'; }).join(', ') +
+            '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;read the page here: <span class="term-cmd">man ' +
+            U().esc(tools[0]) + '</span>', 'term-out term-hint');
+        } else {
+          print('hint 2/3 · search the guide: <span class="term-cmd">guide ' +
+            U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
+        }
+      } else {
+        print('hint 3/3 · tap <b>Show one</b> for the exact command — that marks the run as aided.' +
+          '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or keep digging: <span class="term-cmd">guide ' +
+          U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
+      }
+      run.hintLevel[o.id] = Math.min(2, level + 1);
+      $('#sbHint').textContent = 'Hint ' + (run.hintLevel[o.id] + 1) + '/3';
       return;
     }
     if (t.closest('#sbReveal')) {
