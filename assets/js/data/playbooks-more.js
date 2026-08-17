@@ -370,3 +370,82 @@ LX.playbooks.push(
 }
 
 );
+
+/* ── Added: the two reference trees from Parts V and VI of the playbook ── */
+LX.playbooks.push(
+
+/* ═══ 19. the 60-second pocket guide ═══ */
+{
+  id:'pb-pocket', title:'The 60-second pocket guide', cat:'ops', level:'beginner',
+  prompt:'The one tree to walk when you have no idea which subsystem is at fault. Eight checks, in order, all read-only.',
+  say:'"I will start read-only, confirm scope, and collect evidence before changing state."',
+  steps:[
+    { check:'Service', cmd:'systemctl status NAME',
+      decide:'State, exit code, and quick context.',
+      why:'One command gives you loaded/enabled state, active state, the main PID and a short log excerpt. If the unit is failed or restarting you already know which branch to take, and the exit code narrows it further: an application exit code means it rejected something, signal 9 means something external killed it.' },
+    { check:'Logs', cmd:'journalctl -u NAME --since "15 min ago"',
+      decide:'Errors, timeouts, dependency failures, restart loops?',
+      why:'Time-bound it immediately or you will drown. A service that dies during startup often cannot write its own log file, so the journal is the only record that exists. Add -p err to keep only warnings and worse.' },
+    { check:'CPU and process', cmd:'uptime; nproc; top -b -n1 | head',
+      decide:'Hot process, which user owns it, and what state it is in.',
+      why:'Load is meaningless without the core count. Then read the %Cpu line before the process list: high us is application work, high sy is kernel work, high wa is not CPU at all — it is storage, and you should change branch on the spot.' },
+    { check:'Memory', cmd:'free -h; vmstat 1 5',
+      decide:'Pressure, swap, blocked tasks.',
+      why:'Read available, not free — Linux fills spare RAM with cache and hands it back on demand. In vmstat, si/so above zero is real swapping and b counts tasks blocked on I/O.' },
+    { check:'Storage capacity', cmd:'df -h; df -i',
+      decide:'Capacity or inode problem.',
+      why:'Two cheap commands that eliminate two completely different failures. A full filesystem produces bizarre downstream errors, and inode exhaustion gives the identical ENOSPC message while df -h still shows free space.' },
+    { check:'Disk I/O', cmd:'iostat -xz 1 3',
+      decide:'Latency and saturation, per device.',
+      why:'%util near 100 with a high await means requests are queueing at the device. Follow with pidstat -d to attribute the I/O to a process rather than guessing.' },
+    { check:'Network', cmd:'ss -lntp; nc -zv host port; curl -v; dig +short',
+      decide:'Listening, then TCP, then application, then DNS.',
+      why:'Walk it in that order and each command eliminates a layer. Watch the bind address in ss — 127.0.0.1 means unreachable from off-box no matter what any firewall says. Then refused versus timeout tells you whether the packet arrived.' },
+    { check:'Permissions', cmd:'id; stat FILE; namei -l PATH; getfacl FILE',
+      decide:'Identity, then mode, then path traversal, then ACL.',
+      why:'Evaluate as the identity doing the access, not your login. namei -l is the step people skip: you need execute on every directory in the path, not just read on the file.' }
+  ],
+  probes:[
+    ['They ask "what else?"', '"If that is normal, I would change branches. The next thing I want to rule out is __, so I would check __ because it tells me __."'],
+    ['They give you new evidence mid-answer', '"That changes my hypothesis. Since __ is normal but __ is abnormal, I would move away from __ and investigate __ next."'],
+    ['They ask you to close it out', '"Once I verify the cause I would make the smallest safe change, then re-run the original test and confirm service health, logs, and the user-visible symptom are back to normal."']
+  ],
+  trap:'Command dumping. Naming eight commands with no interpretation scores worse than naming three and saying what each one would prove.',
+  remember:'Command plus purpose plus interpretation beats command dumping, every time.'
+},
+
+/* ═══ 20. talk tracks ═══ */
+{
+  id:'pb-talktracks', title:'What to say when you are stuck', cat:'ops', level:'beginner',
+  prompt:'You do not know the answer, or you have run out of ideas mid-question. These are the sentences that keep you sounding structured while you think.',
+  say:'"I do not want to guess at the failure, so I would start with read-only checks that tell me which subsystem to investigate."',
+  steps:[
+    { check:'When you do not know the root cause yet', cmd:'"I would start with read-only checks that tell me which subsystem to investigate."',
+      decide:'Buys you the whole framework as an answer, without pretending to know the cause.',
+      why:'This is a real answer, not a dodge — it describes a method and shows you will not change state before you understand the problem. Follow it immediately with the four resources so it does not sound like stalling: confirm scope, then CPU, memory, storage, network, permissions, logs.' },
+    { check:'When they ask "what else?"', cmd:'"If that is normal, my next branch would be __ because __."',
+      decide:'Turns an open-ended prod into a structured next step.',
+      why:'The sentence forces you to give a reason, which is what is actually being graded. "I would check memory next" is weak; "I would check memory next, because a slow service with idle CPU and healthy disk is often swapping" is a senior answer.' },
+    { check:'Before any state-changing command', cmd:'"Before I restart or modify anything, I would capture the current state and logs."',
+      decide:'Signals that you know a restart destroys evidence.',
+      why:'Interviewers are listening for whether you distinguish checking state from changing state. Saying this out loud before you propose a fix earns credit even when the fix itself is obvious.' },
+    { check:'When the tool is not installed', cmd:'"If that tool is available I would use it; otherwise the closest built-in signal is __."',
+      decide:'Shows you are not dependent on one binary being present.',
+      why:'iostat and pidstat come from sysstat and are frequently missing on minimal images. Knowing the fallbacks — /proc, ps, vmstat, the journal — is exactly the kind of practical detail that separates people who have worked on locked-down hosts from people who have only read about them.' },
+    { check:'When they hand you new evidence', cmd:'"That changes my hypothesis. Since __ is normal but __ is abnormal, I would investigate __ next."',
+      decide:'Demonstrates that you update on evidence instead of defending your first guess.',
+      why:'Interviewers deliberately feed you contradicting output to see whether you notice. Changing direction cleanly and saying why is a scored behaviour; quietly continuing down your original path is the failure mode they are testing for.' },
+    { check:'When you propose the fix', cmd:'"I would make the smallest reversible change, then validate that the original symptom is gone."',
+      decide:'Closes the loop the way an on-call engineer actually would.',
+      why:'Two halves matter here: smallest reversible change, and validating against the user-visible symptom rather than the metric you happened to be watching. Finish with what you would do afterwards — the durable fix and the follow-up item.' }
+  ],
+  probes:[
+    ['Is it acceptable to say "I do not know"?', 'Yes, if you follow it with how you would find out. "I have not hit that specific failure, but I would start by checking X because it would tell me Y" is a strong answer. Bluffing a wrong mechanism is the thing that hurts.'],
+    ['How much detail is too much?', 'Give the command, the purpose, and the interpretation, then stop and let them steer. Long uninterrupted monologues stop you getting the hints they are trying to give you.'],
+    ['What if you genuinely blank?', 'Fall back to scope: one host or many, one user or everyone, what changed and when. That question is always available and always relevant.']
+  ],
+  trap:'Filling silence with command names. Slow, structured and partially correct beats fast and scattered.',
+  remember:'You are being graded on method, not recall. Narrate the method and the recall has room to arrive.'
+}
+
+);

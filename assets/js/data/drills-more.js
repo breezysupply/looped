@@ -95,3 +95,142 @@ LX.quiz.push(
   choices:['nofail','defaults','noexec','ro'], a:0,
   why:'That plus UUIDs instead of device names is how you keep an fstab edit from making an instance unbootable.' }
 );
+
+/* ── Added: mock-bank drills and rapid-fire recall from the playbook ── */
+LX.drills.push(
+
+{ q:'What does namei -l solve that ls -l on the file does not?', cat:'perms', level:'intermediate',
+  a:'ls -l tells you about the final file only. namei -l walks every component of the path and prints the owner and mode of each one, so you can see whether the user can actually traverse to the file. You need execute on every directory in the chain; one missing x halfway down blocks access even when the file itself is world-readable.',
+  points:['Directory x means traverse, not read. It is the single most-missed cause of "permission denied".',
+    'Run it as the identity that is failing — a service account, not your login.',
+    'Pair it with getfacl when the mode bits look correct: a trailing + in ls -l means ACLs are involved.'] },
+
+{ q:'RSS versus VSZ — what is the difference, and which do you sort by?', cat:'procs', level:'intermediate',
+  a:'VSZ is virtual size: everything the process has mapped, including memory it has never touched, shared libraries, and reserved address space. RSS is resident set size: the physical pages actually in RAM right now. Sort by RSS when hunting a memory problem, because that is the memory really being consumed.',
+  points:['A JVM commonly shows a huge VSZ and a much smaller RSS — the VSZ is not a problem.',
+    'ps -eo pid,user,%mem,rss,vsz,cmd --sort=-rss | head is the command.',
+    'RSS also double-counts shared pages across processes, so summing RSS overstates total use.'] },
+
+{ q:'When is du a sensible next step for a slow service, and when is it a poor one?', cat:'disk', level:'beginner',
+  a:'It is sensible after df has shown capacity pressure, or when you have specific reason to think a directory is growing. It is poor as a first response to "the service is slow", because du measures where space is allocated and says nothing about performance — and walking a large tree is expensive on a host that is already struggling.',
+  points:['Establish why storage is a likely branch before you go looking in it.',
+    'For performance the storage question is iostat, not du: utilisation, await, queue depth.',
+    'This is a real interview trap — the sequence df then du is right, du alone is not.'] },
+
+{ q:'What is the difference between a symptom, a hypothesis, and evidence?', cat:'ops', level:'intermediate',
+  a:'The symptom is what the user reports — "it is slow", "it returns 500s". The hypothesis is your candidate explanation — "the disk is saturated". Evidence is the output that confirms or kills it — iostat showing 100% utilisation with 240ms await on the volume the app writes to. Interviews are largely a test of whether you keep those three separate.',
+  points:['State which one you are on: "my hypothesis is X, and the command that would prove it is Y".',
+    'A hypothesis with no test attached is a guess.',
+    'Change hypothesis cleanly when evidence contradicts it — that is a scored behaviour, not a weakness.'] },
+
+{ q:'How do you validate that your remediation actually solved the incident?', cat:'ops', level:'intermediate',
+  a:'Re-run the original failing test, not a proxy for it. Confirm the service is healthy at the layer the user touches, check that the metric you were watching has recovered and stayed recovered, read the logs for new errors, and confirm the user-visible symptom is gone. Then write down what you changed.',
+  points:['"The metric looks better" is not the same as "the customer request succeeds".',
+    'Watch for a few minutes — a restart can look like a fix for exactly as long as it takes to refill.',
+    'Close the loop with the durable fix and an owner, or the same page fires next week.'] },
+
+{ q:'Why can restarting a service make troubleshooting harder?', cat:'ops', level:'beginner',
+  a:'It changes state before you have understood it. You lose the process state, open file descriptors, memory profile and often the in-memory evidence of what went wrong; a deleted-but-open file disappears along with the space it explained. The symptom usually returns later, now without the clues.',
+  points:['Capture first: systemctl status, journalctl, ps, and the relevant resource command.',
+    'Say this out loud before proposing a restart — it is one of the clearest seniority signals available.',
+    'If you must restart to restore service, capture state first, then restart, then investigate.'] },
+
+{ q:'What does vmstat show you that top does not make obvious?', cat:'procs', level:'intermediate',
+  a:'The b column — processes blocked on I/O — and si/so, actual swap in and out. top gives you a wait percentage but vmstat makes the distinction between memory pressure and I/O pressure explicit, sampled over time so you can see whether it is sustained or a spike.',
+  points:['vmstat 1 5 gives five one-second samples; the first line is averages since boot, so ignore it.',
+    'r is the run queue: sustained r above core count is genuine CPU saturation.',
+    'si/so at zero rules out swapping, which is the fastest way to eliminate memory as the cause.'] },
+
+{ q:'What is the difference between getent hosts and dig?', cat:'net', level:'intermediate',
+  a:'getent goes through the system name-service path defined in nsswitch.conf — so it consults /etc/hosts first, then DNS, exactly like a normal application does. dig speaks DNS directly and ignores that path. When the two disagree, a hosts entry or the nsswitch order is your answer.',
+  points:['Applications resolve like getent, not like dig. Test the way the app resolves.',
+    'dig @server lets you interrogate one resolver specifically, which separates "my resolver is broken" from "the record is wrong".',
+    'ping mixes resolution and reachability into one result — isolate them instead.'] },
+
+{ q:'How do you check the exact route Linux will use for one destination?', cat:'net', level:'intermediate',
+  a:'ip route get ADDRESS. It resolves the actual decision the kernel will make for that destination, including the interface, the gateway, and the source address it will use — rather than making you read the whole table and infer it.',
+  points:['This is how you answer "why is traffic to that subnet leaving the wrong interface".',
+    'ip route alone shows the table; ip route get shows the decision.',
+    'tracepath then shows where along that path things stop, and works where traceroute is not installed.'] },
+
+{ q:'What evidence would make you suspect disk I/O latency?', cat:'disk', level:'intermediate',
+  a:'High load average with idle CPU, a high wa percentage in top, processes sitting in D state, and a b column above zero in vmstat. Confirm with iostat -xz: a device at or near 100% utilisation with a high await and a deep queue. Then attribute it with pidstat -d.',
+  points:['await is the latency the application actually feels; %util alone can mislead on SSDs.',
+    'On EBS, saturation often means provisioned IOPS exhausted rather than a failing device.',
+    'D-state processes cannot be killed until the I/O returns — that is a useful corroborating sign.'] },
+
+{ q:'How do dependencies create latency even when the local service looks healthy?', cat:'ops', level:'intermediate',
+  a:'The local process is fine but every request blocks on something downstream — a database, an internal API, DNS, a lock. Threads or connections pile up waiting, the pool exhausts, and new requests queue behind them. Locally you see healthy CPU and memory with rising response times and connection counts.',
+  points:['Measure the dependency directly with curl -w timings, or nc for plain reachability.',
+    'ss -s and connection-pool metrics show the pile-up before the application logs do.',
+    'A slow dependency and a failing one look different: failures are fast, slowness is what exhausts pools.'] },
+
+{ q:'Explain chmod 750 on a directory in words.', cat:'perms', level:'beginner',
+  a:'Owner gets read, write and execute — list it, create and delete entries, and traverse into it. Group gets read and execute — list and traverse, but not modify. Other gets nothing, so they cannot even traverse through it to reach anything below.',
+  points:['7 = 4+2+1, 5 = 4+1, 0 = none.',
+    'On a directory x is traverse, not run: without it, r only gets you the names.',
+    '750 on a parent directory is a very common reason a service account cannot reach a file it has permission to read.'] },
+
+{ q:'What is the principle behind never using chmod 777 as a quick fix?', cat:'perms', level:'beginner',
+  a:'It grants write to every account on the host, which on a web root means anyone can replace the application code. It also destroys the diagnostic information — you no longer know which permission was actually missing, so the real defect is hidden rather than fixed.',
+  points:['Grant the narrowest thing that works: group read, one traverse bit, or an ACL for one account.',
+    'If 777 "fixes" it, the real answer was ownership or a single missing bit.',
+    'Naming the security consequence, not just the tidiness one, is what scores here.'] },
+
+{ q:'Give a 30-second answer that could open almost any Linux troubleshooting question.', cat:'ops', level:'beginner',
+  a:'"I would start with read-only information so I do not change state before I understand the problem. First confirm the symptom and its scope — one user, one host, or everyone, and what changed. Then check the layer most likely involved: service state and logs, then CPU, memory, storage and network. I would use what I find to pick the next check, and only propose a change once I have evidence for the cause."',
+  points:['Memorise this. It buys thinking time and it is a genuinely correct answer.',
+    'Follow it immediately with the first concrete command so it does not sound rehearsed.',
+    'Scope first is the part most candidates skip, and it is free information.'] }
+
+);
+
+LX.quiz.push(
+{ q:'What does `namei -l /srv/app/config.yaml` show you?', cat:'perms', level:'intermediate',
+  choices:['Ownership and permissions for every component of the path','The ACLs on the final file','The inode number','Which process has the file open'], a:0,
+  why:'It is how you find the parent directory missing a traverse bit — the most common cause of a permission denial that ls -l cannot explain.' },
+
+{ q:'What does `findmnt -T /var/lib/app` answer?', cat:'disk', level:'intermediate',
+  choices:['Which filesystem contains that path, and its mount options','How much space the path uses','Which user owns the path','Whether the path exists'], a:0,
+  why:'It is the fastest way to spot a read-only mount when an application cannot write despite correct permissions.' },
+
+{ q:'`lsof +L1` lists what?', cat:'disk', level:'intermediate',
+  choices:['Open files with a link count below 1 — deleted but still held','Files locked by another user','Files larger than 1 GB','Files opened in the last minute'], a:0,
+  why:'This is the df-versus-du mismatch: the directory entry is gone but the blocks stay allocated until the holding process closes the descriptor.' },
+
+{ q:'A process is in Z state. What is happening?', cat:'procs', level:'beginner',
+  choices:['It has exited and its parent has not reaped the exit status','It is swapped out','It is waiting on disk','It has been stopped by a signal'], a:0,
+  why:'A zombie consumes nothing but a PID slot. You cannot kill it — you signal the parent, which is where the bug is.' },
+
+{ q:'What does a bind address of 0.0.0.0 mean?', cat:'net', level:'beginner',
+  choices:['Listening on every IPv4 interface','Listening on loopback only','The port is closed','IPv6 only'], a:0,
+  why:'127.0.0.1 is loopback only and unreachable from off-box; 0.0.0.0 is all IPv4 interfaces; :: covers IPv6 and, depending on configuration, dual-stack.' },
+
+{ q:'You get "connection refused". What does that tell you?', cat:'net', level:'beginner',
+  choices:['The host was reachable and something rejected the connection','The packet was silently dropped','DNS failed','The route is missing'], a:0,
+  why:'Refused means a response came back — usually no listener on that port. A timeout means silence, which points at filtering, loss, routing, or a dead host.' },
+
+{ q:'A user was added to a group but still cannot access the shared directory. Why?', cat:'perms', level:'beginner',
+  choices:['Their existing session does not carry the new supplementary group','Group permissions take an hour to apply','The group needs a password','Groups do not affect directories'], a:0,
+  why:'Supplementary groups attach at login. Check with id in their shell; fix with a new login or newgrp.' },
+
+{ q:'What does `systemctl show myservice -p User -p Group` give you?', cat:'sys', level:'intermediate',
+  choices:['The account the unit is configured to run as','The user who started the service','The owner of the unit file','The last user to edit the unit'], a:0,
+  why:'That is the configured intent, including drop-ins. ps shows the runtime reality — when they disagree, something overrode the unit.' },
+
+{ q:'Which command shows the kernel view of a process’s real and effective IDs?', cat:'procs', level:'intermediate',
+  choices:['grep -E "^(Uid|Gid):" /proc/PID/status','id','whoami','ps -ef'], a:0,
+  why:'The four numbers are real, effective, saved-set and filesystem IDs. Permission checks generally use the effective ID.' },
+
+{ q:'`tracepath host` is useful because…', cat:'net', level:'intermediate',
+  choices:['It maps the path and reveals MTU issues without needing root or traceroute','It is faster than ping','It tests DNS','It shows open ports'], a:0,
+  why:'Handy on locked-down hosts where traceroute is not installed, and path-MTU problems break large packets while small ones pass.' },
+
+{ q:'What is the fastest way to see a systemd unit’s effective configuration?', cat:'sys', level:'beginner',
+  choices:['systemctl cat NAME','cat /etc/systemd/system/NAME.service','systemctl status NAME','journalctl -u NAME'], a:0,
+  why:'It includes drop-in overrides, which reading the vendor file by hand does not — and drop-ins are exactly where surprises live.' },
+
+{ q:'Which pair of commands is the strongest opening for a failed service?', cat:'sys', level:'beginner',
+  choices:['systemctl status, then journalctl -u','ps aux, then top','df -h, then du','ping, then curl'], a:0,
+  why:'Status gives state and exit code; the journal gives the message the service printed before dying, which it often could not write to its own log file.' }
+);

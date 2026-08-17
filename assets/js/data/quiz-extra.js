@@ -192,3 +192,113 @@ LX.dangerQs.push(
   a:0, why:'777 makes every file world-writable — anyone on the host can replace your application code. Grant the narrowest access that solves it: ownership, group write, or an ACL.' }
 
 );
+
+/* ── Verify the assistant: plausible-sounding answers with a real defect ──
+   Each shows advice you might genuinely be given, and asks what breaks.     */
+LX.dangerQs.push(
+
+{ cat:'perms', level:'beginner',
+  q:'An assistant tells you: "Permission denied? Just run chmod -R 777 /var/www and it will work." What is wrong with that?',
+  choices:['It grants write to every account on the host, and hides which permission was actually missing',
+    'Nothing — it is the standard fix for web roots',
+    'It only works if you also restart the web server',
+    '777 is invalid for directories'],
+  a:0, why:'It "works" in the sense that the error stops, which is exactly why it is dangerous. Anyone on the box can now replace your application code, and you never learned whether the missing right was read, write, or directory traversal. Find the missing bit with namei -l and grant that.' },
+
+{ cat:'disk', level:'beginner',
+  q:'The disk is full. An assistant suggests: "rm -rf /var/log/* will clear it out." What is the problem?',
+  choices:['Logs a process still holds open will not free space, and you have destroyed the evidence',
+    'rm cannot operate on log files',
+    'It will free space but only after a reboot',
+    'Nothing — this is the correct first step'],
+  a:0, why:'Two failures at once. Unlinking a file a running process holds open frees nothing until that descriptor closes, so df may not move. And you have just deleted the audit trail during an incident. Truncate the live log, delete only old rotations, and read the rotation policy afterwards.' },
+
+{ cat:'procs', level:'beginner',
+  q:'An assistant says: "The service is unresponsive — kill -9 the PID and start it again." What would you push back on?',
+  choices:['SIGKILL cannot be caught, so the process cannot flush buffers, release locks or clean up state',
+    'kill -9 requires root and you may not have it',
+    '-9 is not a valid signal number',
+    'Nothing — it is the fastest path back to service'],
+  a:0, why:'Start with TERM so the process can shut down cleanly, wait, and escalate only if it ignores you. -9 leaves stale lock and PID files and can corrupt state. And if the process is in D state, -9 will not work anyway until its I/O completes.' },
+
+{ cat:'sys', level:'intermediate',
+  q:'Your app logs "too many open files". An assistant tells you to run ulimit -n 65535 and retry. Why will that not help?',
+  choices:['A systemd service does not inherit your shell limits — the limit belongs in LimitNOFILE= in the unit',
+    'ulimit is a deprecated command',
+    '65535 is above the kernel maximum',
+    'It helps, but only after a reboot'],
+  a:0, why:'Your interactive shell has nothing to do with the service. Set LimitNOFILE= in the unit, daemon-reload, restart, and verify with /proc/PID/limits. And before raising anything, check whether descriptors are leaking — a higher ceiling on a leak just delays the failure.' },
+
+{ cat:'net', level:'intermediate',
+  q:'To find out whether the firewall is blocking traffic, an assistant suggests running iptables -F on the production host. What is wrong?',
+  choices:['It flushes every rule at once, removing protections and destroying the evidence, with no way to know which rule mattered',
+    'iptables -F only works on the local loopback',
+    'It requires a reboot to take effect',
+    'Nothing — it is a standard diagnostic'],
+  a:0, why:'It is a destructive change disguised as a test. Read the rules with counters first (iptables -L -n -v), and remember there are usually three layers on EC2: host firewall, security group and NACL. tcpdump tells you whether packets even arrive, without changing anything.' },
+
+{ cat:'procs', level:'beginner',
+  q:'free -h shows 200Mi free of 8Gi. An assistant concludes the host needs more memory. What did they miss?',
+  choices:['Linux uses spare RAM as page cache and reclaims it on demand — read the available column',
+    'free -h reports in the wrong units',
+    'They should have run df instead',
+    'Nothing — under 5% free is always a problem'],
+  a:0, why:'Low free is normal and healthy. The number that matters is available, which counts reclaimable cache. Real pressure shows as sustained si/so in vmstat or an OOM entry in the kernel log — alarm on those, not on free.' },
+
+{ cat:'net', level:'intermediate',
+  q:'Users cannot reach the service. An assistant checks ps, sees the process running, and says the problem must be the network. What check is missing?',
+  choices:['Whether it is listening, and on which address — ss -lntp',
+    'Whether the process has a valid PID',
+    'The version of the application',
+    'Nothing — a running process means the app side is fine'],
+  a:0, why:'A running PID proves the process exists, not that it serves anyone. It may still be initialising, may have failed to bind, or may be bound to 127.0.0.1 — which is unreachable from off-box no matter what the network does. Check the listener, then a local health endpoint, then move outward.' },
+
+{ cat:'users', level:'intermediate',
+  q:'An assistant gives you: usermod -G docker alice — to add alice to the docker group. What is the bug?',
+  choices:['Without -a it replaces all her supplementary groups instead of adding one',
+    'usermod cannot modify groups',
+    'The group name must come after the username',
+    'Nothing — this is correct'],
+  a:0, why:'usermod -aG appends; usermod -G replaces the entire list. This is how people accidentally remove their own sudo access by dropping themselves out of wheel. Also note she will not have the new group until she starts a new session.' },
+
+{ cat:'sys', level:'beginner',
+  q:'An assistant tells you to edit /etc/systemd/system/app.service and then run systemctl restart app. What step is missing?',
+  choices:['systemctl daemon-reload — otherwise systemd keeps running the cached old definition',
+    'A reboot',
+    'systemctl enable',
+    'Nothing is missing'],
+  a:0, why:'Without daemon-reload your edit silently does nothing and you spend twenty minutes wondering why the change had no effect. Prefer systemctl edit, which creates a drop-in that survives package updates, then daemon-reload and restart.' },
+
+{ cat:'disk', level:'intermediate',
+  q:'You added a volume to /etc/fstab. An assistant says: "Reboot to check it works." What should you do instead?',
+  choices:['Test with mount -a and findmnt --verify while you still have a shell',
+    'Nothing — rebooting is the only real test',
+    'Run fsck first',
+    'Wait for the next maintenance window'],
+  a:0, why:'A bad fstab line can leave the instance unbootable, and then you are recovering through the console or attaching the root volume elsewhere. Test now, and use a UUID plus nofail so a missing volume degrades the boot instead of blocking it.' },
+
+{ cat:'disk', level:'intermediate',
+  q:'dmesg shows I/O errors on /data. An assistant suggests running fsck /dev/nvme1n1 straight away. What is wrong?',
+  choices:['The filesystem is still mounted — repairing a mounted filesystem corrupts it',
+    'fsck does not work on nvme devices',
+    'You need to run it twice for it to take effect',
+    'Nothing — this is the correct response'],
+  a:0, why:'Unmount first, and snapshot the volume before repairing anything. Also read the kernel log before you touch it: a filesystem that went read-only did so to protect you from a failing device, and remounting or repairing without reading destroys the evidence of why.' },
+
+{ cat:'net', level:'beginner',
+  q:'curl fails with a certificate error. An assistant says to add -k and move on. When is that acceptable?',
+  choices:['As a one-off diagnostic to confirm the fault is TLS — never as the fix',
+    'Always, since -k just skips a slow check',
+    'Only on internal networks, where it is safe permanently',
+    'Never, under any circumstances'],
+  a:0, why:'-k disables verification entirely, so it also hides an active man-in-the-middle. Use it once to prove the problem is the certificate, then diagnose properly: expired, wrong name, or untrusted issuer — openssl s_client answers all three, and check the clock, because skew makes a valid certificate look expired.' },
+
+{ cat:'text', level:'intermediate',
+  q:'An assistant hands you: sed "s/DEBUG/INFO/" app.conf > app.conf to edit the file in place. What happens?',
+  choices:['The shell truncates app.conf before sed reads it, leaving an empty file',
+    'It works correctly',
+    'sed refuses and exits with an error',
+    'It creates a backup automatically'],
+  a:0, why:'Redirection opens and truncates the target first, so sed reads nothing. Use sed -i.bak for a real in-place edit with a backup, or write to a temporary file and mv it into place. This is a genuine data-loss bug, not a style issue.' }
+
+);
