@@ -249,6 +249,7 @@
   }
   function renderLabs() {
     if (window.LXLab) window.LXLab.renderList(state.q);
+    if (window.LXSandbox) window.LXSandbox.renderList(state.q);
   }
   function renderAll() {
     renderCommands(); renderScenarios(); renderDrills(); renderLabs();

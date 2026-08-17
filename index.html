@@ -106,6 +106,64 @@
     </div>
   </section>
 
+  <!-- ── Sandbox ──────────────────────────────────────────── -->
+  <section id="view-sandbox" class="view" aria-label="Terminal sandbox">
+    <p class="blurb" id="sbIntro">A simulated box you type into for real. Commands actually run against a virtual filesystem — truncate a log and <code>df</code> really drops. Tap the key row instead of typing the long bits.</p>
+    <div id="sbList" class="list"></div>
+
+    <div id="sbRun" hidden>
+      <div class="lab-head">
+        <div>
+          <p class="lab-title" id="sbTitle"></p>
+          <span class="muted" id="sbObjCount"></span>
+        </div>
+        <button id="sbExit" class="btn ghost small">Exit</button>
+      </div>
+      <div class="progress"><div id="sbBar" class="progress-fill"></div></div>
+
+      <details id="sbBriefWrap" class="brief-wrap">
+        <summary>Situation</summary>
+        <p id="sbBrief" class="situation"></p>
+      </details>
+
+      <details id="sbObjWrap" class="brief-wrap">
+        <summary>Objectives</summary>
+        <div id="sbObjectives" class="objectives"></div>
+      </details>
+
+      <div id="sbTerm" class="term sb-term" aria-label="Sandbox terminal"></div>
+
+      <div class="sb-composer">
+      <div class="sb-inputrow">
+        <span class="term-prompt">$</span>
+        <input id="sbInput" class="sb-input" type="text" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="Command input">
+        <button id="sbRunBtn" class="btn small primary">Run</button>
+      </div>
+
+      <div id="sbKeys" class="keys"></div>
+      <div class="sb-tools">
+        <button id="sbTab" class="btn small ghost">Tab ⇥</button>
+        <button id="sbUp" class="btn small ghost">↑</button>
+        <button id="sbDown" class="btn small ghost">↓</button>
+        <button id="sbHint" class="btn small ghost">Hint</button>
+        <button id="sbReveal" class="btn small ghost">Show one</button>
+        <button id="sbReset" class="btn small ghost">Reset box</button>
+      </div>
+      </div>
+    </div>
+
+    <div id="sbDone" class="quiz-panel" hidden>
+      <h2 id="sbScore"></h2>
+      <p id="sbVerdict" class="muted"></p>
+      <div id="sbDebrief"></div>
+      <div class="done-btns">
+        <button id="sbRetry" class="btn primary">Run it again</button>
+        <button id="sbBack" class="btn">All missions</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Quiz ─────────────────────────────────────────────── -->
   <section id="view-quiz" class="view" aria-label="Quiz">
     <div id="quizStart" class="quiz-panel">
@@ -239,6 +297,9 @@
   <button class="tab" data-view="labs" role="tab" aria-selected="false">
     <span class="tab-ico">▶_</span><span>Labs</span>
   </button>
+  <button class="tab" data-view="sandbox" role="tab" aria-selected="false">
+    <span class="tab-ico">$_</span><span>Sandbox</span>
+  </button>
   <button class="tab" data-view="quiz" role="tab" aria-selected="false">
     <span class="tab-ico">?</span><span>Quiz</span>
   </button>
@@ -260,9 +321,12 @@
 <script src="assets/js/data/quiz-extra.js"></script>
 <script src="assets/js/data/labs.js"></script>
 <script src="assets/js/data/labs-more.js"></script>
+<script src="assets/js/shell.js"></script>
+<script src="assets/js/data/missions.js"></script>
 <script src="assets/js/lab.js"></script>
 <script src="assets/js/quiz.js"></script>
 <script src="assets/js/review.js"></script>
+<script src="assets/js/sandbox.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

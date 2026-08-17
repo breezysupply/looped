@@ -506,3 +506,50 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 .grade.good { border-color: var(--accent); color: var(--accent); }
 .grade.easy { border-color: var(--blue); color: var(--blue); }
 #revStartBtn:disabled { opacity: .5; }
+
+/* ── Sandbox ────────────────────────────────────────────────── */
+.objectives { margin: 10px 0; }
+.obj {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 13px; padding: 6px 8px; border-radius: 8px;
+  background: var(--bg-elev); border: 1px solid var(--line); margin-bottom: 5px;
+  color: var(--muted);
+}
+.obj-tick { flex: 0 0 14px; color: var(--muted); font-weight: 700; }
+.obj.met { color: var(--text); border-color: var(--accent); }
+.obj.met .obj-tick { color: var(--accent); }
+.obj.met span:last-child { text-decoration: line-through; opacity: .7; }
+
+.sb-term { height: 38vh; max-height: 38vh; min-height: 170px; }
+/* the composer stays put above the tab bar, so the terminal grows behind it */
+.sb-composer {
+  position: sticky; bottom: calc(56px + var(--safe-b)); z-index: 15;
+  background: var(--bg); padding: 6px 0 8px;
+  border-top: 1px solid transparent;
+}
+.term-err { color: #f8a5a5; }
+.term-hint { color: var(--amber); font-style: italic; }
+.sb-term code { color: var(--accent); font-family: var(--mono); }
+
+.sb-inputrow {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  background: #05080c; border: 1px solid var(--accent);
+  border-radius: 10px; padding: 6px 8px;
+}
+.sb-inputrow .term-prompt { font-family: var(--mono); font-size: 14px; }
+.sb-input {
+  flex: 1; min-width: 0; background: none; border: 0; outline: none;
+  color: #fff; font-family: var(--mono); font-size: 16px; padding: 6px 0;
+}
+.sb-inputrow .btn { flex: 0 0 auto; width: auto; }
+
+.keys { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+.keys::-webkit-scrollbar { display: none; }
+.key {
+  flex: 0 0 auto; font-family: var(--mono); font-size: 12.5px;
+  background: var(--bg-elev-2); color: var(--accent);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; min-height: 38px; white-space: nowrap; cursor: pointer;
+}
+.sb-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.sb-tools .btn { flex: 1 0 auto; }

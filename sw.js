@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'linux-pocket-guide-v4';
+var CACHE = 'linux-pocket-guide-v5';
 var ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ var ASSETS = [
   './assets/js/app.js',
   './assets/js/lab.js',
   './assets/js/quiz.js',
+  './assets/js/shell.js',
+  './assets/js/sandbox.js',
   './assets/js/review.js',
   './assets/js/data/commands-core.js',
   './assets/js/data/commands-system.js',
@@ -20,6 +22,7 @@ var ASSETS = [
   './assets/js/data/quiz-extra.js',
   './assets/js/data/labs.js',
   './assets/js/data/labs-more.js',
+  './assets/js/data/missions.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'

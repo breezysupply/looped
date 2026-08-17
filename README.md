@@ -13,6 +13,7 @@ once it has loaded a first time.
 | **Commands** | 120 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
 | **Scenarios** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
 | **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
+| **Sandbox** | A simulated Linux box you **type into for real**. ~50 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, running against a virtual filesystem that changes as you act — truncate a held-open log and `df` actually drops. 6 missions with state-checked objectives (4 incidents, a log-forensics drill, a bash-scripting drill) plus free play. Tab completion, a tappable key row, command history, hint/reveal, and reset |
 | **Labs** | 6 interactive incidents in a simulated terminal — 49 steps, 157 command choices. Pick what you would run; wrong turns execute and explain why they were wrong. Ends with a debrief: what you did and why it worked, a scripted interview answer, expandable per-argument command breakdowns, and prevention notes |
 | **Quiz** | Five question styles, three modes. **Recall** (what does this do / which command), **Read the output** (a real terminal block — what does it tell you?), **Safe or not** (which command would you never run here), **Order the steps** (tap four commands into the right sequence), **Build the command** (assemble it from tokens). Modes: 10 questions, 60-second speed round, or weak-spots-only |
 | **Review** | Spaced repetition. Every miss becomes a flashcard automatically, graded Again / Hard / Good / Easy, scheduled by how well you know it. Plus day streak, per-topic mastery bars weakest-first, recent misses, and your starred items |
@@ -46,6 +47,9 @@ phone and there is no account to create.
 
 1. **Labs first.** Work the incident before you read about it — the wrong turns teach more than
    the right ones, and you never have to type on a phone. Aim for a clean first-try run.
+1b. **Then the same incident in the Sandbox**, where you type the commands yourself. Recognising
+   the right answer and producing it cold are different skills, and only the second one survives
+   an interview. Use the key row so you are tapping, not typing, the long paths.
 2. **Scenarios** for the same situations in condensed form — read the situation, say your answer
    out loud, then expand and compare.
 3. **Drills for the open-ended questions.** Answer before you expand. Speaking it is the skill
@@ -64,6 +68,8 @@ manifest.webmanifest, sw.js    # PWA install + offline cache
 icons/                         # generated app icons
 assets/css/style.css           # mobile-first, dark by default, light theme toggle
 assets/js/app.js               # rendering, search/filter, quiz engine, persistence
+assets/js/shell.js             # the simulated shell: VFS, ~50 commands, parser (no DOM)
+assets/js/sandbox.js           # sandbox UI: terminal, objectives, keypad, debrief
 assets/js/lab.js               # interactive lab engine: terminal, steps, debrief
 assets/js/quiz.js              # five question styles, three modes
 assets/js/review.js            # spaced repetition, flashcards, streak, mastery stats
@@ -78,6 +84,7 @@ assets/js/data/
   drills-more.js               # second drill set + extra quiz questions
   quiz-extra.js                # output-reading and hazard questions
   labs.js, labs-more.js        # interactive labs
+  missions.js                  # sandbox worlds + objectives
 ```
 
 ## Adding your own material
@@ -136,5 +143,30 @@ LX.outputQs.push({ cat:'disk', level:'beginner', cmd:'df -h',
   out:'…real terminal output…', q:'What does this tell you?',
   choices:['correct first', '…'], a:0, why:'the teaching point' });
 ```
+
+A sandbox mission is a world seed plus objectives that inspect real state:
+
+```js
+LX.missions.push({
+  id:'m-disk', title:'/var is 100% full', labId:'disk-full',   // labId reuses that lab's debrief
+  cat:'disk', level:'beginner', mins:8, kind:'incident',
+  brief:'The pager text.',
+  keys:['df -h', 'du -h -d1', '/var/log'],        // the tappable key row
+  world:{ user:'ec2-user', host:'ip-10-0-4-118',
+    disks:[{ fs:'/dev/nvme1n1', size:20*GB, base:900*MB, mount:'/var', inodes:1310720, iused:41003 }],
+    files:[{ path:'/var/log/app/app.log', size:12*GB, owner:'appsvc', fake:'…sample lines…' }],
+    procs:[{ pid:8123, cmd:'java …', open:['/var/log/app/app.log'] }],  // holds the file open
+    units:{ myapp:{ active:true, enabled:true, validate:fn, onStart:fn } },
+    extra:{ nginx:function (w, args) { … } }      // mission-specific binaries
+  },
+  objectives:[{ id:'reclaim', text:'Get /var below 50%', hint:'…', reveal:'truncate -s 0 …',
+    done:function (c) { /* c.w = world, c.ran = commands, c.last = last output */ } }]
+});
+```
+
+Objectives are checked against the world, not against strings — any command that genuinely gets
+the disk under 50% counts. `size` without `content` models a huge file (with `fake` sample lines
+for grep/head), and a file listed in a process's `open` array keeps its blocks when unlinked, so
+the deleted-but-held-open trap behaves correctly.
 
 After changing any file, bump `CACHE` in `sw.js` so installed copies pick the update up.
