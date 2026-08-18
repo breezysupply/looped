@@ -197,9 +197,7 @@
     var practise = t.closest('[data-practise]');
     if (practise) {
       var mid = practise.dataset.practise;
-      $$('.tab').forEach(function (tab) {
-        if (tab.dataset.view === 'sandbox') tab.click();
-      });
+      if (U() && U().go) U().go('sandbox');
       if (window.LXSandbox) window.LXSandbox.open(mid);
       return;
     }

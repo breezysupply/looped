@@ -183,6 +183,7 @@ main { padding: 12px 12px 24px; max-width: 780px; margin: 0 auto; }
   border-radius: 8px;
   font-size: 13px; line-height: 1.55; color: var(--text);
   border-left: 3px solid var(--accent);
+  overflow-wrap: anywhere;
 }
 .tip b { color: var(--accent); }
 
@@ -199,6 +200,7 @@ main { padding: 12px 12px 24px; max-width: 780px; margin: 0 auto; }
   margin-top: 12px; padding: 10px;
   background: var(--bg-elev-2); border-left: 3px solid var(--amber);
   border-radius: 8px; font-size: 13px;
+  white-space: normal; overflow-wrap: anywhere;
 }
 .related { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .rel-link {
@@ -266,6 +268,28 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 .review-item.miss { border-left-color: var(--red); }
 .review-item .rq { font-weight: 600; margin-bottom: 4px; }
 .review-item .ra { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
+
+/* ── Section sub-nav ────────────────────────────────────────── */
+.subnav {
+  /* deliberately not sticky: .topbar already owns top:0, and two stacked
+     sticky bars cost too much of a 390px-wide screen */
+  display: flex; gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.seg {
+  flex: 1 1 0; min-width: 0;
+  padding: 8px 6px; min-height: 38px;
+  background: var(--bg-elev); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.seg.active {
+  background: var(--bg-elev-2); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
 
 /* ── Tab bar ────────────────────────────────────────────────── */
 .tabbar {
@@ -545,7 +569,9 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 
 .keys { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
 .keys::-webkit-scrollbar { display: none; }
-.key {
+/* scoped to the sandbox key row — an unscoped .key collided with the
+   "common trap" callout above and forced it to nowrap */
+.keys .key {
   flex: 0 0 auto; font-family: var(--mono); font-size: 12.5px;
   background: var(--bg-elev-2); color: var(--accent);
   border: 1px solid var(--line); border-radius: 8px;

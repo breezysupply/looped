@@ -27,6 +27,8 @@
   </div>
 </header>
 
+<nav id="subnav" class="subnav" aria-label="Pages in this section" hidden></nav>
+
 <main id="main">
 
   <!-- ── Commands ─────────────────────────────────────────── -->
@@ -47,7 +49,7 @@
   <section id="view-playbooks" class="view" aria-label="Playbooks">
     <p class="blurb" id="pbIntro">Decision trees for "what would you check next?". Tap a step for how and why it works, then take the next one — or expand the whole tree as a reference sheet.</p>
     <div id="pbFilter" class="chips">
-      <button class="chip active" data-pbfilter="playbook">Playbooks</button>
+      <button class="chip active" data-pbfilter="playbook">Trees</button>
       <button class="chip" data-pbfilter="scenario">Scenarios</button>
       <button class="chip" data-pbfilter="all">All</button>
     </div>
@@ -317,25 +319,16 @@
 </main>
 
 <nav class="tabbar" role="tablist" aria-label="Sections">
-  <button class="tab active" data-view="commands" role="tab" aria-selected="true">
-    <span class="tab-ico">❯_</span><span>Commands</span>
+  <button class="tab active" data-group="learn" role="tab" aria-selected="true">
+    <span class="tab-ico">❯_</span><span>Learn</span>
   </button>
-  <button class="tab" data-view="playbooks" role="tab" aria-selected="false">
-    <span class="tab-ico">◆</span><span>Playbooks</span>
+  <button class="tab" data-group="practice" role="tab" aria-selected="false">
+    <span class="tab-ico">$_</span><span>Practice</span>
   </button>
-  <button class="tab" data-view="drills" role="tab" aria-selected="false">
-    <span class="tab-ico">✦</span><span>Drills</span>
-  </button>
-  <button class="tab" data-view="labs" role="tab" aria-selected="false">
-    <span class="tab-ico">▶_</span><span>Labs</span>
-  </button>
-  <button class="tab" data-view="sandbox" role="tab" aria-selected="false">
-    <span class="tab-ico">$_</span><span>Sandbox</span>
-  </button>
-  <button class="tab" data-view="quiz" role="tab" aria-selected="false">
+  <button class="tab" data-group="quiz" role="tab" aria-selected="false">
     <span class="tab-ico">?</span><span>Quiz</span>
   </button>
-  <button class="tab" data-view="review" role="tab" aria-selected="false">
+  <button class="tab" data-group="review" role="tab" aria-selected="false">
     <span class="tab-ico">◈</span><span>Review</span>
   </button>
 </nav>

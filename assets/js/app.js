@@ -10,6 +10,29 @@
   };
   var catName = function (c) { return CATS[c] || c; };
 
+  /* Four bottom tabs; groups with more than one page get a segmented sub-nav. */
+  var GROUPS = [
+    { id: 'learn',    label: 'Learn',    views: [
+      { v: 'commands',  label: 'Commands'  },
+      { v: 'playbooks', label: 'Playbooks' },
+      { v: 'drills',    label: 'Drills'    }
+    ] },
+    { id: 'practice', label: 'Practice', views: [
+      { v: 'labs',    label: 'Labs'    },
+      { v: 'sandbox', label: 'Sandbox' }
+    ] },
+    { id: 'quiz',     label: 'Quiz',     views: [ { v: 'quiz',   label: 'Quiz'   } ] },
+    { id: 'review',   label: 'Review',   views: [ { v: 'review', label: 'Review' } ] }
+  ];
+  function groupOf(v) {
+    for (var i = 0; i < GROUPS.length; i++) {
+      for (var j = 0; j < GROUPS[i].views.length; j++) {
+        if (GROUPS[i].views[j].v === v) return GROUPS[i];
+      }
+    }
+    return GROUPS[0];
+  }
+
   var LS = {
     get: function (k, d) {
       try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }
@@ -20,6 +43,7 @@
 
   var state = {
     view: LS.get('lx.view', 'commands'),
+    lastInGroup: LS.get('lx.groupview', {}),
     cat: 'all',
     level: 'all',
     scenCat: 'all',
@@ -50,7 +74,8 @@
 
   /* shared with lab.js */
   window.LXUtil = { esc: esc, fmt: fmt, LS: LS, catName: catName,
-                    toast: function (m) { toast(m); } };
+                    toast: function (m) { toast(m); },
+                    go: function (v) { setView(v); } };
 
   function toast(msg) {
     var el = $('#toast');
@@ -255,17 +280,43 @@
   }
 
   /* ── View switching ───────────────────────────────────────── */
+  function renderSubnav(g, v) {
+    var el = $('#subnav');
+    if (!el) return;
+    if (g.views.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.setAttribute('role', 'tablist');
+    el.innerHTML = g.views.map(function (x) {
+      var on = x.v === v;
+      return '<button class="seg' + (on ? ' active' : '') + '" role="tab" data-view="' +
+        esc(x.v) + '" aria-selected="' + (on ? 'true' : 'false') + '">' + esc(x.label) + '</button>';
+    }).join('');
+  }
+
   function setView(v) {
     if (!document.getElementById('view-' + v)) v = 'commands';
+    var g = groupOf(v);
     state.view = v;
+    state.lastInGroup[g.id] = v;
     LS.set('lx.view', v);
+    LS.set('lx.groupview', state.lastInGroup);
     $$('.view').forEach(function (s) { s.classList.toggle('active', s.id === 'view-' + v); });
     $$('.tab').forEach(function (t) {
-      var on = t.dataset.view === v;
+      var on = t.dataset.group === g.id;
       t.classList.toggle('active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
+    renderSubnav(g, v);
     window.scrollTo(0, 0);
+  }
+
+  /* the group tab reopens whichever page you last had open in that group */
+  function setGroup(id) {
+    var g = groupOf(null);
+    GROUPS.forEach(function (x) { if (x.id === id) g = x; });
+    var last = state.lastInGroup[g.id];
+    var ok = g.views.some(function (x) { return x.v === last; });
+    setView(ok ? last : g.views[0].v);
   }
 
   /* ── Events ───────────────────────────────────────────────── */
@@ -273,7 +324,10 @@
     var t = e.target;
 
     var tab = t.closest('.tab');
-    if (tab) { setView(tab.dataset.view); return; }
+    if (tab) { setGroup(tab.dataset.group); return; }
+
+    var seg = t.closest('.seg');
+    if (seg) { setView(seg.dataset.view); return; }
 
     var save = t.closest('[data-save]');
     if (save) { e.stopPropagation(); toggleSaved(save.dataset.save); return; }
