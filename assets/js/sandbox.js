@@ -87,6 +87,11 @@
     run.hist.push(line);
     run.histIdx = run.hist.length;
 
+    /* a bare /word is a sandbox command, not a path — /var/log and friends
+       still have a second slash, so they go through to the shell untouched */
+    var sc = line.match(/^\/([a-z?]+)$/i);
+    if (sc && SLASH[sc[1].toLowerCase()]) { SLASH[sc[1].toLowerCase()](); return; }
+
     var res;
     try { res = LXShell.run(run.w, line); }
     catch (e) { res = { out:'', err:'sandbox: ' + e.message, code:1 }; }
@@ -103,40 +108,83 @@
   /* ── Objectives ───────────────────────────────────────────── */
   function ctx() { return { w: run.w, ran: run.ran, last: run.last }; }
 
+  /* A bubble: announced, auto-dismissed, and never focusable — the point is
+     that finishing an objective does not interrupt whatever you are typing. */
+  function bubble(html, cls) {
+    var host = $('#sbBubbles');
+    if (!host) return;
+    while (host.children.length >= 3) host.removeChild(host.firstChild);
+    var b = document.createElement('div');
+    b.className = 'bubble' + (cls ? ' ' + cls : '');
+    b.innerHTML = html;
+    host.appendChild(b);
+    requestAnimationFrame(function () { b.classList.add('in'); });
+    setTimeout(function () {
+      b.classList.remove('in');
+      setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 300);
+    }, cls === 'all' ? 2000 : 2800);
+  }
+
+  function metCount() {
+    return run.mission.objectives.filter(function (o) { return run.met[o.id]; }).length;
+  }
+
   function checkObjectives() {
-    var m = run.mission;
+    var m = run.mission, esc = U().esc;
     if (!m.objectives.length) return;
-    var changed = false;
+    var just = [];
     m.objectives.forEach(function (o) {
       if (run.met[o.id]) return;
       var pass = false;
       try { pass = !!o.done(ctx()); } catch (e) { pass = false; }
-      if (pass) { run.met[o.id] = true; changed = true; }
+      if (pass) { run.met[o.id] = true; just.push(o); }
     });
-    if (changed) {
-      $('#sbHint').textContent = 'Hint';   /* fresh objective, fresh ladder */
-      paintObjectives();
-      var all = m.objectives.every(function (o) { return run.met[o.id]; });
-      if (all) {
-        saveProgress();
-        /* remember which run this belongs to — the user may exit before it fires */
-        var owner = run;
-        run.finishTimer = setTimeout(function () {
-          if (run === owner) finish();
-        }, 500);
-      } else U().toast('Objective complete');
+    if (!just.length) return;
+
+    $('#sbHint').textContent = 'Hint';   /* fresh objective, fresh ladder */
+    paintObjectives();
+    var total = m.objectives.length, done = metCount(), before = done - just.length;
+
+    just.forEach(function (o) {
+      print('✓ objective complete · ' + esc(o.text), 'term-out term-done');
+    });
+
+    if (done === total) {
+      bubble('<b>All objectives complete!</b>' +
+        '<span class="bubble-sub">' + total + ' of ' + total + ' — opening your debrief</span>', 'all');
+      saveProgress();
+      /* remember which run this belongs to — the user may exit before it fires */
+      var owner = run;
+      run.finishTimer = setTimeout(function () {
+        if (run === owner) finish();
+      }, 1100);
+      return;
     }
+
+    just.forEach(function (o, i) {
+      bubble('<b>Objective complete!</b>' +
+        '<span class="bubble-sub">' + esc(o.text) + '</span>' +
+        '<span class="bubble-count">' + (before + i + 1) + ' / ' + total +
+        ' · keep going</span>');
+    });
   }
 
   function paintObjectives() {
     var m = run.mission, esc = U().esc;
     if (!m.objectives.length) {
       $('#sbObjectives').innerHTML = '<p class="muted">Free play — no objectives. Type <code>help</code> to see what is implemented.</p>';
+      $('#sbNow').textContent = '';
       return;
     }
     var doneCount = m.objectives.filter(function (o) { return run.met[o.id]; }).length;
     $('#sbObjCount').textContent = doneCount + ' / ' + m.objectives.length;
     $('#sbBar').style.width = (doneCount / m.objectives.length * 100) + '%';
+    /* the objective you are on stays visible in the header, so the full
+       checklist can stay collapsed and the terminal keeps the screen */
+    var now = nextUnmet();
+    $('#sbNow').innerHTML = now
+      ? '<span class="sb-now-label">Now</span> ' + esc(now.text)
+      : '<span class="sb-now-label done">Done</span> every objective met';
     $('#sbObjectives').innerHTML = m.objectives.map(function (o) {
       return '<div class="obj' + (run.met[o.id] ? ' met' : '') + '">' +
         '<span class="obj-tick">' + (run.met[o.id] ? '✓' : '○') + '</span>' +
@@ -197,6 +245,86 @@
     $('#sbInput').focus();
   }
 
+  /* ── Hints, reveals, and the /slash commands ──────────────── */
+  function resetBox() {
+    run.w = LXShell.createWorld(run.mission.world);
+    run.met = {}; run.ran = []; run.last = null;
+    $('#sbTerm').innerHTML = '';
+    print('Box reset to its starting state.', 'term-out term-meta');
+    paintObjectives();
+  }
+
+  function showHint() {
+    var o = nextUnmet();
+    if (!o) { U().toast('All objectives met'); return; }
+    run.hintLevel = run.hintLevel || {};
+    var level = run.hintLevel[o.id] || 0;
+
+    print('working on: ' + U().esc(o.text), 'term-out term-meta');
+    if (level === 0) {
+      print('hint 1/3 · ' + U().esc(o.hint || o.text), 'term-out term-hint');
+    } else if (level === 1) {
+      var tools = o.hint2 ? [] : toolsIn(o.reveal);
+      if (o.hint2) {
+        print('hint 2/3 · ' + U().esc(o.hint2), 'term-out term-hint');
+      } else if (tools.length) {
+        print('hint 2/3 · the tool' + (tools.length > 1 ? 's' : '') + ' you want: ' +
+          tools.map(function (x) { return '<span class="term-cmd">' + U().esc(x) + '</span>'; }).join(', ') +
+          '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;read the page here: <span class="term-cmd">man ' +
+          U().esc(tools[0]) + '</span>', 'term-out term-hint');
+      } else {
+        print('hint 2/3 · search the guide: <span class="term-cmd">guide ' +
+          U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
+      }
+    } else {
+      print('hint 3/3 · type <span class="term-cmd">/reveal</span> for the exact command — ' +
+        'that marks the run as aided.' +
+        '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or keep digging: <span class="term-cmd">guide ' +
+        U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
+    }
+    run.hintLevel[o.id] = Math.min(2, level + 1);
+    $('#sbHint').textContent = 'Hint ' + (run.hintLevel[o.id] + 1) + '/3';
+  }
+
+  function revealOne() {
+    var o = nextUnmet();
+    if (!o) { U().toast('All objectives met'); return; }
+    run.revealed++;
+    print('one way to do it: <span class="term-cmd">' + U().esc(o.reveal || '') + '</span>', 'term-out term-hint');
+    $('#sbInput').value = o.reveal || '';
+    $('#sbInput').focus();
+  }
+
+  function printObjectives() {
+    var m = run.mission, esc = U().esc;
+    if (!m.objectives.length) { print('free play — no objectives here.', 'term-out term-meta'); return; }
+    print(m.objectives.map(function (o) {
+      return (run.met[o.id] ? '<span class="term-done">  ✓ </span>' : '  ○ ') + esc(o.text);
+    }).join('<br>') + '<br><span class="term-meta">  ' + metCount() + ' / ' + m.objectives.length +
+      ' complete</span>', 'term-out');
+  }
+
+  function slashHelp() {
+    print('sandbox commands (they are not shell — they never touch the box):<br>' +
+      '  <span class="term-cmd">/hint</span>       next hint for the objective you are on (three levels, then /reveal)<br>' +
+      '  <span class="term-cmd">/reveal</span>     the exact command, prefilled — marks the run as aided<br>' +
+      '  <span class="term-cmd">/objectives</span> the checklist and where you are in it<br>' +
+      '  <span class="term-cmd">/reset</span>      put the box back to its starting state<br>' +
+      '  <span class="term-cmd">/quit</span>       leave without finishing<br>' +
+      'for the box itself: <span class="term-cmd">help</span>, <span class="term-cmd">man &lt;cmd&gt;</span>, ' +
+      '<span class="term-cmd">man -k &lt;what it does&gt;</span>, <span class="term-cmd">guide &lt;topic&gt;</span>',
+      'term-out term-meta');
+  }
+
+  var SLASH = {
+    hint: showHint, h: showHint,
+    reveal: revealOne, show: revealOne, r: revealOne,
+    objectives: printObjectives, obj: printObjectives, o: printObjectives,
+    reset: resetBox,
+    quit: function () { exit(); }, exit: function () { exit(); }, q: function () { exit(); },
+    help: slashHelp, '?': slashHelp, commands: slashHelp
+  };
+
   /* ── Lifecycle ────────────────────────────────────────────── */
   function open(id) {
     var m = (LX.missions || []).filter(function (x) { return x.id === id; })[0];
@@ -214,11 +342,16 @@
     $('#sbBrief').textContent = m.brief;
     $('#sbBriefWrap').open = true;
     $('#sbTerm').innerHTML = '';
+    if ($('#sbBubbles')) $('#sbBubbles').innerHTML = '';
     $('#sbObjCount').textContent = m.objectives.length ? '0 / ' + m.objectives.length : 'free play';
-    if ($('#sbObjWrap')) $('#sbObjWrap').open = m.objectives.length > 0;
+    if ($('#sbObjWrap')) $('#sbObjWrap').open = false;
+    $('#sbNow').textContent = '';
     $('#sbBar').style.width = '0%';
     print('Connected to ' + U().esc(m.world.host || 'sandbox'), 'term-out term-meta');
-    print('stuck? <span class="term-cmd">man &lt;cmd&gt;</span> for the full page · ' +
+    print('stuck? type <span class="term-cmd">/hint</span> — three levels, then ' +
+      '<span class="term-cmd">/reveal</span> for the answer. <span class="term-cmd">/help</span> lists the rest.',
+      'term-out term-meta');
+    print('reading up: <span class="term-cmd">man &lt;cmd&gt;</span> for the full page · ' +
       '<span class="term-cmd">man -k &lt;what it does&gt;</span> to find one · ' +
       '<span class="term-cmd">guide &lt;topic&gt;</span> to search everything · ' +
       '<span class="term-cmd">help</span>', 'term-out term-meta');
@@ -277,6 +410,7 @@
 
   function exit() {
     if (run && run.finishTimer) clearTimeout(run.finishTimer);
+    if ($('#sbBubbles')) $('#sbBubbles').innerHTML = '';
     run = null;
     $('#sbRun').hidden = true;
     $('#sbDone').hidden = true;
@@ -299,53 +433,9 @@
     if (t.closest('#sbTab')) { complete(); return; }
     if (t.closest('#sbUp')) { historyStep(-1); return; }
     if (t.closest('#sbDown')) { historyStep(1); return; }
-    if (t.closest('#sbReset')) {
-      run.w = LXShell.createWorld(run.mission.world);
-      run.met = {}; run.ran = []; run.last = null;
-      $('#sbTerm').innerHTML = '';
-      print('Box reset to its starting state.', 'term-out term-meta');
-      paintObjectives();
-      return;
-    }
-    if (t.closest('#sbHint')) {
-      var o = nextUnmet();
-      if (!o) { U().toast('All objectives met'); return; }
-      run.hintLevel = run.hintLevel || {};
-      var level = run.hintLevel[o.id] || 0;
-
-      if (level === 0) {
-        print('hint 1/3 · ' + U().esc(o.hint || o.text), 'term-out term-hint');
-      } else if (level === 1) {
-        var tools = o.hint2 ? [] : toolsIn(o.reveal);
-        if (o.hint2) {
-          print('hint 2/3 · ' + U().esc(o.hint2), 'term-out term-hint');
-        } else if (tools.length) {
-          print('hint 2/3 · the tool' + (tools.length > 1 ? 's' : '') + ' you want: ' +
-            tools.map(function (x) { return '<span class="term-cmd">' + U().esc(x) + '</span>'; }).join(', ') +
-            '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;read the page here: <span class="term-cmd">man ' +
-            U().esc(tools[0]) + '</span>', 'term-out term-hint');
-        } else {
-          print('hint 2/3 · search the guide: <span class="term-cmd">guide ' +
-            U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
-        }
-      } else {
-        print('hint 3/3 · tap <b>Show one</b> for the exact command — that marks the run as aided.' +
-          '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or keep digging: <span class="term-cmd">guide ' +
-          U().esc(keywordOf(o.text)) + '</span>', 'term-out term-hint');
-      }
-      run.hintLevel[o.id] = Math.min(2, level + 1);
-      $('#sbHint').textContent = 'Hint ' + (run.hintLevel[o.id] + 1) + '/3';
-      return;
-    }
-    if (t.closest('#sbReveal')) {
-      var o2 = nextUnmet();
-      if (!o2) { U().toast('All objectives met'); return; }
-      run.revealed++;
-      print('one way to do it: <span class="term-cmd">' + U().esc(o2.reveal || '') + '</span>', 'term-out term-hint');
-      $('#sbInput').value = o2.reveal || '';
-      $('#sbInput').focus();
-      return;
-    }
+    if (t.closest('#sbReset')) { resetBox(); return; }
+    if (t.closest('#sbHint')) { showHint(); return; }
+    if (t.closest('#sbReveal')) { revealOne(); return; }
     var key = t.closest('[data-key]');
     if (key) { insert(key.dataset.key); return; }
   });

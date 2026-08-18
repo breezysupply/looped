@@ -39,10 +39,20 @@ LX.missions.push({
       log:['Aug 14 02:12:41 ip-10-0-4-118 app[8123]: WARN could not write log: No space left on device'] } }
   },
   objectives:[
-    { id:'confirm', text:'Confirm which filesystem is full', hint:'One command shows every mount with its usage.',
-      reveal:'df -h', done:function (c) { return ranRe(c, /^\s*df\b(?!.*-i)/m); } },
-    { id:'inodes', text:'Rule out the other way a filesystem fills up', hint:'Blocks are one; what is the other?',
-      reveal:'df -i', done:function (c) { return ranRe(c, /df\b.*-i/); } },
+    { id:'confirm', text:'Confirm which filesystem is full — and rule out the other way one fills up',
+      hint:'One command shows every mount with its usage. The same command has a flag for the other resource a filesystem runs out of.',
+      hint2:'df -h reads blocks; df -i reads inodes. You want both before going further — a full-looking disk with free blocks is an inode problem.',
+      reveal:'df -h && df -i',
+      done:function (c) {
+        var blocks = false, inodes = false;
+        c.ran.forEach(function (line) {
+          line.split(/[;&|]+/).forEach(function (seg) {
+            if (!/^\s*df\b/.test(seg)) return;
+            if (/\s-[a-zA-Z]*i/.test(seg)) inodes = true; else blocks = true;
+          });
+        });
+        return blocks && inodes;
+      } },
     { id:'localise', text:'Narrow it to the directory eating the space', hint:'Walk down a level at a time rather than scanning everything.',
       reveal:'du -h -d1 /var/log | sort -h', done:function (c) { return ranRe(c, /\bdu\b.*\/var/); } },
     { id:'name', text:'Name the specific large files', hint:'find with a size test, or ls sorted by size.',
@@ -353,7 +363,210 @@ LX.missions.push({
   }
 });
 
-/* ═══ 7. free play ═══════════════════════════════════════════ */
+/* ═══ 7. locked out of SSH ═══════════════════════════════════ */
+LX.missions.push({
+  id:'m-ssh', title:'Permission denied (publickey) on a fresh instance', labId:'ssh-denied',
+  cat:'transfer', level:'beginner', mins:8, kind:'incident',
+  brief:'A new instance from the team AMI refuses every SSH attempt instantly. You got a shell through SSM Session Manager — no port 22, no key. The client is never told why it was refused, so find out from this side and fix it.',
+  keys:['man ', 'guide ', 'ssh -v ', 'ec2-user@localhost', 'journalctl -u sshd', 'ls -ld', '/home/ec2-user/.ssh', 'stat', 'chmod 700', 'chmod 600', 'chown', 'grep -i', '/etc/ssh/sshd_config', 'sudo'],
+  world:{
+    user:'ec2-user', host:'ip-10-0-1-20', ip:'10.0.1.20',
+    disks:[{ fs:'/dev/nvme0n1p1', size:8 * GB, base:2 * GB, mount:'/', inodes:524288, iused:41220 }],
+    dirs:[
+      { path:'/home/ec2-user', mode:'777', owner:'ec2-user', group:'ec2-user' },
+      { path:'/home/ec2-user/.ssh', mode:'777', owner:'ec2-user', group:'ec2-user' }
+    ],
+    files:[
+      { path:'/home/ec2-user/.ssh/authorized_keys', mode:'644', owner:'centos', group:'centos',
+        content:'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH4tJ2mQ7fVn0oQ3zK9pR6sW1xY8bC5dE2gT7hL0nM4v team-2026\n' },
+      { path:'/etc/ssh/sshd_config', owner:'root', mode:'600',
+        content:'# Managed by the team AMI build\nPort 22\nPermitRootLogin no\nPubkeyAuthentication yes\nAuthorizedKeysFile\t.ssh/authorized_keys\nPasswordAuthentication no\n\n# sshd refuses a key file it cannot trust: a home or .ssh directory that\n# others can write to, or a key file owned by somebody else.\nStrictModes yes\n\nSubsystem\tsftp\t/usr/libexec/openssh/sftp-server\n' }
+    ],
+    procs:[
+      { pid:1201, user:'root', cmd:'/usr/sbin/sshd -D', cpu:0.0, mem:0.3, unit:'sshd' },
+      { pid:2044, user:'root', cmd:'/usr/bin/amazon-ssm-agent', cpu:0.2, mem:1.1 }
+    ],
+    sockets:[{ addr:'0.0.0.0', port:22, pid:1201, cmd:'sshd', user:'root' }],
+    units:{ sshd:{ desc:'OpenSSH server daemon', active:true, enabled:true, pid:1201,
+      log:['Aug 14 14:02:11 ip-10-0-1-20 sshd[4471]: Connection from 203.0.113.9 port 51922',
+           'Aug 14 14:02:11 ip-10-0-1-20 sshd[4471]: Authentication refused: bad ownership or modes for directory /home/ec2-user',
+           'Aug 14 14:02:11 ip-10-0-1-20 sshd[4471]: Connection closed by authenticating user ec2-user 203.0.113.9 port 51922 [preauth]'] } },
+    extra:{
+      /* a local login attempt, applying the same StrictModes checks real sshd does */
+      ssh:function (w, a) {
+        var args = a.filter(function (x) { return x.charAt(0) !== '-'; });
+        var target = args[0] || '';
+        if (!target) return { out:'', err:'usage: ssh [-v] [user@]hostname [command]', code:255 };
+        var hostPart = target.replace(/^[^@]*@/, '');
+        if (!/^(localhost|127\.0\.0\.1|10\.0\.1\.20)$/.test(hostPart)) {
+          return { out:'', err:'ssh: Could not resolve hostname ' + hostPart +
+            ': Name or service not known', code:255 };
+        }
+        var loud = a.some(function (x) { return /^-v+$/.test(x); });
+        var pre = loud
+          ? 'debug1: Connecting to ' + hostPart + ' [127.0.0.1] port 22.\n' +
+            'debug1: Connection established.\n' +
+            'debug1: Offering public key: /home/ec2-user/.ssh/id_ed25519 ED25519\n' +
+            'debug1: Authentications that can continue: publickey\n'
+          : '';
+        function writableByOthers(n) {
+          var m = String(n.mode);
+          return (parseInt(m.charAt(1), 10) & 2) !== 0 || (parseInt(m.charAt(2), 10) & 2) !== 0;
+        }
+        var home = w.fs['/home/ec2-user'];
+        var dir = w.fs['/home/ec2-user/.ssh'];
+        var key = w.fs['/home/ec2-user/.ssh/authorized_keys'];
+        if (!key) {
+          return { out: pre, err:'ec2-user@' + hostPart + ': Permission denied (publickey).', code:255 };
+        }
+        var refuse = null;
+        if (!home || writableByOthers(home)) refuse = 'directory /home/ec2-user';
+        else if (!dir || writableByOthers(dir)) refuse = 'directory /home/ec2-user/.ssh';
+        else if (writableByOthers(key) || (key.owner !== 'ec2-user' && key.owner !== 'root')) {
+          refuse = 'file /home/ec2-user/.ssh/authorized_keys';
+        }
+        if (refuse) {
+          w.units.sshd.log.push('Aug 14 14:19:40 ip-10-0-1-20 sshd[5120]: Authentication refused: ' +
+            'bad ownership or modes for ' + refuse);
+          return { out: pre, err:'ec2-user@' + hostPart + ': Permission denied (publickey).', code:255 };
+        }
+        w.sshOk = true;
+        w.units.sshd.log.push('Aug 14 14:22:05 ip-10-0-1-20 sshd[5188]: Accepted publickey for ec2-user ' +
+          'from 127.0.0.1 port 40122 ssh2: ED25519 SHA256:3nJ0pQ7wV2xR');
+        var cmd = args.slice(1).join(' ');
+        if (!cmd) return { out: pre + 'Last login: Fri Aug 14 14:22:05 2026 from 127.0.0.1\n', code:0 };
+        if (cmd === 'hostname') return { out: pre + w.host + '\n', code:0 };
+        var r = LXShell.exec(w, cmd);
+        return { out: pre + (r.out || ''), err: r.err || null, code: r.code || 0 };
+      }
+    }
+  },
+  objectives:[
+    { id:'reproduce', text:'Reproduce the refusal from the box itself',
+      hint:'You have a shell here. Try the login against this host and watch what the client is told.',
+      hint2:'ssh takes -v for a verbose trace. Target localhost so you are testing this sshd.',
+      reveal:'ssh -v ec2-user@localhost hostname',
+      done:function (c) { return ranRe(c, /^\s*ssh\b/m); } },
+    { id:'server', text:'Get the reason the server refused — the client is never told',
+      hint:'sshd writes its own reasoning to the journal. The client only ever sees "Permission denied".',
+      reveal:'journalctl -u sshd -n 20 --no-pager',
+      done:function (c) { return ranRe(c, /journalctl|systemctl\s+status\s+sshd/); } },
+    { id:'inspect', text:'Inspect the ownership and modes on the home dir, .ssh, and the key file',
+      hint:'Listing a directory shows what is inside it; you want the directory entry itself.',
+      hint2:'ls -ld <dir> prints the directory rather than its contents. stat gives the same in long form.',
+      reveal:'ls -ld /home/ec2-user /home/ec2-user/.ssh && ls -l /home/ec2-user/.ssh/authorized_keys',
+      done:function (c) { return ranRe(c, /(ls\b[^|]*-\w*d\w*|stat)\b[^|]*(\.ssh|\/home\/ec2-user)/); } },
+    { id:'strict', text:'Find the sshd setting that makes those modes fatal',
+      hint:'One directive tells sshd to refuse keys it cannot trust. It is in the server config, not the client one.',
+      reveal:'grep -i strictmodes /etc/ssh/sshd_config',
+      done:function (c) {
+        return ranRe(c, /strictmodes/i) ||
+          (ranRe(c, /(cat|grep|less|more|tail)\b.*sshd_config/) && outHas(c, /StrictModes/i));
+      } },
+    { id:'perms', text:'Tighten the modes: 700 on .ssh, 600 on the key, home not writable by others',
+      hint:'sshd objects to anything group- or world-writable anywhere on the path to the key.',
+      reveal:'chmod 755 /home/ec2-user && chmod 700 /home/ec2-user/.ssh && chmod 600 /home/ec2-user/.ssh/authorized_keys',
+      done:function (c) {
+        var h = c.w.fs['/home/ec2-user'], d = c.w.fs['/home/ec2-user/.ssh'],
+            k = c.w.fs['/home/ec2-user/.ssh/authorized_keys'];
+        function tight(n) {
+          var m = String(n.mode);
+          return (parseInt(m.charAt(1), 10) & 2) === 0 && (parseInt(m.charAt(2), 10) & 2) === 0;
+        }
+        return !!h && !!d && !!k && tight(h) && String(d.mode) === '700' && String(k.mode) === '600';
+      } },
+    { id:'owner', text:'Give the key file back to ec2-user, then prove the login works',
+      hint:'The AMI baked it as another user. sshd will not read a key file owned by somebody else.',
+      hint2:'chown user:group <file> — it needs sudo — then run the ssh test again.',
+      reveal:'sudo chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys && ssh ec2-user@localhost hostname',
+      done:function (c) {
+        var k = c.w.fs['/home/ec2-user/.ssh/authorized_keys'];
+        return !!k && k.owner === 'ec2-user' && !!c.w.sshOk;
+      } }
+  ]
+});
+
+/* ═══ 8. the box is crawling ═════════════════════════════════ */
+LX.missions.push({
+  id:'m-slow', title:'"The server is slow" — sixty seconds to triage', labId:'slow-host',
+  cat:'procs', level:'intermediate', mins:8, kind:'incident',
+  brief:'Support says the application is crawling on ip-10-0-5-9. No alarms have fired. You have a shell and about a minute before someone asks for an update. Work down the resources one tool at a time, find what is actually starving, and contain it without losing the backup.',
+  keys:['man ', 'guide ', 'uptime', 'nproc', 'top', 'free -h', 'iostat -xz', 'pidstat -d', 'ps aux', 'ionice -c 3 -p ', 'renice -n 19 -p ', 'sudo'],
+  world:{
+    user:'ec2-user', host:'ip-10-0-5-9', cwd:'/home/ec2-user',
+    uptime:'41 days', load:'14.72, 11.90, 7.44', cores:4,
+    cpu:{ us:5.2, sy:3.8, id:2.4, wa:88.5 },
+    mem:{ total:15773, free:402, used:5120, cache:10251, available:9902, swap:0 },
+    disks:[
+      { fs:'/dev/nvme0n1p1', size:30 * GB, base:9 * GB, mount:'/', inodes:1966080, iused:88400 },
+      { fs:'/dev/nvme1n1', size:500 * GB, base:210 * GB, mount:'/data', inodes:32768000, iused:412003 }
+    ],
+    io:{
+      devices:[
+        { name:'nvme0n1', r:2.1, w:8.4, rkb:18.2, wkb:96.0, await:0.44, qu:0.01, util:1.8 },
+        { name:'nvme1n1', r:14.0, w:1880.6, rkb:210.0, wkb:200714.0, await:240.18, qu:18.62, util:100.0 }
+      ],
+      perProcess:[
+        { uid:0, pid:20114, rd:2140.0, wr:200714.0, delay:412, cmd:'tar' },
+        { uid:993, pid:8123, rd:88.4, wr:1204.0, delay:38, cmd:'java' }
+      ]
+    },
+    files:[
+      { path:'/etc/cron.d/nightly-backup', owner:'root',
+        content:'# Full /data snapshot to the backup volume\n0 13 * * * root /usr/local/bin/backup.sh\n' },
+      { path:'/usr/local/bin/backup.sh', owner:'root', mode:'755',
+        content:'#!/usr/bin/env bash\nset -euo pipefail\ntar -czf /data/backups/data-$(date +%F).tgz /data/app\n' }
+    ],
+    procs:[
+      { pid:20114, user:'root', cmd:'tar -czf /data/backups/data-2026-08-14.tgz /data/app',
+        cpu:9.4, mem:0.6, rss:24880, vsz:118204, state:'D', time:'48:12' },
+      { pid:8123, user:'appsvc', cmd:'/usr/bin/java -jar /opt/app/app.jar',
+        cpu:3.1, mem:31.2, rss:5041220, vsz:9112044, state:'D', time:'2:14', unit:'myapp' },
+      { pid:8140, user:'appsvc', cmd:'/usr/bin/java -jar /opt/app/worker.jar',
+        cpu:1.8, mem:6.4, rss:1024880, vsz:3110024, state:'D', time:'0:48' },
+      { pid:3301, user:'root', cmd:'/usr/sbin/rsyslogd -n', cpu:0.1, mem:0.4 },
+      { pid:1201, user:'root', cmd:'/usr/sbin/sshd -D', cpu:0.0, mem:0.3 }
+    ],
+    units:{ myapp:{ desc:'Order API', active:true, enabled:true, pid:8123,
+      log:['Aug 14 13:44:02 ip-10-0-5-9 app[8123]: WARN request took 18422ms (threshold 2000ms)'] } }
+  },
+  objectives:[
+    { id:'pressure', text:'Establish whether there is real saturation: load average against core count',
+      hint:'A load average means nothing until you know how many cores it is spread across.',
+      hint2:'One command prints the three load averages; another prints the core count.',
+      reveal:'uptime; nproc',
+      done:function (c) { return ranRe(c, /uptime|\btop\b/) && ranRe(c, /nproc|cpuinfo|lscpu/); } },
+    { id:'split', text:'Split it: is the CPU busy, or is it waiting on something?',
+      hint:'The CPU line breaks into user, system, idle and iowait. One of those is doing all the work here.',
+      reveal:'top -b -n1 | head -5',
+      done:function (c) { return ranRe(c, /\btop\b|vmstat|mpstat/); } },
+    { id:'mem', text:'Rule memory out before you go further',
+      hint:'Read the available column and the swap line — heavy swapping looks exactly like this from outside.',
+      reveal:'free -h',
+      done:function (c) { return ranRe(c, /\bfree\b/); } },
+    { id:'device', text:'Name the device that is saturated',
+      hint:'Per-device I/O statistics: you want %util and await, not throughput.',
+      hint2:'iostat -xz 1 3 — x is extended stats, z hides the idle devices.',
+      reveal:'iostat -xz 1 3',
+      done:function (c) { return ranRe(c, /iostat/) && outHas(c, /nvme1n1/); } },
+    { id:'culprit', text:'Attribute the I/O to a single process',
+      hint:'The app is a victim here, not the cause — it is blocked in D state waiting on the same device.',
+      hint2:'pidstat breaks I/O down per process with -d.',
+      reveal:'pidstat -d 1 3',
+      done:function (c) { return ranRe(c, /pidstat\b.*-d|iotop/); } },
+    { id:'contain', text:'Stand the backup down without killing it, then re-measure to prove recovery',
+      hint:'You do not want to lose the backup — you want it to stop competing. There is a scheduling class for exactly that.',
+      hint2:'ionice -c 3 -p <pid> puts it in the idle I/O class. Then run iostat again rather than assuming.',
+      reveal:'sudo ionice -c 3 -p 20114 && iostat -xz',
+      done:function (c) {
+        var d = ((c.w.io || {}).devices || []).filter(function (x) { return x.name === 'nvme1n1'; })[0];
+        return !!d && d.util < 50 &&
+          c.ran.slice(-4).some(function (x) { return /iostat|uptime|top|pidstat/.test(x); });
+      } }
+  ]
+});
+
+/* ═══ 9. free play ═══════════════════════════════════════════ */
 LX.missions.push({
   id:'m-free', title:'Free play — a box to poke at', cat:'files', level:'beginner', mins:0, kind:'free',
   brief:'No objectives. A populated instance with logs, config, processes, and a full-ish disk. Explore, break things, run `help` to see what is implemented. Nothing here can hurt anything.',

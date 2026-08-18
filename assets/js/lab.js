@@ -11,6 +11,11 @@
   function LS(k, d) { return U().LS.get(k, d); }
   function save(k, v) { U().LS.set(k, v); }
 
+  /* the sandbox mission that reruns this lab as a typed exercise, if there is one */
+  function typedFor(labId) {
+    return ((window.LX && LX.missions) || []).filter(function (m) { return m.labId === labId; })[0] || null;
+  }
+
   /* ── Lab list ─────────────────────────────────────────────── */
   function progressOf(lab) {
     var done = LS('lx.labs', {});
@@ -38,8 +43,9 @@
       var badge = p
         ? '<span class="badge done">✓ best ' + p.best + '/' + l.steps.length + ' first try</span>'
         : '<span class="badge">not attempted</span>';
-      return '<article class="card lab-card" data-lab="' + esc(l.id) + '">' +
-        '<div class="card-head">' +
+      var typed = typedFor(l.id);
+      return '<article class="card lab-card">' +
+        '<div class="card-head" data-lab="' + esc(l.id) + '">' +
           '<div class="card-main">' +
             '<p class="card-title plain">' + esc(l.title) + '</p>' +
             '<p class="card-sum">' + esc(l.brief) + '</p>' +
@@ -50,7 +56,12 @@
             '</div>' +
           '</div>' +
           '<span class="lab-go">▶</span>' +
-        '</div></article>';
+        '</div>' +
+        (typed ? '<div class="lab-alt">' +
+          '<span class="muted">Multiple choice. Same incident, typed:</span>' +
+          '<button class="btn small ghost" data-typed="' + esc(typed.id) + '">$_ Type it yourself</button>' +
+        '</div>' : '') +
+      '</article>';
     }).join('');
   }
 
@@ -219,7 +230,11 @@
         return '<div class="term-line"><span class="term-prompt">' + esc(e.prompt) + '</span>' +
           '<span class="term-cmd">' + esc(e.cmd) + '</span></div>' +
           (e.out ? '<div class="term-out">' + esc(e.out) + '</div>' : '');
-      }).join('') + '</div>';
+      }).join('') + '</div>' +
+      (typedFor(lab.id) ? '<p class="section-label">Now do it without the options</p>' +
+        '<div class="lab-alt end"><span class="muted">Same incident, but you type every command.</span>' +
+        '<button class="btn small primary" data-typed="' + esc(typedFor(lab.id).id) + '">$_ Type it yourself</button>' +
+        '</div>' : '');
 
     $('#labRun').hidden = true;
     $('#labDone').hidden = false;
@@ -255,6 +270,14 @@
 
   /* ── Events ───────────────────────────────────────────────── */
   document.addEventListener('click', function (e) {
+    var typed = e.target.closest('[data-typed]');
+    if (typed) {
+      e.stopPropagation();
+      if (U() && U().go) U().go('sandbox');
+      if (window.LXSandbox) window.LXSandbox.open(typed.dataset.typed);
+      return;
+    }
+
     var card = e.target.closest('[data-lab]');
     if (card) { open(card.dataset.lab); return; }
 

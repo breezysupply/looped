@@ -142,7 +142,7 @@
 
   <!-- ── Sandbox ──────────────────────────────────────────── -->
   <section id="view-sandbox" class="view" aria-label="Terminal sandbox">
-    <p class="blurb" id="sbIntro">A simulated box you type into for real. Commands actually run against a virtual filesystem — truncate a log and <code>df</code> really drops. Tap the key row instead of typing the long bits.</p>
+    <p class="blurb" id="sbIntro">A simulated box you type into for real. Commands actually run against a virtual filesystem — truncate a log and <code>df</code> really drops. Every lab has a version here where you type the commands yourself. Stuck? Type <code>/hint</code> in the terminal.</p>
     <div id="sbList" class="list"></div>
 
     <div id="sbRun" hidden>
@@ -150,6 +150,7 @@
         <div>
           <p class="lab-title" id="sbTitle"></p>
           <span class="muted" id="sbObjCount"></span>
+          <p class="sb-now" id="sbNow"></p>
         </div>
         <button id="sbExit" class="btn ghost small">Exit</button>
       </div>
@@ -165,7 +166,8 @@
         <div id="sbObjectives" class="objectives"></div>
       </details>
 
-      <div id="sbTerm" class="term sb-term" aria-label="Sandbox terminal"></div>
+      <div id="sbTerm" class="term sb-term" role="log" aria-label="Sandbox terminal"></div>
+      <div id="sbBubbles" class="bubbles" aria-live="polite"></div>
 
       <div class="sb-composer">
       <div class="sb-inputrow">

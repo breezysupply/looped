@@ -235,12 +235,15 @@
     targets.forEach(function (t) {
       var abs = resolve(w, t), n = w.fs[abs];
       if (!n) { chunks.push('ls: cannot access \'' + t + '\': No such file or directory'); return; }
-      var list = (n.t === 'd' && !f.d) ? children(w, abs) : [abs];
-      if (!f.a) list = list.filter(function (x) { return basename(x).charAt(0) !== '.'; });
+      var listing = n.t === 'd' && !f.d;
+      var list = listing ? children(w, abs) : [abs];
+      /* the dotfile filter applies to a directory's contents, never to a target
+         the user named outright — `ls -ld ~/.ssh` must still print .ssh */
+      if (!f.a && listing) list = list.filter(function (x) { return basename(x).charAt(0) !== '.'; });
       if (f.S) list.sort(function (x, y) { return sizeOf(w.fs[y]) - sizeOf(w.fs[x]); });
       if (f.t) list.sort(function (x, y) { return (w.fs[y].ts || 0) - (w.fs[x].ts || 0); });
       if (f.r) list.reverse();
-      var showPath = (n.t === 'd' && !f.d) ? false : true;
+      var showPath = !listing;
       if (f.l) {
         var total = list.reduce(function (s, x) { return s + sizeOf(w.fs[x]); }, 0);
         var body = list.map(function (x) {
@@ -249,7 +252,7 @@
             pad(f.h ? human(sizeOf(e)) : sizeOf(e), 6) + ' ' + mtimeStr(e) + ' ' +
             (showPath ? x : basename(x));
         });
-        chunks.push((n.t === 'd' && !f.d ? 'total ' + (f.h ? human(total) : Math.ceil(total / 1024)) + '\n' : '') + body.join('\n'));
+        chunks.push((listing ? 'total ' + (f.h ? human(total) : Math.ceil(total / 1024)) + '\n' : '') + body.join('\n'));
       } else {
         chunks.push(list.map(function (x) { return showPath ? x : basename(x); }).join('  '));
       }
@@ -944,13 +947,16 @@
     if (!proc) return err('ionice: failed to set pid ' + pid + '\'s I/O class: No such process');
     proc.ionice = cls;
     if (cls === 3 && w.io) {
-      /* the greedy job stands aside: device pressure drops */
+      /* the greedy job stands aside. Only the devices it was actually saturating
+         recover — an already-idle volume must not be made to look worse. */
       (w.io.devices || []).forEach(function (d) {
-        d.util = Math.min(d.util, 38.6); d.await = 9.21; d.qu = 1.94;
+        if (d.util < 50) return;
+        d.util = 38.6; d.await = 9.21; d.qu = 1.94;
+        d.w /= 4; d.wkb /= 4; d.r /= 4; d.rkb /= 4;
       });
       w.load = '4.12, 9.80, 8.91';
       if (w.cpu) { w.cpu.wa = 12.4; w.cpu.id = 82.1; }
-      (w.io.perProcess || []).forEach(function (x) { if (x.pid === pid) { x.rd /= 4; x.wr /= 4; } });
+      (w.io.perProcess || []).forEach(function (x) { if (x.pid === pid) { x.rd /= 4; x.wr /= 4; x.delay = 22; } });
     }
     return ok('');
   };
@@ -1515,7 +1521,18 @@
     w.env = { HOME: '/home/' + w.user, USER: w.user, PWD: w.cwd, SHELL: '/bin/bash',
               PATH: '/usr/local/bin:/usr/bin:/bin' };
     mkdirp(w, '/'); mkdirp(w, '/home/' + w.user); mkdirp(w, '/var/log'); mkdirp(w, '/etc'); mkdirp(w, '/tmp');
-    (seed.dirs || []).forEach(function (d) { mkdirp(w, d.path || d, d); });
+    (seed.dirs || []).forEach(function (d) {
+      var dp = d.path || d;
+      mkdirp(w, dp);
+      /* apply the seed's attributes even when the path was bootstrapped above,
+         otherwise a seeded mode on /home/<user> is silently dropped */
+      var dn = w.fs[resolve(w, dp)];
+      if (dn && typeof d === 'object') {
+        if (d.mode) dn.mode = String(d.mode);
+        if (d.owner) dn.owner = d.owner;
+        if (d.group) dn.group = d.group;
+      }
+    });
     (seed.files || []).forEach(function (f) {
       mkdirp(w, dirname(resolve(w, f.path)));
       var n = mkfile(w, f.path, f.content || '', f);
