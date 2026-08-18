@@ -447,5 +447,66 @@ LX.playbooks.push(
   trap:'Filling silence with command names. Slow, structured and partially correct beats fast and scattered.',
   remember:'You are being graded on method, not recall. Narrate the method and the recall has room to arrive.'
 }
+,
+
+/* ═══ 22. the five-command walk ═══ */
+{
+  id:'pb-app-walk', title:'An application will not start: the five-command walk', cat:'sys', level:'beginner',
+  prompt:'"An application on the box will not start. Walk me through what you would run."',
+  say:'"I would walk it in one direction, each command answering the question the last one raised. systemctl status for the state and the exit code. If I need the full context, journalctl for that unit. If the exit says it was killed rather than that it exited, that is the kernel, not the application, so dmesg to see whether the OOM killer fired. If it did, free -h for how much memory the host actually has and whether there is swap. Then ps aux sorted by memory for who was consuming it. Five commands, and at each one I already know what the next question is."',
+  steps:[
+    { check:'What does systemd think happened?', cmd:'systemctl status NAME',
+      decide:'Active state, and — the part that decides everything after this — did it exit, or was it killed?',
+      why:'The wording of that line is the fork in the road. `code=exited status=1` means the process ran, disliked something, and quit on its own: the reason will be in its own output. `code=killed status=9/KILL` means it never chose to stop — something outside it ended it, and the application logs will simply stop mid-sentence with no error at all. Everything below follows from which of those you are looking at.',
+      branches:[
+        { when:'code=exited, an exit code from the app', then:'The app has something to say. Read its journal, then its config.', goto:'pb-svc-start' },
+        { when:'The restart counter is climbing', then:'It starts and dies repeatedly — follow the crash-loop tree', goto:'pb-crashloop' },
+        { when:'code=killed, status=9/KILL', then:'Keep walking this tree. Something external killed it.' }
+      ] },
+    { check:'Need more logs?', cmd:'journalctl -u NAME -b -n 100 --no-pager',
+      decide:'What is the last thing it said before it stopped — and does the log end cleanly or mid-line?',
+      why:'A service that dies during startup usually cannot write to its own log file yet, so the journal is the only record there is. `-b` limits it to this boot so you are not reading last week; `-n 100` keeps it to a screen; `--no-pager` matters on a phone and in scripts. Read the shape of the ending, not just the content: a stack trace or a config error is the application failing, while output that simply stops mid-line is the signature of a process that was killed without warning.',
+      branches:[
+        { when:'A config or permission error', then:'Take it at its word — validate the config and check the path', goto:'pb-svc-start' },
+        { when:'"Too many open files"', then:'Descriptor exhaustion, not memory', goto:'pb-fd' },
+        { when:'"No space left on device"', then:'It cannot write its PID or socket file', goto:'pb-disk-full' },
+        { when:'The log just stops', then:'Nothing wrote an error because nothing got the chance. Next step.' }
+      ] },
+    { check:'Think Linux killed it?', cmd:'dmesg -T | grep -i "out of memory"   ·   journalctl -k | grep -i oom',
+      decide:'Did the OOM killer fire, and was your process the one it chose?',
+      why:'This is the step people skip, and it is the one that ends the argument. When the kernel runs out of memory it picks a victim and kills it with SIGKILL — a signal a process cannot catch, so it gets no chance to log anything. The kernel does log it, in its own ring buffer, which is a different place from the application and unit logs. `-T` turns the timestamps into human dates so you can line it up against when the service died. The line names the process and its RSS at the moment it was killed, which is your evidence.',
+      branches:[
+        { when:'"Out of memory: Killed process ..."', then:'Confirmed. Now size the problem — next step.' },
+        { when:'Nothing there', then:'Not the kernel. Something else sent the signal: a supervisor, a deploy script, or a person. Check the unit\'s own limits and NRestarts', goto:'pb-crashloop' },
+        { when:'Killed, but a different process', then:'Yours may have been the collateral. Still worth sizing the host.' }
+      ] },
+    { check:'Think memory is the issue?', cmd:'free -h',
+      decide:'Read the available column, not free — and check whether there is any swap at all.',
+      why:'`free` is where people misread the output: the "free" column looks alarmingly small on a healthy box, because Linux deliberately uses spare memory as page cache and hands it back the moment something needs it. The column that answers "can I start something" is **available**. The swap line matters just as much: EC2 instances usually launch with no swap, which means there is no slow degradation to warn you — the box runs fine right up until the OOM killer fires.',
+      branches:[
+        { when:'available is low, no swap', then:'The host is genuinely too small for what is on it, or something is leaking. Next step names it.' },
+        { when:'available is fine now', then:'It was a spike, or a cgroup limit rather than the host. Check the unit\'s MemoryMax', goto:'pb-mem' },
+        { when:'Swap is heavily used', then:'Thrashing — everything is slow rather than dead', goto:'pb-load' }
+      ] },
+    { check:'Who is using the memory?', cmd:'ps aux --sort=-%mem | head   ·   ps -eo pid,user,%mem,rss,cmd --sort=-rss | head',
+      decide:'One process holding most of it, or many small ones adding up? And is it growing?',
+      why:'`ps aux --sort=-%mem | head` is the one to have in your fingers — it answers the question in a single line you can type from memory. Read **RSS**, not VSZ: VSZ counts address space the process has reserved but may never touch, so a JVM can show 5 GB of VSZ while actually using 800 MB. The shape of the answer is the diagnosis: one process far above the rest is either undersized limits or a leak, whereas many similar processes adding up is a worker or connection pool sized for a bigger machine.',
+      branches:[
+        { when:'One large process, and it grows over time', then:'A leak, or a heap ceiling above what the host has. Compare the configured limit to the host — for a JVM, Xmx against total RAM' },
+        { when:'Many similar processes', then:'A pool sized past the instance. Reduce the worker count or move to a bigger instance type' },
+        { when:'Nothing looks large', then:'It was transient. Add memory metrics before it happens again', goto:'pb-mem' }
+      ] }
+  ],
+  probes:[
+    ['Why not just restart it and see?', 'Because the evidence is already there from the first failure, and a restart adds noise to the journal that you then have to read past. It also destroys the memory state you were about to inspect — after a restart, free and ps describe a box that is no longer the one that broke.'],
+    ['The app log ends mid-line. What does that tell you?', 'That the process never got a chance to write a final line, which points at SIGKILL rather than a fault the application handled. That is the OOM killer or a manual kill -9, and it moves the investigation to dmesg.'],
+    ['free -h shows almost no free memory. Is that a problem?', 'Not on its own. Linux uses spare memory as page cache and returns it on demand — the number that matters is available. A box with 200 MB free and 8 GB available is healthy.'],
+    ['dmesg is empty but the process still died with signal 9. Now what?', 'Something in userspace sent it. Check systemctl show NAME -p NRestarts and the unit\'s resource limits, then any deploy or supervision tooling — a cgroup MemoryMax kill is logged by systemd, not by the kernel OOM killer.'],
+    ['How do you stop this recurring?', 'Size the heap or worker count against the actual instance, set MemoryMax on the unit so it is contained rather than random, alarm on available memory rather than free, and add swap only as a shock absorber — never as capacity.']
+  ],
+  trap:'Stopping at journalctl. The unit log is silent for exactly the failure people find hardest — the kernel killing the process — because a SIGKILL leaves nothing to write. If the log ends mid-line and you have not run dmesg, you have not finished the walk.',
+  remember:'Each command answers the question the last one raised: status says how it died, journalctl says what it said, dmesg says whether the kernel did it, free says whether there was room, ps says who took it.',
+  mission:'m-oom'
+}
 
 );
