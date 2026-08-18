@@ -633,7 +633,105 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 .brief-wrap.say { border-left: 3px solid var(--accent); }
 .brief-wrap.say .situation { font-style: italic; }
 .badge.branchy { color: var(--blue); border-color: var(--blue); }
-.pb-tools { display: flex; justify-content: flex-end; margin: 10px 0 8px; }
+.pb-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 8px; }
+.seg-row { display: flex; gap: 4px; }
+.seg-row .seg { flex: 0 0 auto; padding: 7px 14px; min-height: 34px; }
+
+/* ── Flow mode: the chain you would sketch on a whiteboard ─────
+   One column, centred, question -> arrow -> command. Everything a
+   command needs to explain itself lives inside its own node. */
+.flow { display: flex; flex-direction: column; align-items: stretch; }
+.flow-start {
+  align-self: center; max-width: 100%;
+  padding: 10px 16px; text-align: center;
+  background: var(--bg-elev-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px;
+  font-size: 14px; font-weight: 650; overflow-wrap: anywhere;
+}
+.flow-q {
+  margin: 12px 0 0; text-align: center;
+  color: var(--muted); font-size: 13px; overflow-wrap: anywhere;
+}
+.flow-arrow {
+  display: flex; flex-direction: column; align-items: center;
+  color: var(--accent); line-height: 1;
+}
+.flow-line { width: 1px; height: 16px; background: var(--accent); opacity: .6; }
+.flow-tip { font-size: 11px; margin-top: -1px; }
+
+.flow-item {
+  align-self: center; width: 100%; max-width: 520px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--bg-elev); overflow: hidden;
+}
+.flow-item.open { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.flow-node {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 12px 14px; min-height: var(--tap);
+  background: none; border: 0; color: var(--text);
+  text-align: left; cursor: pointer;
+}
+.flow-node code {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--mono); font-size: 13.5px; color: var(--accent);
+  background: none; padding: 0; overflow-wrap: anywhere;
+}
+.flow-caret { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+/* a step that is a talk track or a checklist, not a command to run */
+.flow-item.prose { background: var(--bg-elev-2); border-style: dashed; }
+.flow-say { flex: 1 1 auto; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+
+
+.flow-callout { display: none; padding: 0 14px 14px; border-top: 1px solid var(--line); }
+.flow-item.open .flow-callout { display: block; }
+.flow-label {
+  margin: 12px 0 4px; font-size: 11px; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--muted); font-weight: 650;
+}
+.flow-text { margin: 0 0 6px; font-size: 14px; overflow-wrap: anywhere; }
+.flow-text.dim { color: var(--muted); font-size: 13px; }
+.flow-more { margin: 8px 0 0; }
+.flow-more > summary {
+  cursor: pointer; list-style: none; min-height: 32px;
+  display: flex; align-items: center;
+  color: var(--accent); font-size: 12.5px;
+}
+.flow-more > summary::-webkit-details-marker { display: none; }
+.flow-more > summary::before { content: '▸ '; margin-right: 4px; font-size: 10px; }
+.flow-more[open] > summary::before { content: '▾ '; }
+.flow-more[open] > summary { margin-bottom: 4px; }
+
+.flow-callout .syntax { margin: 6px 0 0; }
+
+.flow-alt {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-elev-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
+}
+.flow-alt code {
+  flex: 1 1 auto; min-width: 0; font-family: var(--mono);
+  font-size: 12.5px; background: none; padding: 0; overflow-wrap: anywhere;
+}
+
+.flow-fork {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
+  padding: 8px 0; border-top: 1px dashed var(--line); font-size: 13px;
+}
+.flow-when {
+  font-family: var(--mono); font-size: 12px; color: var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, var(--line));
+  border-radius: 999px; padding: 1px 8px; overflow-wrap: anywhere;
+}
+.flow-then { flex: 1 1 140px; color: var(--muted); overflow-wrap: anywhere; }
+
+.flow-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.copy-wide {
+  flex: 1 1 auto; padding: 8px 10px; min-height: 36px;
+  background: var(--bg-elev-2); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 8px;
+  font-size: 12.5px; cursor: pointer; overflow-wrap: anywhere;
+}
+
 
 .pb-steps { display: flex; flex-direction: column; gap: 8px; }
 .pb-step {

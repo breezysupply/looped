@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'linux-pocket-guide-v11';
+var CACHE = 'linux-pocket-guide-v12';
 var ASSETS = [
   './',
   './index.html',

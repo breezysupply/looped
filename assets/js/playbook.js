@@ -73,6 +73,93 @@
     }).join('');
   }
 
+  /* ── Flow mode ────────────────────────────────────────────────
+     The same tree drawn as the chain you would sketch on a whiteboard:
+     question, arrow, command. Tapping a command opens what it is and why
+     it is the move here — nothing else on screen. */
+
+  /* the command a step is really about, for the library lookup:
+     first word of the first alternative, minus sudo and pipes */
+  function baseCmd(cmdStr) {
+    var first = String(cmdStr || '').split('·')[0];
+    var tok = first.trim().split(/[\s|;&]+/).filter(Boolean);
+    var i = 0;
+    while (tok[i] === 'sudo' || /^[A-Z_]+=/.test(tok[i] || '')) i++;
+    return (tok[i] || '').replace(/^\W+|\W+$/g, '');
+  }
+  function libEntry(name) {
+    return ((window.LX && LX.commands) || []).filter(function (c) { return c.name === name; })[0] || null;
+  }
+  /* Some steps are talk tracks or checklists rather than commands — the
+     talk-track tree is entirely quoted sentences. Anything the library and
+     the shell both fail to recognise is rendered as prose, not as code with
+     a copy button. */
+  function isProse(cmdStr) {
+    var t = String(cmdStr || '').trim();
+    if (/^["'\u201c]/.test(t)) return true;
+    var name = baseCmd(cmdStr);
+    if (!name) return true;
+    if (libEntry(name)) return false;
+    return !(window.LXShell && LXShell.commands().indexOf(name) !== -1);
+  }
+
+  function flowNode(s, i) {
+    var esc = U().esc, fmt = U().fmt;
+    var open = view.all || view.open[i];
+    var name = baseCmd(s.cmd);
+    var lib = libEntry(name);
+    var prose = isProse(s.cmd);
+    var alts = String(s.cmd).split('·').map(function (x) { return x.trim(); }).filter(Boolean);
+
+    return (s.check ? '<p class="flow-q">' + esc(s.check) + '</p>' : '') +
+      '<div class="flow-arrow" aria-hidden="true"><span class="flow-line"></span><span class="flow-tip">▼</span></div>' +
+      '<div class="flow-item' + (open ? ' open' : '') + (prose ? ' prose' : '') + '" data-step="' + i + '">' +
+        '<button class="flow-node" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+          (prose ? '<span class="flow-say">' + esc(alts.join('  ·  ')) + '</span>'
+                 : '<code>' + esc(alts[0]) + '</code>') +
+          '<span class="flow-caret">' + (open ? '▾' : '▸') + '</span>' +
+        '</button>' +
+        '<div class="flow-callout">' +
+          (lib ? '<p class="flow-label">What it is</p>' +
+                 '<p class="flow-text">' + fmt(lib.sum) + '</p>' +
+                 '<div class="syntax">' + esc(lib.syntax) + '</div>'
+               : '') +
+          (s.decide ? '<p class="flow-label">Why you would run it here</p>' +
+                      '<p class="flow-text">' + fmt(s.decide) + '</p>' : '') +
+          (s.why ? '<details class="flow-more"><summary>The longer version</summary>' +
+                   '<p class="flow-text dim">' + fmt(s.why) + '</p></details>' : '') +
+          (!prose && alts.length > 1 ? '<p class="flow-label">Same job, other tools</p>' +
+            alts.slice(1).map(function (x) {
+              return '<div class="flow-alt"><code>' + esc(x) + '</code>' +
+                '<button class="copy" data-copy="' + esc(x) + '" aria-label="Copy">⧉</button></div>';
+            }).join('') : '') +
+          (s.branches ? '<p class="flow-label">Then it forks</p>' +
+            s.branches.map(function (b) {
+              return '<div class="flow-fork">' +
+                '<span class="flow-when">' + esc(b.when) + '</span>' +
+                '<span class="flow-then">' + fmt(b.then) + '</span>' +
+                (b.goto ? ' <button class="btn small ghost pb-goto" data-goto-pb="' + esc(b.goto) +
+                  '">that tree →</button>' : '') +
+              '</div>';
+            }).join('') : '') +
+          (prose ? '' :
+            '<div class="flow-links">' +
+              '<button class="copy-wide" data-copy="' + esc(alts[0]) + '">⧉ Copy</button>' +
+              (lib ? '<button class="copy-wide" data-goto="' + esc(name) + '">Full page for ' +
+                     esc(name) + ' →</button>' : '') +
+            '</div>') +
+        '</div>' +
+      '</div>';
+  }
+
+  function flowHtml(p) {
+    var esc = U().esc;
+    return '<div class="flow">' +
+      '<div class="flow-start">' + esc(p.title) + '</div>' +
+      p.steps.map(flowNode).join('') +
+      '</div>';
+  }
+
   /* ── Walker ───────────────────────────────────────────────── */
   function stepHtml(s, i) {
     var esc = U().esc, fmt = U().fmt;
@@ -103,20 +190,31 @@
 
   function paint() {
     var esc = U().esc, fmt = U().fmt, p = view.pb;
-    var shown = view.all ? p.steps.length : view.shown;
+    var flow = view.mode === 'flow';
+    /* flow mode is a reference sheet: the whole chain is the point of it */
+    var shown = (flow || view.all) ? p.steps.length : view.shown;
 
     $('#pbTitle').textContent = p.title;
-    $('#pbStepNo').textContent = shown + ' / ' + p.steps.length + ' steps';
+    $('#pbStepNo').textContent = flow
+      ? p.steps.length + ' steps · tap a command'
+      : shown + ' / ' + p.steps.length + ' steps';
     $('#pbBar').style.width = (shown / p.steps.length * 100) + '%';
     $('#pbPrompt').textContent = p.prompt || '';
     $('#pbSayWrap').hidden = !p.say;
     $('#pbSay').textContent = p.say || '';
     $('#pbAllBtn').textContent = view.all ? 'Collapse all' : 'Expand all';
+    $$('#pbMode .seg').forEach(function (b) {
+      var on = b.dataset.pbmode === view.mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
 
-    $('#pbSteps').innerHTML = p.steps.slice(0, shown).map(stepHtml).join('');
+    $('#pbSteps').innerHTML = flow
+      ? flowHtml(p)
+      : p.steps.slice(0, shown).map(stepHtml).join('');
 
     var last = shown >= p.steps.length;
-    $('#pbNext').hidden = view.all || last;
+    $('#pbNext').hidden = flow || view.all || last;
     $('#pbNext').textContent = 'Next step  ↓';
     $('#pbEnd').hidden = !(last || view.all);
 
@@ -139,7 +237,10 @@
   function open(id) {
     var pb = byId(id);
     if (!pb) return;
-    view = { pb: pb, shown: 1, open: { 0: true }, all: false };
+    var mode = U().LS.get('lx.pbmode', 'flow') === 'walk' ? 'walk' : 'flow';
+    /* walk mode opens step 1 to start you off; flow mode is a reference
+       sheet, so the chain stays clean until you tap something */
+    view = { pb: pb, shown: 1, open: mode === 'walk' ? { 0: true } : {}, all: false, mode: mode };
     $('#pbList').hidden = true;
     $('#pbIntro').hidden = true;
     $('#pbFilter').hidden = true;
@@ -174,6 +275,33 @@
     if (!view) return;
 
     if (t.closest('#pbExit')) { exit(); return; }
+
+    var mode = t.closest('[data-pbmode]');
+    if (mode) {
+      view.mode = mode.dataset.pbmode;
+      U().LS.set('lx.pbmode', view.mode);
+      if (view.mode === 'walk') {
+        if (!view.all) view.shown = Math.max(view.shown, 1);
+        /* arriving in walk mode with everything shut is a dead end — open
+           the step you are on, the way opening the playbook directly does */
+        var anyOpen = view.pb.steps.some(function (_, k) { return view.open[k]; });
+        if (!anyOpen) view.open[view.shown - 1] = true;
+      }
+      paint();
+      return;
+    }
+
+    var node = t.closest('.flow-node');
+    if (node) {
+      var fi = Number(node.parentNode.dataset.step);
+      if (view.all) {   /* leaving expand-all keeps what is on screen */
+        view.all = false;
+        view.pb.steps.forEach(function (_, k) { view.open[k] = true; });
+      }
+      view.open[fi] = !view.open[fi];
+      paint();
+      return;
+    }
 
     if (t.closest('#pbAllBtn')) {
       view.all = !view.all;

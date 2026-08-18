@@ -326,7 +326,9 @@
     var tab = t.closest('.tab');
     if (tab) { setGroup(tab.dataset.group); return; }
 
-    var seg = t.closest('.seg');
+    /* must be [data-view]: .seg is also the styling class for the playbook
+       mode toggle, and matching it bare navigated away from the playbook */
+    var seg = t.closest('.seg[data-view]');
     if (seg) { setView(seg.dataset.view); return; }
 
     var save = t.closest('[data-save]');
