@@ -103,6 +103,33 @@
     return !(window.LXShell && LXShell.commands().indexOf(name) !== -1);
   }
 
+  /* Sample output for a step, with the lines that matter marked.
+     Keyed by playbook id and step index in LX.pbOut, so the tree data stays
+     the shape it was. */
+  function sampleFor(pbId, i) {
+    var t = (window.LX && LX.pbOut && LX.pbOut[pbId]) || null;
+    return (t && t[i]) || null;
+  }
+  function sampleHtml(sample, label) {
+    if (!sample || !sample.out) return '';
+    var esc = U().esc;
+    var body = esc(sample.out);
+    var marks = (sample.mark || []).slice().sort(function (a, b) { return b.length - a.length; });
+    if (marks.length) {
+      /* one pass over an alternation, longest first, so a mark can never be
+         re-matched inside another mark's markup; the trailing guard stops
+         `rows=5` highlighting half of `rows=50000` */
+      var alt = marks.map(function (m) {
+        return esc(m).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }).join('|');
+      var rx = new RegExp('(' + alt + ')(?!\\w)', 'gm');
+      body = body.replace(rx, function (hit) { return '<mark>' + hit + '</mark>'; });
+    }
+    return '<p class="' + (label === 'flow' ? 'flow-label' : 'section-label') + '">What you should see</p>' +
+      '<div class="term term-static pb-sample">' + body + '</div>' +
+      (sample.note ? '<p class="pb-sample-note">' + U().fmt(sample.note) + '</p>' : '');
+  }
+
   function flowNode(s, i) {
     var esc = U().esc, fmt = U().fmt;
     var open = view.all || view.open[i];
@@ -126,6 +153,7 @@
                : '') +
           (s.decide ? '<p class="flow-label">Why you would run it here</p>' +
                       '<p class="flow-text">' + fmt(s.decide) + '</p>' : '') +
+          sampleHtml(sampleFor(view.pb.id, i), 'flow') +
           (s.why ? '<details class="flow-more"><summary>The longer version</summary>' +
                    '<p class="flow-text dim">' + fmt(s.why) + '</p></details>' : '') +
           (!prose && alts.length > 1 ? '<p class="flow-label">Same job, other tools</p>' +
@@ -175,6 +203,7 @@
       '</div>' +
       '<div class="pb-step-body">' +
         (s.decide ? '<p class="pb-decide"><b>What it settles.</b> ' + fmt(s.decide) + '</p>' : '') +
+        sampleHtml(sampleFor(view.pb.id, i), 'walk') +
         (s.why ? '<p class="pb-why">' + fmt(s.why) + '</p>' : '') +
         (s.branches ? '<p class="section-label">Then branch on what you see</p>' +
           s.branches.map(function (b) {

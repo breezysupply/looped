@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'linux-pocket-guide-v13';
+var CACHE = 'linux-pocket-guide-v14';
 var ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ var ASSETS = [
   './assets/js/data/scenarios-more.js',
   './assets/js/data/playbooks.js',
   './assets/js/data/playbooks-more.js',
+  './assets/js/data/playbook-outputs.js',
   './assets/js/data/drills.js',
   './assets/js/data/drills-more.js',
   './assets/js/data/quiz-extra.js',
