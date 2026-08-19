@@ -101,12 +101,18 @@
     if (res.err) print(esc(res.err.replace(/\n$/, '')), 'term-out term-err');
 
     run.ran.push(line);
+    run.out.push((res.out || '') + (res.err || ''));
+    run.code.push(res.code || 0);
     run.last = { cmd: line, out: (res.out || '') + (res.err || '') };
     checkObjectives();
   }
 
   /* ── Objectives ───────────────────────────────────────────── */
-  function ctx() { return { w: run.w, ran: run.ran, last: run.last }; }
+  /* out[i] and code[i] belong to ran[i] — objectives check the evidence a
+     command produced, not merely that its name was typed */
+  function ctx() {
+    return { w: run.w, ran: run.ran, out: run.out, code: run.code, last: run.last };
+  }
 
   /* A bubble: announced, auto-dismissed, and never focusable — the point is
      that finishing an objective does not interrupt whatever you are typing. */
@@ -248,7 +254,7 @@
   /* ── Hints, reveals, and the /slash commands ──────────────── */
   function resetBox() {
     run.w = LXShell.createWorld(run.mission.world);
-    run.met = {}; run.ran = []; run.last = null;
+    run.met = {}; run.ran = []; run.out = []; run.code = []; run.last = null;
     $('#sbTerm').innerHTML = '';
     print('Box reset to its starting state.', 'term-out term-meta');
     paintObjectives();
@@ -330,8 +336,8 @@
     var m = (LX.missions || []).filter(function (x) { return x.id === id; })[0];
     if (!m) return;
     if (run && run.finishTimer) clearTimeout(run.finishTimer);
-    run = { mission: m, w: LXShell.createWorld(m.world), ran: [], last: null,
-            met: {}, revealed: 0, hist: [], histIdx: 0, hintLevel: {} };
+    run = { mission: m, w: LXShell.createWorld(m.world), ran: [], out: [], code: [],
+            last: null, met: {}, revealed: 0, hist: [], histIdx: 0, hintLevel: {} };
     if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
 
     $('#sbList').hidden = true;

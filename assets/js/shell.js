@@ -329,7 +329,17 @@
     var p = flags(a), f = p.f, rest = p.rest.slice();
     var ctxAfter = numFlag(a, 'A', 0), ctxBefore = numFlag(a, 'B', 0), ctxBoth = numFlag(a, 'C', 0);
     if (ctxBoth) { ctxAfter = ctxBoth; ctxBefore = ctxBoth; }
-    rest = rest.filter(function (x) { return !/^\d+$/.test(x); });
+    /* -A/-B/-C/-m take a count; only those consumed tokens are dropped.
+       Filtering every bare number ate the pattern in `grep 8080`. */
+    var eaten = [];
+    for (var ci = 0; ci < a.length; ci++) {
+      if (/^-[ABCm]$/.test(a[ci]) && /^\d+$/.test(a[ci + 1] || '')) eaten.push(a[ci + 1]);
+    }
+    rest = rest.filter(function (x) {
+      var j = eaten.indexOf(x);
+      if (j !== -1) { eaten.splice(j, 1); return false; }
+      return true;
+    });
     var pat = rest.shift();
     if (pat == null) return err('usage: grep [OPTION]... PATTERN [FILE]...');
     var rx;
@@ -602,6 +612,21 @@
     var start = (a[0] && a[0].charAt(0) !== '-') ? a[0] : '.';
     var namePat = null, iname = null, type = null, sizeMin = null, mtime = null, maxdepth = null;
     var doDelete = false, execCmd = null;
+    /* real find rejects a path that turns up after the expression has begun,
+       which is what `find -size +100M /var/log` is */
+    for (var pi = (start === '.' ? 0 : 1); pi < a.length; pi++) {
+      if (a[pi].charAt(0) === '-') break;
+    }
+    for (var qi = pi; qi < a.length; qi++) {
+      if (a[qi].charAt(0) !== '-' && !/^[+-]?\d/.test(a[qi]) &&
+          ['-name','-iname','-type','-size','-mtime','-maxdepth','-exec','-newer','-perm','-user']
+            .indexOf(a[qi - 1]) === -1 &&
+          a[qi] !== '{}' && a[qi] !== '+' && a[qi] !== ';' && a[qi] !== '\\;' &&
+          a.indexOf('-exec') === -1) {
+        return err('find: paths must precede expression: \'' + a[qi] + '\'\n' +
+          'find: possible unquoted pattern after predicate `' + a[qi - 1] + '\'?');
+      }
+    }
     for (var i = 0; i < a.length; i++) {
       switch (a[i]) {
         case '-name': namePat = a[++i]; break;
@@ -613,6 +638,9 @@
         case '-delete': doDelete = true; break;
         case '-exec': execCmd = a.slice(i + 1).join(' ').replace(/\s*(\\;|\+)\s*$/, ''); i = a.length; break;
       }
+    }
+    if (sizeMin != null && !/^[+-]?\d+[bckMGwT]?$/.test(sizeMin)) {
+      return err('find: Invalid argument `' + sizeMin + '\' to -size');
     }
     var base = resolve(w, start);
     if (!w.fs[base]) return err('find: \'' + start + '\': No such file or directory');
@@ -634,7 +662,7 @@
         if (!rx2.test(basename(p))) return false;
       }
       if (sizeMin) {
-        var m = sizeMin.match(/^([+-]?)(\d+)([kMG]?)$/);
+        var m = sizeMin.match(/^([+-]?)(\d+)([bckMGwT]?)$/);
         if (m) {
           var mult = { k: 1024, M: 1048576, G: 1073741824, '': 512 }[m[3]];
           var want = parseInt(m[2], 10) * mult, have = sizeOf(n);
@@ -1018,11 +1046,22 @@
   CMD.systemctl = function (w, a) {
     var verb = a[0], unit = (a[1] || '').replace(/\.service$/, '');
     var units = w.units || {};
-    if (verb === 'list-units') {
-      var failed = Object.keys(units).filter(function (u) { return units[u].failed; });
-      return ok(failed.length
-        ? failed.map(function (u) { return '● ' + u + '.service  loaded failed failed  ' + (units[u].desc || u); }).join('\n') + '\n'
-        : '0 loaded units listed.\n');
+    if (verb === 'list-units' || verb === 'list-unit-files') {
+      var argstr = a.join(' ');
+      var onlyFailed = /--failed|--state[= ]failed/.test(argstr);
+      var names = Object.keys(units).filter(function (u) {
+        return !onlyFailed || units[u].failed;
+      });
+      if (!names.length) return ok('0 loaded units listed.\n');
+      var rows = names.map(function (u) {
+        var U2 = units[u];
+        var active = U2.failed ? 'failed' : (U2.active ? 'active' : 'inactive');
+        var sub = U2.failed ? 'failed' : (U2.active ? 'running' : 'dead');
+        return (U2.failed ? '● ' : '  ') + pad(u + '.service', 24, true) +
+          ' loaded ' + pad(active, 9, true) + pad(sub, 9, true) + (U2.desc || u);
+      });
+      return ok('  UNIT                     LOAD   ACTIVE   SUB      DESCRIPTION\n' +
+        rows.join('\n') + '\n\n' + names.length + ' loaded units listed.\n');
     }
     var U = units[unit];
     if (!U && verb !== 'daemon-reload') return err('Unit ' + unit + '.service could not be found.');

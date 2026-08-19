@@ -4,6 +4,27 @@ window.LX = window.LX || { commands: [], scenarios: [], drills: [] };
 LX.missions = LX.missions || [];
 
 var GB = 1024 * 1024 * 1024, MB = 1024 * 1024;
+
+/* An objective is met by evidence, not by a string that was typed.
+   did(cmdRe, outRe): some command matching cmdRe produced output of its own
+   matching outRe. A half-typed command fails on the output, not the name —
+   `systemctl cat` alone prints "Unit .service could not be found", which
+   does not contain a heap setting, so it does not count.
+   ranOk(cmdRe): matched and exited 0 — for the few commands that correctly
+   print nothing at all. ranRe stays string-only for the rare objective whose
+   evidence is genuinely that the command was attempted. */
+function did(ctx, cmdRe, outRe) {
+  return ctx.ran.some(function (c, i) {
+    if (!cmdRe.test(c)) return false;
+    if (!outRe) return true;
+    return outRe.test(((ctx.out || [])[i]) || '');
+  });
+}
+function ranOk(ctx, cmdRe) {
+  return ctx.ran.some(function (c, i) {
+    return cmdRe.test(c) && ((ctx.code || [])[i] || 0) === 0;
+  });
+}
 function ranRe(ctx, re) { return ctx.ran.some(function (c) { return re.test(c); }); }
 function outHas(ctx, re) { return ctx.last && re.test(ctx.last.out || ''); }
 
@@ -45,7 +66,9 @@ LX.missions.push({
       reveal:'df -h && df -i',
       done:function (c) {
         var blocks = false, inodes = false;
-        c.ran.forEach(function (line) {
+        c.ran.forEach(function (line, i) {
+          var out = ((c.out || [])[i]) || '';
+          if (!/Mounted on/.test(out)) return;      /* it has to have printed the table */
           line.split(/[;&|]+/).forEach(function (seg) {
             if (!/^\s*df\b/.test(seg)) return;
             if (/\s-[a-zA-Z]*i/.test(seg)) inodes = true; else blocks = true;
@@ -54,10 +77,11 @@ LX.missions.push({
         return blocks && inodes;
       } },
     { id:'localise', text:'Narrow it to the directory eating the space', hint:'Walk down a level at a time rather than scanning everything.',
-      reveal:'du -h -d1 /var/log | sort -h', done:function (c) { return ranRe(c, /\bdu\b.*\/var/); } },
+      reveal:'du -h -d1 /var/log | sort -h',
+      done:function (c) { return did(c, /\bdu\b.*\/var/, /\/var\/log/); } },
     { id:'name', text:'Name the specific large files', hint:'find with a size test, or ls sorted by size.',
       reveal:'find /var/log/app -type f -size +100M -exec ls -lh {} +',
-      done:function (c) { return ranRe(c, /find\b.*-size|ls\b.*-l.*S|ls\b.*S.*\/var\/log/); } },
+      done:function (c) { return did(c, /find\b.*-size|ls\b.*-l.*S|ls\b.*S.*\/var\/log/, /app\.log/); } },
     { id:'reclaim', text:'Get /var below 50% — without breaking the writer',
       hint:'The service still holds app.log open. Deleting it would not return the blocks.',
       reveal:'truncate -s 0 /var/log/app/app.log',
@@ -72,7 +96,7 @@ LX.missions.push({
       } },
     { id:'rootcause', text:'Read the rotation policy and spot why this recurred',
       hint:'The policy file is in /etc/logrotate.d/.', reveal:'cat /etc/logrotate.d/app',
-      done:function (c) { return ranRe(c, /logrotate/); } }
+      done:function (c) { return did(c, /logrotate/, /rotate\s+0|daily|missingok/); } }
   ]
 });
 
@@ -136,14 +160,17 @@ LX.missions.push({
   },
   objectives:[
     { id:'state', text:'Establish how the unit failed', hint:'State, exit code, and recent log lines in one command.',
-      reveal:'systemctl status nginx', done:function (c) { return ranRe(c, /systemctl\s+status\s+nginx/); } },
+      reveal:'systemctl status nginx',
+      done:function (c) { return did(c, /systemctl\s+status\s+nginx/, /Active:/); } },
     { id:'log', text:'Read the actual error message', hint:'The service never started, so it never wrote its own error log.',
-      reveal:'journalctl -u nginx -n 20 --no-pager', done:function (c) { return ranRe(c, /journalctl/); } },
+      reveal:'journalctl -u nginx -n 20 --no-pager',
+      done:function (c) { return did(c, /journalctl/, /worker_connection|emerg|nginx/); } },
     { id:'validate', text:'Confirm the fault with the config validator', hint:'Most daemons ship one.',
-      reveal:'nginx -t', done:function (c) { return ranRe(c, /nginx\s+-t/); } },
+      reveal:'nginx -t',
+      done:function (c) { return did(c, /nginx\s+-t/, /syntax is ok|emerg|test failed/); } },
     { id:'diff', text:'See what actually changed against the backup', hint:'There is an nginx.conf.bak next to it.',
       reveal:'diff -u /etc/nginx/nginx.conf.bak /etc/nginx/nginx.conf',
-      done:function (c) { return ranRe(c, /\bdiff\b/); } },
+      done:function (c) { return did(c, /\bdiff\b/, /worker_connection|^[+-]/m); } },
     { id:'fix', text:'Fix the typo, keeping client_max_body_size',
       hint:'A targeted substitution beats reverting the whole file.',
       reveal:'sudo sed -i.bak2 "s/worker_connection /worker_connections /" /etc/nginx/nginx.conf',
@@ -161,7 +188,7 @@ LX.missions.push({
 LX.missions.push({
   id:'m-bind', title:'The API answers locally but not from outside', labId:'bind-address',
   cat:'net', level:'intermediate', mins:8, kind:'incident',
-  brief:'curl localhost:8080/health returns 200 on the box. From the load balancer it times out. The team says it is "a firewall thing". Find out what it really is and fix it.',
+  brief:'curl localhost:8080/health returns 200 on the box. From the load balancer it times out. The team says it is "a firewall thing". The service is myapp and its config is under /etc/myapp. Find out what it really is and fix it.',
   keys:['man ', 'guide ', 'ss -tulpn', 'curl -s', 'http://10.0.3.77:8080/health', 'grep -rn', '/etc/myapp/config.yml', 'sed -i', 'sudo', 'systemctl restart myapp'],
   world:{
     user:'ec2-user', host:'ip-10-0-3-77', ip:'10.0.3.77',
@@ -184,13 +211,13 @@ LX.missions.push({
   objectives:[
     { id:'socket', text:'Find what address the process is actually listening on',
       hint:'The port is not the interesting part — the address is.', reveal:'ss -tulpn | grep 8080',
-      done:function (c) { return ranRe(c, /\bss\b|\blsof\b.*-i/); } },
+      done:function (c) { return did(c, /\bss\b|\blsof\b.*-i/, /:8080/); } },
     { id:'prove', text:'Prove it from the instance\'s own private IP, not localhost',
       hint:'Same request, different destination address.', reveal:'curl -s -o /dev/null -w "%{http_code}" http://10.0.3.77:8080/health',
-      done:function (c) { return ranRe(c, /curl\b(?!.*(localhost|127\.0\.0\.1))/); } },
+      done:function (c) { return did(c, /curl\b(?!.*(localhost|127\.0\.0\.1))/, /\S/); } },
     { id:'config', text:'Find the setting that controls the bind address',
       hint:'Application config, not system config.', reveal:'grep -n bind /etc/myapp/config.yml',
-      done:function (c) { return ranRe(c, /(grep|cat).*(myapp|config)/); } },
+      done:function (c) { return did(c, /(grep|cat|less|head|tail).*(myapp|config)/, /bind_host/); } },
     { id:'change', text:'Change it to listen on every interface',
       hint:'0.0.0.0 means all IPv4 interfaces.',
       reveal:'sudo sed -i "s/bind_host: 127.0.0.1/bind_host: 0.0.0.0/" /etc/myapp/config.yml',
@@ -214,8 +241,8 @@ LX.missions.push({
 LX.missions.push({
   id:'m-oom', title:'The service dies every few hours with no error', labId:'oom-kill',
   cat:'procs', level:'intermediate', mins:8, kind:'incident',
-  brief:'A Java service on a 3.7G instance disappears two or three times a day. The application log ends mid-line. The team blames the JVM. Find the real cause and prove it.',
-  keys:['man ', 'guide ', 'systemctl status myapp', 'dmesg -T', 'grep -i "out of memory"', 'free -h', 'systemctl cat myapp', 'ps -eo pid,rss,cmd', '|'],
+  brief:'The myapp service — a Java process on a 3.7G instance — disappears two or three times a day. The application log ends mid-line, with no error. The team blames the JVM. Find the real cause and prove it. (`systemctl list-units` if you want to see what is running here.)',
+  keys:['man ', 'guide ', 'systemctl list-units', 'systemctl status myapp', 'dmesg -T', 'grep -i "out of memory"', 'free -h', 'systemctl cat myapp', 'ps -eo pid,rss,cmd', '|'],
   world:{
     user:'ec2-user', host:'ip-10-0-1-52',
     mem:{ total:3829, free:148, used:2913, cache:767, available:610, swap:0 },
@@ -238,17 +265,20 @@ LX.missions.push({
   },
   objectives:[
     { id:'signal', text:'Establish how the process died', hint:'systemd records the exit code or signal.',
-      reveal:'systemctl status myapp', done:function (c) { return ranRe(c, /systemctl\s+status|journalctl/); } },
+      reveal:'systemctl status myapp',
+      done:function (c) { return did(c, /systemctl\s+status|journalctl/, /killed|signal|status=9|Active:/i); } },
     { id:'kernel', text:'Find who killed it — the app log will never say',
       hint:'The kernel logs its own decisions in a place userspace tools do not write.',
       reveal:'dmesg -T | grep -i "out of memory"',
       done:function (c) { return ranRe(c, /dmesg/) && outHas(c, /[Oo]ut of memory|oom/i); } },
     { id:'memory', text:'Check how much memory the host actually has, and whether there is swap',
       hint:'Read "available", and look at the swap line.', reveal:'free -h',
-      done:function (c) { return ranRe(c, /\bfree\b/); } },
+      done:function (c) { return did(c, /\bfree\b/, /Swap:/); } },
     { id:'heap', text:'Find the configured JVM heap ceiling',
-      hint:'Look at how the service is actually started.', reveal:'systemctl cat myapp | grep Xmx',
-      done:function (c) { return ranRe(c, /systemctl\s+cat|cat\s+\/etc\/systemd|ps\b.*cmd|grep.*Xmx/); } },
+      hint:'Look at how the service is actually started. The heap ceiling is a flag on the command line.',
+      hint2:'systemctl cat <unit> prints the effective unit file — pipe it through grep if you only want the flag.',
+      reveal:'systemctl cat myapp | grep Xmx',
+      done:function (c) { return did(c, /systemctl\s+cat|cat\s+\/etc\/systemd|\bps\b|grep/, /-Xmx\d/); } },
     { id:'fix', text:'Size the heap to fit the host — set Xmx to 2g in the unit file',
       hint:'sed can edit the unit file; then systemd has to re-read it.',
       reveal:'sudo sed -i "s/-Xmx3584m/-Xmx2g/" /etc/systemd/system/myapp.service',
@@ -258,7 +288,7 @@ LX.missions.push({
       } },
     { id:'reload', text:'Make systemd pick up the change', hint:'Editing a unit file is not enough on its own.',
       reveal:'sudo systemctl daemon-reload && sudo systemctl restart myapp',
-      done:function (c) { return ranRe(c, /daemon-reload/); } }
+      done:function (c) { return ranOk(c, /(^|[;&|]\s*)(sudo\s+)?systemctl\s+daemon-reload/); } }
   ]
 });
 
@@ -446,16 +476,16 @@ LX.missions.push({
       hint:'You have a shell here. Try the login against this host and watch what the client is told.',
       hint2:'ssh takes -v for a verbose trace. Target localhost so you are testing this sshd.',
       reveal:'ssh -v ec2-user@localhost hostname',
-      done:function (c) { return ranRe(c, /^\s*ssh\b/m); } },
+      done:function (c) { return did(c, /^\s*ssh\b/m, /Permission denied|Last login|ip-10-0-1-20/); } },
     { id:'server', text:'Get the reason the server refused — the client is never told',
       hint:'sshd writes its own reasoning to the journal. The client only ever sees "Permission denied".',
       reveal:'journalctl -u sshd -n 20 --no-pager',
-      done:function (c) { return ranRe(c, /journalctl|systemctl\s+status\s+sshd/); } },
+      done:function (c) { return did(c, /journalctl|systemctl\s+status\s+sshd/, /Authentication refused|bad ownership|sshd/); } },
     { id:'inspect', text:'Inspect the ownership and modes on the home dir, .ssh, and the key file',
       hint:'Listing a directory shows what is inside it; you want the directory entry itself.',
       hint2:'ls -ld <dir> prints the directory rather than its contents. stat gives the same in long form.',
       reveal:'ls -ld /home/ec2-user /home/ec2-user/.ssh && ls -l /home/ec2-user/.ssh/authorized_keys',
-      done:function (c) { return ranRe(c, /(ls\b[^|]*-\w*d\w*|stat)\b[^|]*(\.ssh|\/home\/ec2-user)/); } },
+      done:function (c) { return did(c, /(ls\b[^|]*-\w*d\w*|stat)\b[^|]*(\.ssh|\/home\/ec2-user)/, /drwx|Access:/); } },
     { id:'strict', text:'Find the sshd setting that makes those modes fatal',
       hint:'One directive tells sshd to refuse keys it cannot trust. It is in the server config, not the client one.',
       reveal:'grep -i strictmodes /etc/ssh/sshd_config',
@@ -535,15 +565,17 @@ LX.missions.push({
       hint:'A load average means nothing until you know how many cores it is spread across.',
       hint2:'One command prints the three load averages; another prints the core count.',
       reveal:'uptime; nproc',
-      done:function (c) { return ranRe(c, /uptime|\btop\b/) && ranRe(c, /nproc|cpuinfo|lscpu/); } },
+      done:function (c) {
+        return did(c, /uptime|\btop\b/, /load average/) && did(c, /nproc|cpuinfo|lscpu/, /\d/);
+      } },
     { id:'split', text:'Split it: is the CPU busy, or is it waiting on something?',
       hint:'The CPU line breaks into user, system, idle and iowait. One of those is doing all the work here.',
       reveal:'top -b -n1 | head -5',
-      done:function (c) { return ranRe(c, /\btop\b|vmstat|mpstat/); } },
+      done:function (c) { return did(c, /\btop\b|vmstat|mpstat/, /wa|%Cpu/); } },
     { id:'mem', text:'Rule memory out before you go further',
       hint:'Read the available column and the swap line — heavy swapping looks exactly like this from outside.',
       reveal:'free -h',
-      done:function (c) { return ranRe(c, /\bfree\b/); } },
+      done:function (c) { return did(c, /\bfree\b/, /Swap:/); } },
     { id:'device', text:'Name the device that is saturated',
       hint:'Per-device I/O statistics: you want %util and await, not throughput.',
       hint2:'iostat -xz 1 3 — x is extended stats, z hides the idle devices.',
@@ -553,7 +585,7 @@ LX.missions.push({
       hint:'The app is a victim here, not the cause — it is blocked in D state waiting on the same device.',
       hint2:'pidstat breaks I/O down per process with -d.',
       reveal:'pidstat -d 1 3',
-      done:function (c) { return ranRe(c, /pidstat\b.*-d|iotop/); } },
+      done:function (c) { return did(c, /pidstat\b.*-d|iotop/, /kB_wr\/s|tar/); } },
     { id:'contain', text:'Stand the backup down without killing it, then re-measure to prove recovery',
       hint:'You do not want to lose the backup — you want it to stop competing. There is a scheduling class for exactly that.',
       hint2:'ionice -c 3 -p <pid> puts it in the idle I/O class. Then run iostat again rather than assuming.',
