@@ -1,0 +1,67 @@
+/* Shared test plumbing. Everything that used to be hardcoded to one machine —
+   repo path, browser binary, server port, screenshot directory — resolves here
+   so the suites run on a clean clone and in CI. */
+const path = require('path');
+const fs = require('fs');
+
+const ROOT = path.resolve(__dirname, '..');
+const ARTIFACTS = path.join(ROOT, 'tests', '.artifacts');
+const PORT = Number(process.env.LX_PORT || 8099);
+const URL = process.env.LX_URL || `http://127.0.0.1:${PORT}/index.html`;
+
+/* Playwright's own resolution works when browsers are installed normally; this
+   env var covers the preinstalled-browser case where the version differs. */
+function launchOptions() {
+  const exe = process.env.LX_CHROMIUM || process.env.CHROME_PATH;
+  return exe ? { executablePath: exe } : {};
+}
+
+function repoFile(...p) { return path.join(ROOT, ...p); }
+
+function shot(name) {
+  fs.mkdirSync(ARTIFACTS, { recursive: true });
+  return path.join(ARTIFACTS, name);
+}
+
+/* Load the content data files into this process, in the order index.html does,
+   with just enough of a window for them to register themselves. */
+function loadContent(extra) {
+  global.window = global;
+  global.LX = {
+    commands: [], scenarios: [], drills: [], quiz: [], labs: [],
+    missions: [], playbooks: [], outputQs: [], dangerQs: []
+  };
+  if (extra && extra.shell) global.LXShell = require(repoFile('assets/js/shell.js'));
+  const dir = repoFile('assets/js/data');
+  order().forEach(function (f) {
+    if (fs.existsSync(path.join(dir, f))) require(path.join(dir, f));
+  });
+  return global.LX;
+}
+
+/* The load order index.html uses. Read from index.html so the two cannot drift. */
+function order() {
+  const html = fs.readFileSync(repoFile('index.html'), 'utf8');
+  return [...html.matchAll(/src="assets\/js\/data\/([^"]+)"/g)].map(m => m[1]);
+}
+
+/* The four bottom tabs group several views each; tests address views by name. */
+const GROUP_OF = {
+  commands: 'learn', playbooks: 'learn', drills: 'learn',
+  labs: 'practice', sandbox: 'practice', quiz: 'quiz', review: 'review'
+};
+async function go(page, view) {
+  await page.click(`.tab[data-group="${GROUP_OF[view]}"]`);
+  const seg = page.locator(`#subnav .seg[data-view="${view}"]`);
+  if (await seg.count()) await seg.click();
+  await page.waitForTimeout(100);
+}
+
+/* Horizontal overflow in px — the phone-layout regression that keeps recurring. */
+function overflow(page) {
+  return page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth);
+}
+
+module.exports = { ROOT, ARTIFACTS, PORT, URL, launchOptions, repoFile, shot,
+                   loadContent, order, go, overflow, GROUP_OF };
