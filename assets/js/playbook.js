@@ -67,7 +67,7 @@
           '<p class="card-sum">' + esc(p.prompt || '') + '</p>' +
           '<div class="card-meta">' +
             '<span class="badge">' + esc(U().catName(p.cat)) + '</span>' +
-            '<span class="badge ' + p.level + '">' + p.level + '</span>' +
+            '<span class="badge ' + esc(p.level) + '">' + esc(p.level) + '</span>' +
             '<span class="badge">' + p.steps.length + ' steps</span>' +
             (p.steps.some(function (s) { return s.branches; }) ? '<span class="badge branchy">branches</span>' : '') +
             (seen ? '<span class="badge done">✓ walked</span>' : '') +

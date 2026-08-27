@@ -9,14 +9,24 @@
   function get(k, d) { return U().LS.get(k, d); }
   function set(k, v) { U().LS.set(k, v); }
 
-  function today() { return new Date().toISOString().slice(0, 10); }
+  /* All three work in local time. today() used toISOString, which is UTC, while
+     addDays used the local calendar — so west of UTC a card scheduled "tomorrow"
+     came due today, and the streak rolled at the wrong midnight. */
+  function ymd(d) {
+    return d.getFullYear() + '-' +
+      ('0' + (d.getMonth() + 1)).slice(-2) + '-' +
+      ('0' + d.getDate()).slice(-2);
+  }
+  function today() { return ymd(new Date()); }
   function addDays(days) {
     var d = new Date();
     d.setDate(d.getDate() + Math.round(days));
-    return d.toISOString().slice(0, 10);
+    return ymd(d);
   }
   function daysBetween(a, b) {
-    return Math.round((new Date(b) - new Date(a)) / 86400000);
+    /* parse as local midnight, not UTC: new Date('2026-08-27') is UTC */
+    function at(x) { var p = String(x).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    return Math.round((at(b) - at(a)) / 86400000);
   }
 
   var session = null;   // { queue:[ids], i, graded, again }
@@ -25,10 +35,10 @@
   function cards() { return get('lx.cards', {}); }
   function saveCards(c) { set('lx.cards', c); }
 
-  function addCard(id, front, back, cat) {
+  function addCard(id, front, back, cat, trk) {
     var c = cards();
     if (c[id]) return false;
-    c[id] = { front: front, back: back, cat: cat || 'files',
+    c[id] = { front: front, back: back, cat: cat || 'files', track: trk || 'linux',
               ivl: 0, ease: 2.5, due: today(), reps: 0, lapses: 0 };
     saveCards(c);
     return true;
@@ -75,32 +85,34 @@
   function cardFromCommand(name) {
     var c = LX.commands.filter(function (x) { return x.name === name; })[0];
     if (!c) return false;
-    return addCard('c:' + c.name,
+    return addCard(LXStore.idFor('c', c.name),
       'What does `' + c.name + '` do — and what is the trap?',
-      c.sum + (c.tip ? '\n\nTrap: ' + c.tip : ''), c.cat);
+      c.sum + (c.tip ? '\n\nTrap: ' + c.tip : ''), c.cat, LX.track.of(c));
   }
   function cardFromDrill(qtext) {
     var d = LX.drills.filter(function (x) { return x.q === qtext; })[0];
     if (!d) return false;
-    return addCard('d:' + d.q, d.q,
-      d.a + (d.points ? '\n\n• ' + d.points.join('\n• ') : ''), d.cat);
+    return addCard(LXStore.idFor('d', d.q), d.q,
+      d.a + (d.points ? '\n\n• ' + d.points.join('\n• ') : ''), d.cat, LX.track.of(d));
   }
   function cardFromScenario(title) {
     var s = LX.scenarios.filter(function (x) { return x.title === title; })[0];
     if (!s) return false;
-    return addCard('s:' + s.title,
+    return addCard(LXStore.idFor('s', s.title),
       s.title + '\n\n' + s.situation + '\n\nWhat do you run, in what order, and why?',
       s.steps.map(function (t) { return '$ ' + t[0] + '\n   ' + t[1]; }).join('\n') +
-      '\n\nWhat they are scoring: ' + s.key, s.cat);
+      '\n\nWhat they are scoring: ' + s.key, s.cat, LX.track.of(s));
   }
 
   /* called by app.js when something is starred / unstarred */
   function syncSaved(id, isSaved) {
     if (!isSaved) { removeCard(id); return; }
-    var key = id.slice(2);
-    if (id[0] === 'c') cardFromCommand(key);
-    else if (id[0] === 'd') cardFromDrill(key);
-    else if (id[0] === 's') cardFromScenario(key);
+    var x = U().findById(id);
+    if (!x) { render(); return; }
+    var kind = id.charAt(0);
+    if (kind === 'c') cardFromCommand(x.name);
+    else if (kind === 'd') cardFromDrill(x.q);
+    else if (kind === 's') cardFromScenario(x.title);
     render();
   }
 

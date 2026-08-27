@@ -98,8 +98,18 @@ const { chromium } = require('playwright');
   // other tabs still fine
   await H.go(page, 'quiz');
   await page.click('#quizStartBtn');
-  await page.waitForSelector('#quizStage .choice');
-  console.log('quiz still works: yes');
+  /* On the rare miss, say why: start() bails with a toast when the pool is
+     empty, and a bare 30s selector timeout tells you nothing about which. */
+  const started = await page.waitForSelector('#quizStage .choice', { timeout: 15000 })
+    .then(() => true).catch(() => false);
+  if (started) console.log('quiz still works: yes');
+  else {
+    console.log('FAIL quiz produced no questions —',
+      'panel hidden:', await page.locator('#quizStart').isHidden(),
+      '| toast:', JSON.stringify(await page.locator('#toast').textContent().catch(() => '')),
+      '| track:', await page.evaluate(() => LXUtil.track()),
+      '| cat/level:', await page.inputValue('#quizCat'), await page.inputValue('#quizLevel'));
+  }
 
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);

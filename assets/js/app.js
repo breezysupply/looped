@@ -75,7 +75,8 @@
   window.LXUtil = { esc: esc, fmt: fmt, LS: LS, catName: catName,
                     toast: function (m) { toast(m); },
                     go: function (v) { setView(v); },
-                    track: function () { return state.track; } };
+                    track: function () { return state.track; },
+                    findById: findById, idOf: idOf };
 
   function toast(msg) {
     var el = $('#toast');
@@ -83,6 +84,34 @@
     el.classList.add('show');
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { el.classList.remove('show'); }, 1400);
+  }
+
+  /* Stable ids. A star and its review card are the same id, so rewording a
+     drill can no longer orphan the card and leave a duplicate beside it.
+     Computed from content but not *of* content — see assets/js/store.js. */
+  var TEXT_OF = {
+    c: function (x) { return x.name; },
+    s: function (x) { return x.title; },
+    d: function (x) { return x.q; }
+  };
+  var POOL_OF = {
+    c: function () { return LX.commands; },
+    s: function () { return LX.scenarios; },
+    d: function () { return LX.drills; }
+  };
+  var idCache = {};
+  function idOf(kind, x) {
+    var text = TEXT_OF[kind](x);
+    var ck = kind + '\u0000' + text;
+    if (!idCache[ck]) idCache[ck] = LXStore.idFor(kind, text);
+    return idCache[ck];
+  }
+  function findById(id) {
+    var kind = id.charAt(0);
+    if (!POOL_OF[kind]) return null;
+    var pool = POOL_OF[kind]();
+    for (var i = 0; i < pool.length; i++) if (idOf(kind, pool[i]) === id) return pool[i];
+    return null;
   }
 
   /* ── Saved items ──────────────────────────────────────────── */
@@ -161,9 +190,9 @@
   }
 
   function commandCard(c) {
-    var id = 'c:' + c.name;
+    var id = idOf('c', c);
     var badges = '<span class="badge">' + catName(c.cat) + '</span>' +
-      '<span class="badge ' + c.level + '">' + c.level + '</span>';
+      '<span class="badge ' + esc(c.level) + '">' + esc(c.level) + '</span>';
     var body = '<div class="syntax">' + esc(c.syntax) + '</div>' +
       (c.flags ? '<p class="section-label">Key options</p>' + rowBlock(c.flags) : '') +
       '<p class="section-label">Examples</p>' + exBlock(c.ex) +
@@ -177,9 +206,9 @@
   }
 
   function scenarioCard(s) {
-    var id = 's:' + s.title;
+    var id = idOf('s', s);
     var badges = '<span class="badge">' + catName(s.cat) + '</span>' +
-      '<span class="badge ' + s.level + '">' + s.level + '</span>' +
+      '<span class="badge ' + esc(s.level) + '">' + esc(s.level) + '</span>' +
       '<span class="badge">scenario</span>';
     var body = '<p class="situation">' + fmt(s.situation) + '</p>' +
       '<p class="section-label">Work through it</p>' + exBlock(s.steps) +
@@ -192,9 +221,9 @@
   }
 
   function drillCard(d) {
-    var id = 'd:' + d.q;
+    var id = idOf('d', d);
     var badges = '<span class="badge">' + catName(d.cat) + '</span>' +
-      '<span class="badge ' + d.level + '">' + d.level + '</span>' +
+      '<span class="badge ' + esc(d.level) + '">' + esc(d.level) + '</span>' +
       '<span class="badge">drill</span>';
     var body = '<p class="section-label">Model answer</p>' +
       '<p class="answer">' + fmt(d.a) + '</p>' +
@@ -206,17 +235,11 @@
   }
 
   function cardFor(id) {
-    var key = id.slice(2);
-    if (id[0] === 'c') {
-      var c = LX.commands.filter(function (x) { return x.name === key; })[0];
-      return c ? commandCard(c) : '';
-    }
-    if (id[0] === 's') {
-      var s = LX.scenarios.filter(function (x) { return x.title === key; })[0];
-      return s ? scenarioCard(s) : '';
-    }
-    var d = LX.drills.filter(function (x) { return x.q === key; })[0];
-    return d ? drillCard(d) : '';
+    var x = findById(id);
+    if (!x) return '';
+    return id.charAt(0) === 'c' ? commandCard(x)
+         : id.charAt(0) === 's' ? scenarioCard(x)
+         : drillCard(x);
   }
 
   /* ── Chips ────────────────────────────────────────────────── */
@@ -373,7 +396,8 @@
     el.innerHTML = g.views.map(function (x) {
       var on = x.v === v;
       return '<button class="seg' + (on ? ' active' : '') + '" role="tab" data-view="' +
-        esc(x.v) + '" aria-selected="' + (on ? 'true' : 'false') + '">' + esc(x.label) + '</button>';
+        esc(x.v) + '" aria-selected="' + (on ? 'true' : 'false') + '" tabindex="' +
+        (on ? '0' : '-1') + '" aria-controls="view-' + esc(x.v) + '">' + esc(x.label) + '</button>';
     }).join('');
   }
 
@@ -389,8 +413,17 @@
       var on = t.dataset.group === g.id;
       t.classList.toggle('active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
+      /* roving tabindex: one stop for the whole bar, arrows move within it */
+      t.setAttribute('tabindex', on ? '0' : '-1');
     });
     renderSubnav(g, v);
+    var panel = document.getElementById('view-' + v);
+    if (panel) {
+      panel.setAttribute('aria-label', g.views.length > 1 ? g.label + ': ' + v : g.label);
+    }
+    /* Focus deliberately stays on the tab. Moving it into the panel broke
+       arrow navigation — the next arrow key had no tab to move from — and
+       aria-controls already tells a screen reader what the tab governs. */
     window.scrollTo(0, 0);
   }
 
@@ -465,6 +498,37 @@
 
   });
 
+  /* Arrow keys move along the tab bar and the sub-nav, which is what
+     role="tab" promises and nothing implemented. */
+  function arrowNav(e, sel, activate) {
+    var items = $$(sel);
+    var i = items.indexOf(document.activeElement);
+    if (i === -1) return false;
+    var next = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % items.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = items.length - 1;
+    if (next === null) return false;
+    e.preventDefault();
+    activate(items[next]);
+    items[next].focus();   /* after activate: it re-renders the sub-nav */
+    return true;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (document.activeElement && document.activeElement.closest('.tabbar')) {
+      arrowNav(e, '.tabbar .tab', function (el) { setGroup(el.dataset.group); });
+      return;
+    }
+    if (document.activeElement && document.activeElement.closest('#subnav')) {
+      arrowNav(e, '#subnav .seg', function (el) { setView(el.dataset.view); });
+      return;
+    }
+    if (e.key === 'Escape' && !$('#trackSheet').hidden) { openTrackSheet(false); }
+  });
+
   var searchEl = $('#search');
   searchEl.addEventListener('input', function () {
     state.q = searchEl.value.trim();
@@ -476,6 +540,40 @@
     $('#clearSearch').hidden = true;
     renderCommands(); renderScenarios(); renderDrills(); renderLabs();
     searchEl.focus();
+  });
+
+  /* ── Progress export / import ─────────────────────────────────
+     A textarea rather than a file download: the app is often running as an
+     installed PWA on a phone, where a download is awkward and a select-all
+     copy is not. */
+  function dataMsg(text, ok) {
+    var el = $('#dataMsg');
+    el.hidden = !text;
+    el.textContent = text || '';
+    el.style.color = ok === false ? 'var(--red)' : '';
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('#dataExport')) {
+      var box = $('#dataBox');
+      box.hidden = false;
+      box.value = LXStore.exportAll();
+      box.focus(); box.select();
+      dataMsg('Copy this somewhere safe. Paste it into Import on the new device.');
+      return;
+    }
+    if (e.target.closest('#dataImport')) {
+      var b = $('#dataBox');
+      if (b.hidden || !b.value.trim()) {
+        b.hidden = false; b.value = ''; b.focus();
+        dataMsg('Paste an export here, then press Import again.');
+        return;
+      }
+      var r = LXStore.importAll(b.value);
+      if (!r.ok) { dataMsg(r.err, false); return; }
+      dataMsg('Restored ' + r.keys + ' keys. Reloading…');
+      setTimeout(function () { location.reload(); }, 700);
+      return;
+    }
   });
 
   $('#themeBtn').addEventListener('click', function () {

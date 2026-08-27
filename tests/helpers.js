@@ -9,11 +9,23 @@ const ARTIFACTS = path.join(ROOT, 'tests', '.artifacts');
 const PORT = Number(process.env.LX_PORT || 8099);
 const URL = process.env.LX_URL || `http://127.0.0.1:${PORT}/index.html`;
 
-/* Playwright's own resolution works when browsers are installed normally; this
-   env var covers the preinstalled-browser case where the version differs. */
+/* Playwright resolves its own browser when the versions line up. They do not in
+   an environment with a preinstalled browser pinned to a different build, so fall
+   back to LX_CHROMIUM, then to whatever chromium is sitting in
+   PLAYWRIGHT_BROWSERS_PATH, before giving up and letting Playwright complain. */
 function launchOptions() {
-  const exe = process.env.LX_CHROMIUM || process.env.CHROME_PATH;
-  return exe ? { executablePath: exe } : {};
+  const named = process.env.LX_CHROMIUM || process.env.CHROME_PATH;
+  if (named && fs.existsSync(named)) return { executablePath: named };
+  const dir = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  if (dir && fs.existsSync(dir)) {
+    const found = fs.readdirSync(dir)
+      .filter(d => /^chromium-\d+$/.test(d))
+      .sort()
+      .map(d => path.join(dir, d, 'chrome-linux', 'chrome'))
+      .filter(f => fs.existsSync(f));
+    if (found.length) return { executablePath: found[found.length - 1] };
+  }
+  return {};
 }
 
 function repoFile(...p) { return path.join(ROOT, ...p); }

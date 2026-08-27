@@ -54,7 +54,7 @@
             '<p class="card-sum">' + esc(l.brief) + '</p>' +
             '<div class="card-meta">' +
               '<span class="badge">' + esc(U().catName(l.cat)) + '</span>' +
-              '<span class="badge ' + l.level + '">' + l.level + '</span>' +
+              '<span class="badge ' + esc(l.level) + '">' + esc(l.level) + '</span>' +
               '<span class="badge">~' + l.mins + ' min</span>' + badge +
             '</div>' +
           '</div>' +

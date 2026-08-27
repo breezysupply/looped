@@ -4,7 +4,8 @@
   "private": true,
   "description": "Offline pocket trainer for troubleshooting judgement — Linux, cloud, identity and the rest of the systems-engineering surface.",
   "scripts": {
-    "test": "node tests/run.js",
+    "build": "node tools/build.js",
+    "test": "node tools/build.js --check && node tests/run.js",
     "test:data": "node tests/run.js data",
     "test:ui": "node tests/run.js ui",
     "serve": "node -e \"require('./tests/helpers');\" && python3 -m http.server 8099"

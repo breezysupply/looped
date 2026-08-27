@@ -55,6 +55,10 @@
   }
   function mkdirp(w, p, opts) {
     p = resolve(w, p);
+    if (!w.fs['/']) {
+      w.fs['/'] = { t:'d', mode:'755', owner:'root', group:'root', mtime: w.now };
+    }
+    if (p === '/') return;
     var parts = p.split('/').filter(Boolean), cur = '';
     for (var i = 0; i < parts.length; i++) {
       cur += '/' + parts[i];
@@ -124,6 +128,17 @@
       }
       if (ch === '"' || ch === "'") { quote = ch; cur += '\u0001Q'; continue; }
       if (ch === '\\' && i + 1 < line.length) { cur += line[++i]; continue; }
+      /* $( … ) is one token however much whitespace is inside it: splitting on
+         spaces first meant `echo $(echo one two)` never matched the expansion
+         pattern and came out literally */
+      if (ch === '$' && line[i + 1] === '(') {
+        var depth = 0, j = i + 1;
+        for (; j < line.length; j++) {
+          if (line[j] === '(') depth++;
+          else if (line[j] === ')') { depth--; if (!depth) break; }
+        }
+        if (depth === 0) { cur += line.slice(i, j + 1); i = j; continue; }
+      }
       if (/\s/.test(ch)) { if (cur) { toks.push(cur); cur = ''; } continue; }
       if (ch === '|' || ch === '<') { if (cur) { toks.push(cur); cur = ''; } toks.push(ch); continue; }
       if (ch === '>') {
@@ -144,7 +159,7 @@
     var quoted = wasQuoted(tok);
     var s = tok, substituted = false;
     /* $(...) */
-    s = s.replace(/\$\(([^)]*)\)/g, function (_, inner) {
+    s = s.replace(/\$\((.*)\)/g, function (_, inner) {
       substituted = true;
       var r = exec(w, unquote(inner));
       return (r.out || '').replace(/\n+$/, '');
@@ -204,9 +219,24 @@
   };
   CMD.uname = function (w, a) {
     var p = flags(a).f;
-    if (p.a) return ok('Linux ' + w.host + ' 6.1.0-aws #1 SMP x86_64 GNU/Linux\n');
-    if (p.m) return ok('x86_64\n');
-    return ok('6.1.0-aws\n');
+    var os = w.os || 'Linux', kern = w.kernel || '6.1.0-aws', arch = w.arch || 'x86_64';
+    if (p.a) return ok(os + ' ' + w.host + ' ' + kern + ' #1 SMP ' + arch + ' GNU/Linux\n');
+    if (p.m) return ok(arch + '\n');
+    if (p.s) return ok(os + '\n');
+    return ok(kern + '\n');
+  };
+  CMD.basename = function (w, a) {
+    var p = flags(a);
+    if (!p.rest.length) return err('basename: missing operand');
+    var name = basename(p.rest[0].replace(/\/+$/, '')) || '/';
+    var suf = p.rest[1];
+    if (suf && name !== suf && name.slice(-suf.length) === suf) name = name.slice(0, -suf.length);
+    return ok(name + '\n');
+  };
+  CMD.dirname = function (w, a) {
+    var p = flags(a);
+    if (!p.rest.length) return err('dirname: missing operand');
+    return ok((dirname(p.rest[0].replace(/\/+$/, '')) || '.') + '\n');
   };
   CMD.date = function (w) { return ok((w.date || 'Fri Aug 14 09:41:02 UTC 2026') + '\n'); };
   CMD.nproc = function (w) { return ok((w.cores || 4) + '\n'); };
@@ -1554,6 +1584,7 @@
       journal: (seed.journal || []).slice(),
       units: {}, deleted: [],
       mem: seed.mem, cpu: seed.cpu, load: seed.load, uptime: seed.uptime,
+      date: seed.date, os: seed.os, kernel: seed.kernel, arch: seed.arch,
       io: seed.io ? JSON.parse(JSON.stringify(seed.io)) : null, extra: seed.extra || null,
       cores: seed.cores || 4, ip: seed.ip
     };
@@ -1595,7 +1626,21 @@
   var api = { createWorld: createWorld, run: run, exec: exec, human: human,
               setLibrary: function (l) { LIB = l; },
               resolve: resolve, node: node, children: children, diskUsed: diskUsed,
-              commands: function () { return Object.keys(CMD).sort(); } };
+              commands: function () { return Object.keys(CMD).sort(); },
+
+              /* A track ships its own verbs through here rather than editing this
+                 file. fn(world, args, stdin) returns {out, err, code}; the helpers
+                 it needs to behave like a built-in are handed over with it. */
+              register: function (name, fn) {
+                if (typeof name !== 'string' || typeof fn !== 'function') return api;
+                CMD[name] = fn;
+                return api;
+              },
+              registered: function (name) { return Object.prototype.hasOwnProperty.call(CMD, name); },
+              /* what a registered command needs to look native */
+              util: { ok: ok, err: err, flags: flags, pad: pad, lines: lines,
+                      basename: basename, dirname: dirname, mountOf: mountOf,
+                      sizeOf: sizeOf, mkfile: mkfile, mkdirp: mkdirp, walk: walk } };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   global.LXShell = api;

@@ -60,7 +60,7 @@
           '<p class="card-sum">' + esc(m.brief) + '</p>' +
           '<div class="card-meta">' +
             '<span class="badge">' + esc(U().catName(m.cat)) + '</span>' +
-            '<span class="badge ' + m.level + '">' + m.level + '</span>' +
+            '<span class="badge ' + esc(m.level) + '">' + esc(m.level) + '</span>' +
             '<span class="badge">' + kind + '</span>' + badge +
           '</div></div><span class="lab-go">▶</span></div></article>';
     }).join('');

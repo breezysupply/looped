@@ -55,9 +55,11 @@ python3 -m http.server 8000
 # then open http://<your-laptop-ip>:8000 on your phone, same Wi-Fi
 ```
 
-Everything persists in `localStorage` on that device: theme, starred items, last tab, quiz accuracy
-per topic, lab scores, your review deck and its schedule, and your day streak. Nothing leaves the
-phone and there is no account to create.
+Everything persists in `localStorage` on that device: theme, active track, starred items, last
+page, quiz accuracy per topic, lab and mission scores, your review deck and its schedule, and
+your day streak. Nothing leaves the phone and there is no account to create — which also means
+nothing restores it if you lose the device, so **Review → Your progress → Export** is worth doing
+before you change phones.
 
 ## Study loop that works
 
