@@ -1,9 +1,6 @@
 const H = require('../helpers');
 /* Solve every mission headlessly with its own reveal commands. */
-global.LXShell = require(H.repoFile('assets/js/shell.js'));
-global.window = global;
-global.LX = { commands: [], scenarios: [], drills: [], quiz: [], labs: [] };
-require(H.repoFile('assets/js/data/missions.js'));
+H.loadContent({ shell: true });
 
 var only = process.argv[2];
 var bad = 0;

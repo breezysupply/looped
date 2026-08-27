@@ -66,10 +66,18 @@ const openPb = async (p, id) => {
   console.log('mode persists across reload:', await p.locator('#pbMode .seg.active').textContent());
   await p.click('#pbMode .seg[data-pbmode="flow"]'); await p.waitForTimeout(100);
 
-  // every playbook renders in flow mode without overflow or a missing command
-  const ids = await p.evaluate(() => LX.playbooks.map(x => x.id));
-  let worst = 0, bad = [], nolib = 0, nodes = 0;
-  for (const id of ids) {
+  // every playbook in every track renders without overflow or a missing command
+  const tracks = await p.evaluate(() => LX.tracks.map(t => t.id));
+  let worst = 0, bad = [], nolib = 0, nodes = 0, ids = [];
+  for (const tr of tracks) {
+    if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(60); }
+    await p.click('#trackBtn');
+    await p.click(`.track-row[data-track="${tr}"]`);
+    await p.waitForTimeout(150);
+    const trIds = await p.evaluate((t) =>
+      LX.playbooks.filter(x => (x.track || 'linux') === t).map(x => x.id), tr);
+    ids = ids.concat(trIds);
+    for (const id of trIds) {
     await openPb(p, id);
     await p.click('#pbAllBtn'); await p.waitForTimeout(50);
     const o = await H.overflow(p);
@@ -77,12 +85,14 @@ const openPb = async (p, id) => {
     nodes += await p.locator('.flow-node').count();
     nolib += await p.locator('.flow-item.open').count() - await p.locator('.flow-item.open .syntax').count();
     await p.click('#pbAllBtn'); await p.waitForTimeout(30);
+    }
   }
-  console.log(`all ${ids.length} playbooks in flow mode — overflow:`, bad.join(' ') || 'none', '| worst:', worst);
+  console.log(`all ${ids.length} playbooks across ${tracks.length} tracks — overflow:`, bad.join(' ') || 'none', '| worst:', worst);
   console.log(`flow nodes rendered: ${nodes} | without a library match: ${nolib}`);
 
   // scenarios (no check/why) survive the same renderer
-  await p.click('#pbExit'); await p.waitForTimeout(80);
+  if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(80); }
+  await p.click('#trackBtn'); await p.click('.track-row[data-track="linux"]'); await p.waitForTimeout(150);
   await p.click('#pbFilter .chip[data-pbfilter="scenario"]'); await p.waitForTimeout(120);
   const sc = await p.locator('#pbList [data-pb]').first().getAttribute('data-pb');
   await p.click(`[data-pb="${sc}"]`); await p.waitForTimeout(120);

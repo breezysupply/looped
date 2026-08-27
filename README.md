@@ -16,11 +16,12 @@ studying never dilutes the one you are. **All tracks** mixes them deliberately.
 
 | Track | State |
 | --- | --- |
-| **Linux** | Complete: 131 commands, 22 playbooks, 35 scenarios, 45 drills, 6 labs, 8 typed missions |
-| **Containers & Networking** | Registered, empty — next to be built |
+| **Linux** | 131 commands, 22 playbooks, 35 scenarios, 45 drills, 6 labs, 8 typed missions |
+| **Containers & Networking** | 48 commands, 9 playbooks with sample output for every step, 20 drills, 12 hazard questions, 15 recall items, 5 typed missions against a simulated cluster |
 
 Tracks planned after that: AWS core, Identity & M365, IaC & automation, Security & compliance,
-Azure, AI platform administration. The roadmap and its reasoning live in the plan file referenced
+Azure, AI platform administration. Content is tagged to certification objectives (CKA, AWS SAA,
+AZ-104, Security+) as it is written. The roadmap and its reasoning live in the plan file referenced
 in `CONTRIBUTING.md`.
 
 ## What's in it

@@ -43,7 +43,13 @@ function loadContent(extra) {
     commands: [], scenarios: [], drills: [], quiz: [], labs: [],
     missions: [], playbooks: [], outputQs: [], dangerQs: []
   };
-  if (extra && extra.shell) global.LXShell = require(repoFile('assets/js/shell.js'));
+  if (extra && extra.shell) {
+    global.LXShell = require(repoFile('assets/js/shell.js'));
+    /* track extensions register their verbs through LXShell.register */
+    fs.readdirSync(repoFile('assets/js')).forEach(function (f) {
+      if (/^shell-.*\.js$/.test(f)) require(repoFile('assets/js', f));
+    });
+  }
   const dir = repoFile('assets/js/data');
   order().forEach(function (f) {
     if (fs.existsSync(path.join(dir, f))) require(path.join(dir, f));

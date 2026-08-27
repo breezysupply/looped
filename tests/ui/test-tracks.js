@@ -26,8 +26,9 @@ const { chromium } = require('playwright');
   })));
   console.log('sheet rows:', rows.map(r => `${r.id}(${r.count})`).join(' '));
   console.log('has an All option:', rows.some(r => r.id === 'all'));
-  console.log('linux carries the whole library:', rows.find(r => r.id === 'linux').count > 200);
-  console.log('containers is empty for now:', rows.find(r => r.id === 'containers').count === 0);
+  console.log('every track has content:', rows.filter(r => r.id !== 'all').every(r => r.count > 0));
+  console.log('All is the sum of the parts:',
+    rows.find(r => r.id === 'all').count === rows.filter(r => r.id !== 'all').reduce((a, r) => a + r.count, 0));
 
   // switching to an empty track must empty every list, not error
   await p.click('.track-row[data-track="containers"]');
@@ -38,11 +39,19 @@ const { chromium } = require('playwright');
   console.log('  commands:', await p.locator('#cmdCount').textContent(),
     '| cards:', await p.locator('#cmdList .card').count());
   const chips = await p.locator('#catChips .chip').allInnerTexts();
-  console.log('  category chips:', JSON.stringify(chips), chips.length === 1 ? '(All only — correct)' : '(FAIL: other-track categories leaked)');
+  const leaked = await p.evaluate((names) => {
+    const own = Object.values(LX.track.byId('containers').cats);
+    return names.filter(n => n !== 'All' && own.indexOf(n) === -1);
+  }, chips);
+  console.log('  category chips:', chips.length, '| from another track:', leaked.length ? leaked : 'none');
   await H.go(p, 'playbooks');
   console.log('  playbooks:', await p.locator('#pbList [data-pb]').count());
   await H.go(p, 'drills');
-  console.log('  drills:', await p.locator('#drillList .card').count());
+  console.log('  drills:', await p.locator('#drillList .card').count(),
+    '| playbook/mission content is containers-only:', await p.evaluate(() => {
+      const ids = Array.from(document.querySelectorAll('#pbList [data-pb]')).map(e => e.dataset.pb);
+      return ids.every(id => (LX.playbooks.filter(p => p.id === id)[0] || {}).track === 'containers');
+    }));
   await H.go(p, 'labs');
   console.log('  labs:', await p.locator('#labList [data-lab]').count(),
     '| missions:', await p.locator('#sbList [data-mission]').count());
@@ -58,8 +67,11 @@ const { chromium } = require('playwright');
   await H.go(p, 'commands');
   const back = await p.locator('#cmdCount').textContent();
   console.log('\nback on linux —', back, '| chips:', await p.locator('#catChips .chip').count());
-  console.log('  every command card is linux:', await p.evaluate(() =>
-    LX.commands.filter(c => (c.track || 'linux') !== 'linux').length === 0));
+  console.log('  every rendered card is linux:', await p.evaluate(() => {
+    const shown = Array.from(document.querySelectorAll('#cmdList .card-title')).map(e => e.textContent);
+    const linux = LX.commands.filter(c => (c.track || 'linux') === 'linux').map(c => c.name);
+    return shown.every(t => linux.indexOf(t) !== -1);
+  }));
 
   // choice persists
   await p.click('#trackBtn');

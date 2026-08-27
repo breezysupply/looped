@@ -1585,6 +1585,11 @@
       units: {}, deleted: [],
       mem: seed.mem, cpu: seed.cpu, load: seed.load, uptime: seed.uptime,
       date: seed.date, os: seed.os, kernel: seed.kernel, arch: seed.arch,
+      /* deep-copied like procs and disks: missions mutate them and must not
+         edit the seed shared by every future run */
+      k8s: seed.k8s ? JSON.parse(JSON.stringify(seed.k8s)) : null,
+      docker: seed.docker ? JSON.parse(JSON.stringify(seed.docker)) : null,
+      cniReady: seed.cniReady,
       io: seed.io ? JSON.parse(JSON.stringify(seed.io)) : null, extra: seed.extra || null,
       cores: seed.cores || 4, ip: seed.ip
     };

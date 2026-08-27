@@ -1,11 +1,7 @@
 const H = require('../helpers');
 /* Every mark must appear in its output, exactly once, and be specific enough
    to be unambiguous — a highlight in the wrong place teaches the wrong thing. */
-global.window = global;
-global.LX = { commands: [], scenarios: [], drills: [] };
-['playbooks','playbooks-more','playbook-outputs'].forEach(function (f) {
-  require(H.repoFile('assets/js/data/') + f + '.js');
-});
+H.loadContent();
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 var bad = 0, marks = 0, repeats = [];
 LX.playbooks.forEach(function (pb) {

@@ -1,10 +1,7 @@
 const H = require('../helpers');
 /* Objectives must require evidence. A fragment, a typo, or a command that
    errored must never tick a box. */
-global.LXShell = require(H.repoFile('assets/js/shell.js'));
-global.window = global;
-global.LX = { commands: [], scenarios: [], drills: [], quiz: [], labs: [] };
-require(H.repoFile('assets/js/data/missions.js'));
+H.loadContent({ shell: true });
 
 /* [mission, command typed, objective that must stay unmet, note] */
 var CASES = [
@@ -29,7 +26,23 @@ var CASES = [
   ['m-ssh',  'ls /home/ec2-user/.ssh',           'inspect',   'contents, not the directory entry'],
   ['m-slow', 'pidstat',                          'culprit',   'no -d, no I/O breakdown'],
   ['m-slow', 'uptime',                           'pressure',  'load without the core count'],
-  ['m-slow', 'iostat',                           'device',    null]            // iostat does name nvme1n1
+  ['m-slow', 'iostat',                           'device',    null],           // iostat does name nvme1n1
+
+  /* containers */
+  ['cn-m-svc',       'kubectl get pods',                    'endpoints', 'listing pods is not checking endpoints'],
+  ['cn-m-svc',       'kubectl get endpoints',               'endpoints', null],
+  ['cn-m-svc',       'kubectl label pod api-6c8b9f-2k4mz app=api', 'fix', 'no --overwrite, so nothing changed'],
+  ['cn-m-svc',       'kubectl get pods',                    'labels',    'no --show-labels, so no labels shown'],
+  ['cn-m-crashloop', 'kubectl logs worker-59d4c-hb2vt',     'prev',      'without --previous it is the wrong container'],
+  ['cn-m-crashloop', 'kubectl get pods',                    'how',       'the exit code is in describe, not get'],
+  ['cn-m-crashloop', 'kubectl set resources deploy/worker --limits=memory=300Mi', 'fix', 'still below what it needs'],
+  ['cn-m-crashloop', 'kubectl set resources deploy/nosuch --limits=memory=512Mi', 'fix', 'wrong deployment'],
+  ['cn-m-pending',   'kubectl describe pod reindex-4t7bn',  'taint',     'that is the pod, not the node'],
+  ['cn-m-pending',   'kubectl taint node ip-10-0-3-4 wrong=key:NoSchedule-', 'fix', 'removing a taint that is not there'],
+  ['cn-m-imagepull', 'kubectl set image deploy/checkout checkout=checkout:2.7.9', 'fix', 'another tag that does not exist'],
+  ['cn-m-imagepull', 'kubectl get pods',                    'reason',    'the registry error is in describe'],
+  ['cn-m-dns',       'kubectl exec -n payments ledger-8b6c4-r9wzt -- env', 'reproduce', 'ran a command, but not a lookup'],
+  ['cn-m-dns',       'echo done > cause.txt',               'name',      'a note that names nothing']
 ];
 
 var fails = 0, checked = 0;

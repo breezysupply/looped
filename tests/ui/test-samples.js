@@ -12,9 +12,17 @@ const { chromium } = require('playwright');
   await p.click('#subnav .seg[data-view="playbooks"]');
   await p.waitForTimeout(150);
 
-  const ids = await p.evaluate(() => LX.playbooks.map(x => x.id));
-  let totalSamples = 0, totalMarks = 0, bad = [], worst = 0;
-  for (const id of ids) {
+  const tracks = await p.evaluate(() => LX.tracks.map(t => t.id));
+  let totalSamples = 0, totalMarks = 0, bad = [], worst = 0, ids = [];
+  for (const tr of tracks) {
+    if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(60); }
+    await p.click('#trackBtn');
+    await p.click(`.track-row[data-track="${tr}"]`);
+    await p.waitForTimeout(150);
+    const trIds = await p.evaluate((t) =>
+      LX.playbooks.filter(x => (x.track || 'linux') === t).map(x => x.id), tr);
+    ids = ids.concat(trIds);
+    for (const id of trIds) {
     if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(60); }
     await p.click(`[data-pb="${id}"]`); await p.waitForTimeout(80);
     await p.click('#pbAllBtn'); await p.waitForTimeout(80);
@@ -26,12 +34,14 @@ const { chromium } = require('playwright');
     const expected = await p.evaluate(x => (LX.pbOut[x]||[]).filter(Boolean).length, id);
     if (s !== expected) bad.push(`${id} rendered ${s} of ${expected}`);
     await p.click('#pbAllBtn'); await p.waitForTimeout(40);
+    }
   }
   console.log('flow mode — samples rendered:', totalSamples, '| highlighted lines:', totalMarks);
-  console.log('page overflow across all 22:', bad.join(' ') || 'none', '| worst:', worst);
+  console.log('page overflow across every track:', bad.join(' ') || 'none', '| worst:', worst);
 
   // the sample block must scroll inside itself, not push the page wide
-  await p.click('#pbExit'); await p.waitForTimeout(60);
+  if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(60); }
+  await p.click('#trackBtn'); await p.click('.track-row[data-track="linux"]'); await p.waitForTimeout(150);
   await p.click('[data-pb="pb-app-walk"]'); await p.waitForTimeout(80);
   await p.locator('.flow-node').first().click(); await p.waitForTimeout(80);
   console.log('sample visible in flow callout:', await p.locator('.pb-sample').first().isVisible());

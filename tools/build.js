@@ -20,12 +20,12 @@ const check = process.argv.includes('--check');
 
 /* tracks.js first — it is the registry every content file and engine reads.
    app.js last — it boots the app and expects everything else to be present. */
-const ENGINE_FIRST = ['assets/js/store.js', 'assets/js/shell.js'];
+const ENGINE_FIRST = ['assets/js/store.js', 'assets/js/shell.js', 'assets/js/shell-containers.js'];
 const ENGINE_LAST = [
   'assets/js/lab.js', 'assets/js/quiz.js', 'assets/js/sandbox.js',
   'assets/js/playbook.js', 'assets/js/review.js', 'assets/js/app.js'
 ];
-const DATA_FIRST = ['assets/js/data/tracks.js'];
+const DATA_FIRST = ['assets/js/data/tracks.js', 'assets/js/data/objectives.js'];
 
 const STATIC = [
   './', './index.html', './manifest.webmanifest', './assets/css/style.css',

@@ -65,6 +65,24 @@ no heap setting, so it does not count. Add a case to `test-strict.js` for any ne
 **Output highlights must be unambiguous.** A one- or two-character `mark` lights up every stray
 digit in a `top` header. `check-marks.js` enforces this; run it before committing.
 
+## Adding a track
+
+1. Register it in `assets/js/data/tracks.js` with its own category map.
+2. Write content files under `assets/js/data/`, every record carrying `track: '<id>'`.
+3. If the track needs its own shell verbs, add `assets/js/shell-<track>.js` and register them
+   through `LXShell.register(name, fn)` — the engine stays a Linux shell and tracks extend it.
+   `LXShell.util` hands over the helpers a command needs to behave like a built-in.
+4. `npm run build`, then `npm test`.
+
+The containers track is the worked example: `containers-*.js` for content,
+`shell-containers.js` for `kubectl`/`docker`/`crictl` against a simulated cluster, and
+`containers-outputs.js` for the sample output on every playbook step.
+
+A simulated world should derive rather than duplicate. Service endpoints in the containers
+track are computed from selectors against pod labels and readiness at read time, so relabelling
+a pod really does change what `kubectl get endpoints` prints — which is what makes the mission
+teach the thing the playbook claims.
+
 ## Storage
 
 Progress lives in `localStorage` under `lx.*` keys, on the device, and goes nowhere else.

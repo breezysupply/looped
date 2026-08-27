@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-38a5bf5b';
+var CACHE = 'looped-8b3225f4';
 var ASSETS = [
   './',
   './index.html',
@@ -10,11 +10,20 @@ var ASSETS = [
   './icons/icon-512.png',
   './assets/js/store.js',
   './assets/js/shell.js',
+  './assets/js/shell-containers.js',
   './assets/js/data/tracks.js',
+  './assets/js/data/objectives.js',
   './assets/js/data/commands-core.js',
   './assets/js/data/commands-more.js',
   './assets/js/data/commands-net.js',
   './assets/js/data/commands-system.js',
+  './assets/js/data/containers-docker.js',
+  './assets/js/data/containers-drills.js',
+  './assets/js/data/containers-k8s.js',
+  './assets/js/data/containers-missions.js',
+  './assets/js/data/containers-net.js',
+  './assets/js/data/containers-outputs.js',
+  './assets/js/data/containers-playbooks.js',
   './assets/js/data/drills-more.js',
   './assets/js/data/drills.js',
   './assets/js/data/labs-more.js',
