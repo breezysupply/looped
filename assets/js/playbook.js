@@ -80,17 +80,31 @@
      question, arrow, command. Tapping a command opens what it is and why
      it is the move here — nothing else on screen. */
 
-  /* the command a step is really about, for the library lookup:
-     first word of the first alternative, minus sudo and pipes */
-  function baseCmd(cmdStr) {
+  /* The command a step is really about, for the library lookup. Not just the
+     first word: a library entry can be several words — `kubectl get`,
+     `aws ec2 describe-instances` — so match the longest prefix that names one,
+     and fall back to the bare verb. Taking only the first token used to leave
+     every kubectl and aws step with no callout at all. */
+  function cmdTokens(cmdStr) {
     var first = String(cmdStr || '').split('·')[0];
     var tok = first.trim().split(/[\s|;&]+/).filter(Boolean);
     var i = 0;
     while (tok[i] === 'sudo' || /^[A-Z_]+=/.test(tok[i] || '')) i++;
-    return (tok[i] || '').replace(/^\W+|\W+$/g, '');
+    return tok.slice(i).map(function (t) { return t.replace(/^\W+|\W+$/g, ''); })
+              .filter(Boolean);
   }
+  function baseCmd(cmdStr) { return cmdTokens(cmdStr)[0] || ''; }
   function libEntry(name) {
     return ((window.LX && LX.commands) || []).filter(function (c) { return c.name === name; })[0] || null;
+  }
+  /* Longest prefix first, so `aws ec2 describe-instances` wins over `aws ec2`. */
+  function libFor(cmdStr) {
+    var tok = cmdTokens(cmdStr);
+    for (var n = Math.min(tok.length, 4); n > 0; n--) {
+      var hit = libEntry(tok.slice(0, n).join(' '));
+      if (hit) return hit;
+    }
+    return null;
   }
   /* Some steps are talk tracks or checklists rather than commands — the
      talk-track tree is entirely quoted sentences. Anything the library and
@@ -101,7 +115,7 @@
     if (/^["'\u201c]/.test(t)) return true;
     var name = baseCmd(cmdStr);
     if (!name) return true;
-    if (libEntry(name)) return false;
+    if (libFor(cmdStr)) return false;
     return !(window.LXShell && LXShell.commands().indexOf(name) !== -1);
   }
 
@@ -135,8 +149,7 @@
   function flowNode(s, i) {
     var esc = U().esc, fmt = U().fmt;
     var open = view.all || view.open[i];
-    var name = baseCmd(s.cmd);
-    var lib = libEntry(name);
+    var lib = libFor(s.cmd);
     var prose = isProse(s.cmd);
     var alts = String(s.cmd).split('·').map(function (x) { return x.trim(); }).filter(Boolean);
 
@@ -175,8 +188,8 @@
           (prose ? '' :
             '<div class="flow-links">' +
               '<button class="copy-wide" data-copy="' + esc(alts[0]) + '">⧉ Copy</button>' +
-              (lib ? '<button class="copy-wide" data-goto="' + esc(name) + '">Full page for ' +
-                     esc(name) + ' →</button>' : '') +
+              (lib ? '<button class="copy-wide" data-goto="' + esc(lib.name) + '">Full page for ' +
+                     esc(lib.name) + ' →</button>' : '') +
             '</div>') +
         '</div>' +
       '</div>';

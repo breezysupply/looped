@@ -87,7 +87,13 @@ digit in a `top` header. `check-marks.js` enforces this; run it before committin
    `LXShell.util` hands over the helpers a command needs to behave like a built-in.
 4. `npm run build`, then `npm test`.
 
-The containers track is the worked example: `containers-*.js` for content,
+Two worked examples now exist, and they are deliberately different shapes. The **containers**
+track has a simulated cluster, so it ships typed sandbox missions; the **aws** track has no
+simulator, so it teaches through sample output on every playbook step, read-the-output quiz items
+and multiple-choice labs. A domain without a simulator is not a lesser track — `LX.pbOut` is what
+stops a reader leaving the app to check what a command prints.
+
+The containers track is the worked example for simulation: `containers-*.js` for content,
 `shell-containers.js` for `kubectl`/`docker`/`crictl` against a simulated cluster, and
 `containers-outputs.js` for the sample output on every playbook step. Note that
 `shell-containers.js` is listed in the *track's* `files`, not loaded eagerly — a track's shell

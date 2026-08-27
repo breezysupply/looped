@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-5303e733';
+var CACHE = 'looped-58116c67';
 var ASSETS = [
   './',
   './index.html',
@@ -41,7 +41,15 @@ var ASSETS = [
   './assets/js/data/containers-outputs.js',
   './assets/js/data/containers-drills.js',
   './assets/js/data/containers-labs.js',
-  './assets/js/data/containers-missions.js'
+  './assets/js/data/containers-missions.js',
+  './assets/js/data/aws-compute.js',
+  './assets/js/data/aws-network.js',
+  './assets/js/data/aws-iam.js',
+  './assets/js/data/aws-data.js',
+  './assets/js/data/aws-playbooks.js',
+  './assets/js/data/aws-outputs.js',
+  './assets/js/data/aws-drills.js',
+  './assets/js/data/aws-labs.js'
 ];
 
 self.addEventListener('install', function (e) {

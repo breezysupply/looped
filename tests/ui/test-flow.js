@@ -68,7 +68,11 @@ const openPb = async (p, id) => {
 
   // every playbook in every track renders without overflow or a missing command
   const tracks = await p.evaluate(() => LX.tracks.map(t => t.id));
-  let worst = 0, bad = [], nolib = 0, nodes = 0, ids = [];
+  /* Per track, because the failure mode is silent: a track whose commands the
+     library lookup cannot resolve still renders, just with no callout on any
+     step — which is the entire point of Flow mode. A whole-library total hides
+     one track being at zero. */
+  let worst = 0, bad = [], nolib = 0, nodes = 0, ids = [], perTrack = {};
   for (const tr of tracks) {
     if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(60); }
     await p.click('#trackBtn');
@@ -82,13 +86,20 @@ const openPb = async (p, id) => {
     await p.click('#pbAllBtn'); await p.waitForTimeout(50);
     const o = await H.overflow(p);
     if (o > 0) { bad.push(`${id}:${o}`); worst = Math.max(worst, o); }
-    nodes += await p.locator('.flow-node').count();
-    nolib += await p.locator('.flow-item.open').count() - await p.locator('.flow-item.open .syntax').count();
+    const n = await p.locator('.flow-node').count();
+    const miss = await p.locator('.flow-item.open').count() - await p.locator('.flow-item.open .syntax').count();
+    nodes += n; nolib += miss;
+    perTrack[tr] = perTrack[tr] || { n: 0, miss: 0 };
+    perTrack[tr].n += n; perTrack[tr].miss += miss;
     await p.click('#pbAllBtn'); await p.waitForTimeout(30);
     }
   }
   console.log(`all ${ids.length} playbooks across ${tracks.length} tracks — overflow:`, bad.join(' ') || 'none', '| worst:', worst);
   console.log(`flow nodes rendered: ${nodes} | without a library match: ${nolib}`);
+  console.log('  per track:', Object.keys(perTrack).map(t =>
+    `${t} ${perTrack[t].n - perTrack[t].miss}/${perTrack[t].n}`).join(' · '));
+  const dead = Object.keys(perTrack).filter(t => perTrack[t].n && perTrack[t].miss === perTrack[t].n);
+  if (dead.length) throw new Error(`no command step in ${dead.join(', ')} resolves to a library entry — Flow mode has no callouts at all there`);
 
   // scenarios (no check/why) survive the same renderer
   if (await p.locator('#pbExit').isVisible()) { await p.click('#pbExit'); await p.waitForTimeout(80); }
