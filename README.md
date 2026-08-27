@@ -1,29 +1,44 @@
-# Linux Pocket Guide
+# looped
 
-A phone-first study guide for Linux fundamentals, built for interview prep — specifically the
-kind of Linux/networking/troubleshooting depth expected of an **L5 Amazon Dedicated Cloud Engineer**.
+A phone-first trainer for troubleshooting judgement — the pocket kind, not the online-lab kind.
+It started as Linux interview prep for an L5 cloud engineer role and is growing into the full
+systems-engineering surface: containers and networking, AWS, identity and Microsoft 365,
+Terraform, security and compliance, Azure, and AI-platform administration.
 
 No build step, no dependencies, no backend. Open `index.html` and it works — including offline,
-once it has loaded a first time.
+once it has loaded once.
+
+## Tracks
+
+Content is organised into **tracks**, chosen from the pill in the top bar. Everything — chip
+rows, search, quiz pools, the review deck — scopes to the active track, so a domain you are not
+studying never dilutes the one you are. **All tracks** mixes them deliberately.
+
+| Track | State |
+| --- | --- |
+| **Linux** | Complete: 131 commands, 22 playbooks, 35 scenarios, 45 drills, 6 labs, 8 typed missions |
+| **Containers & Networking** | Registered, empty — next to be built |
+
+Tracks planned after that: AWS core, Identity & M365, IaC & automation, Security & compliance,
+Azure, AI platform administration. The roadmap and its reasoning live in the plan file referenced
+in `CONTRIBUTING.md`.
 
 ## What's in it
 
-| Tab | Contents |
+Four sections at the bottom, several pages each:
+
+| Section | Contents |
 | --- | --- |
-| **Commands** | 120 commands, beginner → intermediate, each with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
-| **Playbooks** | 19 decision trees for "what would you check next?" — the O.N.V.A. framework (Observe → Narrow → Verify → Act) plus 18 scenario trees. Each step reveals one at a time: tap it for what it settles and how to read the output, tap **Next step** for the next one, or **Expand all** to read the whole tree as a reference sheet. 17 steps carry **branches** that fork on what you see, several jumping straight into another tree. Ends with the common trap, the one-line takeaway, likely follow-up probes, and a link into the matching Sandbox mission. The 35 scenarios render through the same walker |
-| **Scenarios (inside Playbooks)** | 35 real troubleshooting situations (disk full, OOM kill, can't SSH, DNS broken, port unreachable, read-only root, unbootable instance, NFS hang, TIME_WAIT exhaustion, ALB 502/504, fleet patching) as ordered command sequences, plus what the interviewer is actually scoring |
-| **Drills** | 31 open-ended questions with model answers and the points to hit — boot sequence, fork/exec, permissions, OOM scoring, TCP handshake and TIME_WAIT, containers in kernel terms, LVM, SG vs NACL, on-call posture, and four behavioral/Leadership-Principle framings |
-| **Sandbox** | A simulated Linux box you **type into for real**. ~50 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, running against a virtual filesystem that changes as you act — truncate a held-open log and `df` actually drops. 6 missions with state-checked objectives (4 incidents, a log-forensics drill, a bash-scripting drill) plus free play. Tab completion, a tappable key row, command history, and reset. **Working `man` pages** built from the command library, `man -k` to find a command by what it does, and `guide <topic>` to search commands, scenarios and drills from inside the terminal — so you never have to leave the app to look something up. Hints escalate in three steps: a nudge, then the tool to reach for plus its man page, then the exact command |
-| **Labs** | 6 interactive incidents in a simulated terminal — 49 steps, 157 command choices. Pick what you would run; wrong turns execute and explain why they were wrong. Ends with a debrief: what you did and why it worked, a scripted interview answer, expandable per-argument command breakdowns, and prevention notes |
-| **Quiz** | Five question styles, three modes. **Recall** (what does this do / which command), **Read the output** (a real terminal block — what does it tell you?), **Safe or not** (which command would you never run here), **Order the steps** (tap four commands into the right sequence), **Build the command** (assemble it from tokens). Modes: 10 questions, 60-second speed round, or weak-spots-only |
-| **Review** | Spaced repetition. Every miss becomes a flashcard automatically, graded Again / Hard / Good / Easy, scheduled by how well you know it. Plus day streak, per-topic mastery bars weakest-first, recent misses, and your starred items |
+| **Learn → Commands** | Every command with syntax, key options, worked examples, and an "interview note" naming the trap or the follow-up question |
+| **Learn → Playbooks** | Decision trees for "what would you check next?", in two modes. **Flow** draws the whole tree as one column — question, arrow, command — and tapping a command opens what it is, why it is the move here, **the output you should expect** with the deciding line highlighted, and where it forks. **Walk** reveals one step at a time. Branches jump between trees; each ends with the common trap, the takeaway, likely follow-up probes, and a link into the matching sandbox mission. The 35 scenarios render through the same walker |
+| **Learn → Drills** | Open-ended questions with model answers and the points to hit |
+| **Practice → Labs** | Interactive incidents in a simulated terminal. Pick what you would run; wrong turns execute and explain why. Ends with a debrief, a scripted interview answer, and per-argument command breakdowns |
+| **Practice → Sandbox** | A simulated box you **type into for real** — 70 commands with pipes, redirects, `for`/`while`/`if`, `$(…)` and globbing, against a virtual filesystem that changes as you act. Every lab has a typed version here. Objectives are met by **evidence**: a command has to produce the output that proves it, so a half-typed command does not count. `/hint` in the terminal gives a three-step ladder, `/reveal` the answer, and working `man` pages plus `guide <topic>` mean you never leave the app to look something up |
+| **Quiz** | Five styles — Recall, Read the output, Safe or not, Order the steps, Build the command — in three modes: 10 questions, a 60-second speed round, or weak spots only |
+| **Review** | Spaced repetition. Every miss becomes a flashcard automatically, graded Again / Hard / Good / Easy. Plus day streak, per-topic mastery bars weakest-first, and your starred items |
 
-Everything is searchable from one box at the top — command names, flags, example text, scenario
-steps, drill answers. Search matches across tabs and tells you where the other hits are.
-
-Topics are tagged: Files & Nav, Text, Search, Permissions, Processes, Disk, Users, Networking,
-SSH & Transfer, Packages, System & systemd, Shell, Cloud / EC2, On-call, Behavioral.
+Everything is searchable from one box at the top, across pages, and it tells you where the other
+hits are.
 
 ## Using it on your phone
 
@@ -66,18 +81,20 @@ phone and there is no account to create.
 ## Layout
 
 ```
-index.html                     # markup + tab shell
+index.html                     # markup + nav shell
 manifest.webmanifest, sw.js    # PWA install + offline cache
 icons/                         # generated app icons
 assets/css/style.css           # mobile-first, dark by default, light theme toggle
 assets/js/app.js               # rendering, search/filter, quiz engine, persistence
-assets/js/shell.js             # the simulated shell: VFS, ~50 commands, parser (no DOM)
+assets/js/shell.js             # the simulated shell: VFS, 70 commands, parser (no DOM)
 assets/js/sandbox.js           # sandbox UI: terminal, objectives, keypad, debrief
 assets/js/playbook.js          # playbook walker: step reveal, branches, expand all
 assets/js/lab.js               # interactive lab engine: terminal, steps, debrief
 assets/js/quiz.js              # five question styles, three modes
 assets/js/review.js            # spaced repetition, flashcards, streak, mastery stats
+tests/                         # validators (node) + Playwright suites; see CONTRIBUTING.md
 assets/js/data/
+  tracks.js                    # the track registry — categories live here, not in app.js
   commands-core.js             # files, text, search, text processing
   commands-system.js           # permissions, processes, disk, users, systemd, logs
   commands-net.js              # networking, SSH/transfer, archives, packages, shell, EC2
@@ -90,11 +107,19 @@ assets/js/data/
   labs.js, labs-more.js        # interactive labs
   missions.js                  # sandbox worlds + objectives
   playbooks.js, playbooks-more.js  # decision trees
+  playbook-outputs.js          # sample output for every playbook step, with highlights
 ```
 
 ## Adding your own material
 
-The data files are plain arrays — no schema tooling, no compile step. Add an entry, reload.
+The data files are plain arrays — no schema tooling, no compile step. Add an entry, reload. Run
+`npm run test:data` before committing: it validates tracks, categories, ids, cross-references and
+output highlights in about two seconds.
+
+Every record may carry `track`. Anything without one is Linux, which is what the whole library
+was before tracks existed. A new track goes in `assets/js/data/tracks.js` **with its own category
+map** — a category that is not registered for its track is a validation failure rather than
+something that silently vanishes from the chip rows.
 
 ```js
 LX.commands.push({
@@ -173,9 +198,14 @@ Every objective carries `hint` (the nudge) and `reveal` (the exact command). The
 derived automatically — it names the commands inside `reveal` and points you at `man <cmd>` — so
 adding an objective gives you the full three-step ladder for free. Add `hint2` to override it.
 
-Objectives are checked against the world, not against strings — any command that genuinely gets
-the disk under 50% counts. `size` without `content` models a huge file (with `fake` sample lines
+Objectives are checked against evidence, not against strings. `did(cmdRe, outRe)` requires that a
+command matching `cmdRe` produced output of its own matching `outRe`, so `systemctl cat` with no
+unit — which prints "Unit .service could not be found" — does not tick "find the heap ceiling",
+while `systemctl cat myapp` and `ps -eo cmd | grep Xmx` both do. State checks against the world
+count too: any command that genuinely gets the disk under 50% passes. `size` without `content` models a huge file (with `fake` sample lines
 for grep/head), and a file listed in a process's `open` array keeps its blocks when unlinked, so
 the deleted-but-held-open trap behaves correctly.
 
-After changing any file, bump `CACHE` in `sw.js` so installed copies pick the update up.
+Adding a data file means adding it to **both** `index.html` and `sw.js`'s `ASSETS` list, then
+bumping `CACHE` in `sw.js` so installed copies pick the update up. `npm run test:data` fails if
+the two lists disagree.

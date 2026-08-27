@@ -2,13 +2,11 @@
 (function () {
   'use strict';
 
-  var CATS = {
-    files:'Files & Nav', text:'Text', search:'Search', perms:'Permissions',
-    procs:'Processes', disk:'Disk', users:'Users', net:'Networking',
-    transfer:'SSH & Transfer', pkg:'Packages', sys:'System & systemd',
-    shell:'Shell', cloud:'Cloud / EC2', ops:'On-call', behavioral:'Behavioral'
-  };
-  var catName = function (c) { return CATS[c] || c; };
+  /* Categories come from the track registry (data/tracks.js), not a literal
+     here — a track can introduce its own without being silently dropped. */
+  var catName = function (c) { return LX.track.catName(c, state ? state.track : null); };
+  var trackCats = function () { return LX.track.cats(state.track); };
+  var inTrack = function (x) { return LX.track.inTrack(x, state.track); };
 
   /* Four bottom tabs; groups with more than one page get a segmented sub-nav. */
   var GROUPS = [
@@ -42,6 +40,7 @@
   };
 
   var state = {
+    track: LS.get('lx.track', 'linux'),
     view: LS.get('lx.view', 'commands'),
     lastInGroup: LS.get('lx.groupview', {}),
     cat: 'all',
@@ -75,7 +74,8 @@
   /* shared with lab.js */
   window.LXUtil = { esc: esc, fmt: fmt, LS: LS, catName: catName,
                     toast: function (m) { toast(m); },
-                    go: function (v) { setView(v); } };
+                    go: function (v) { setView(v); },
+                    track: function () { return state.track; } };
 
   function toast(msg) {
     var el = $('#toast');
@@ -111,6 +111,7 @@
   function filteredCommands() {
     var q = state.q.toLowerCase();
     return LX.commands.filter(function (c) {
+      if (!inTrack(c)) return false;
       if (state.cat !== 'all' && c.cat !== state.cat) return false;
       if (state.level !== 'all' && c.level !== state.level) return false;
       return !q || cmdText(c).indexOf(q) !== -1;
@@ -119,6 +120,7 @@
   function filteredScenarios() {
     var q = state.q.toLowerCase();
     return LX.scenarios.filter(function (s) {
+      if (!inTrack(s)) return false;
       if (state.scenCat !== 'all' && s.cat !== state.scenCat) return false;
       return !q || scenText(s).indexOf(q) !== -1;
     });
@@ -126,6 +128,7 @@
   function filteredDrills() {
     var q = state.q.toLowerCase();
     return LX.drills.filter(function (d) {
+      if (!inTrack(d)) return false;
       if (state.drillCat !== 'all' && d.cat !== state.drillCat) return false;
       return !q || drillText(d).indexOf(q) !== -1;
     });
@@ -226,7 +229,11 @@
   function usedCats(list) {
     var seen = [];
     list.forEach(function (x) { if (seen.indexOf(x.cat) === -1) seen.push(x.cat); });
-    return Object.keys(CATS).filter(function (c) { return seen.indexOf(c) !== -1; });
+    var known = trackCats();
+    var ordered = Object.keys(known).filter(function (c) { return seen.indexOf(c) !== -1; });
+    /* anything a track forgot to register still shows, rather than vanishing */
+    seen.forEach(function (c) { if (c && ordered.indexOf(c) === -1) ordered.push(c); });
+    return ordered;
   }
 
   /* ── Renderers ────────────────────────────────────────────── */
@@ -242,12 +249,13 @@
   }
 
   function renderCommands() {
-    buildChips($('#catChips'), usedCats(LX.commands), state.cat, 'data-cat');
+    buildChips($('#catChips'), usedCats(LX.commands.filter(inTrack)), state.cat, 'data-cat');
     $$('#levelChips .chip').forEach(function (b) {
       b.classList.toggle('active', b.dataset.level === state.level);
     });
     var list = filteredCommands();
-    $('#cmdCount').textContent = list.length + ' of ' + LX.commands.length + ' commands';
+    var pool = LX.commands.filter(inTrack).length;
+    $('#cmdCount').textContent = list.length + ' of ' + pool + ' commands';
     $('#cmdList').innerHTML = list.length ? list.map(commandCard).join('') : otherHits();
   }
   function renderScenarios() {
@@ -255,9 +263,10 @@
     if (window.LXPlaybook) window.LXPlaybook.renderList(state.q);
   }
   function renderDrills() {
-    buildChips($('#drillChips'), usedCats(LX.drills), state.drillCat, 'data-dcat');
+    buildChips($('#drillChips'), usedCats(LX.drills.filter(inTrack)), state.drillCat, 'data-dcat');
     var list = filteredDrills();
-    $('#drillCount').textContent = list.length + ' of ' + LX.drills.length + ' drills';
+    var dpool = LX.drills.filter(inTrack).length;
+    $('#drillCount').textContent = list.length + ' of ' + dpool + ' drills';
     $('#drillList').innerHTML = list.length ? list.map(drillCard).join('') : otherHits();
   }
   function renderSaved() {
@@ -277,6 +286,81 @@
   function renderAll() {
     renderCommands(); renderScenarios(); renderDrills(); renderLabs();
     renderSaved(); renderStats();
+  }
+
+  /* the quiz and seed dropdowns list the active track's categories */
+  function rebuildCatSelects() {
+    var pool = LX.commands.concat(LX.quiz, LX.scenarios, LX.drills).filter(inTrack);
+    var cats = usedCats(pool);
+    ['#quizCat', '#seedCat'].forEach(function (selId) {
+      var el = $(selId);
+      if (!el) return;
+      var keep = el.value;
+      el.innerHTML = '<option value="all">All topics</option>';
+      cats.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = catName(c);
+        el.appendChild(o);
+      });
+      if (keep && el.querySelector('option[value="' + keep + '"]')) el.value = keep;
+    });
+  }
+
+  /* ── Tracks ───────────────────────────────────────────────── */
+  function trackLabel(id) {
+    if (id === 'all') return 'All tracks';
+    var t = LX.track.byId(id);
+    return t ? t.short || t.name : id;
+  }
+
+  function countsFor(id) {
+    function n(arr) {
+      return (arr || []).filter(function (x) { return LX.track.inTrack(x, id); }).length;
+    }
+    return n(LX.commands) + n(LX.playbooks) + n(LX.drills) + n(LX.labs) + n(LX.scenarios);
+  }
+
+  function renderTrackSheet() {
+    var el = $('#trackList');
+    if (!el) return;
+    var rows = LX.tracks.map(function (t) {
+      return { id: t.id, name: t.name, ico: t.ico || '•', blurb: t.blurb || '' };
+    });
+    if (LX.tracks.length > 1) {
+      rows.push({ id: 'all', name: 'All tracks', ico: '∗',
+                  blurb: 'Everything at once — a mixed quiz and one combined review deck.' });
+    }
+    el.innerHTML = rows.map(function (r) {
+      var on = r.id === state.track;
+      return '<button class="track-row' + (on ? ' active' : '') + '" data-track="' + esc(r.id) + '"' +
+        (on ? ' aria-current="true"' : '') + '>' +
+        '<span class="track-ico">' + esc(r.ico) + '</span>' +
+        '<span class="track-main"><span class="track-nm">' + esc(r.name) + '</span>' +
+        (r.blurb ? '<span class="track-blurb">' + esc(r.blurb) + '</span>' : '') + '</span>' +
+        '<span class="track-count">' + countsFor(r.id) + '</span></button>';
+    }).join('');
+  }
+
+  function openTrackSheet(open) {
+    var sheet = $('#trackSheet');
+    if (!sheet) return;
+    if (open) renderTrackSheet();
+    sheet.hidden = !open;
+    $('#trackBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { var f = sheet.querySelector('.track-row'); if (f) f.focus(); }
+    else $('#trackBtn').focus();
+  }
+
+  function setTrack(id) {
+    if (id !== 'all' && !LX.track.byId(id)) id = LX.tracks[0].id;
+    state.track = id;
+    LS.set('lx.track', id);
+    /* category filters belong to the track you left, so reset them */
+    state.cat = 'all'; state.scenCat = 'all'; state.drillCat = 'all';
+    $('#trackName').textContent = trackLabel(id);
+    rebuildCatSelects();
+    renderAll();
+    openTrackSheet(false);
   }
 
   /* ── View switching ───────────────────────────────────────── */
@@ -322,6 +406,13 @@
   /* ── Events ───────────────────────────────────────────────── */
   document.addEventListener('click', function (e) {
     var t = e.target;
+
+    if (t.closest('#trackBtn')) { openTrackSheet($('#trackSheet').hidden); return; }
+    if (t.closest('#trackClose') || t === $('#trackSheet')) { openTrackSheet(false); return; }
+    /* must be .track-row: <html> also carries data-track, so a bare
+       [data-track] selector matches every click in the document */
+    var trow = t.closest('.track-row');
+    if (trow) { setTrack(trow.dataset.track); return; }
 
     var tab = t.closest('.tab');
     if (tab) { setGroup(tab.dataset.group); return; }
@@ -398,16 +489,11 @@
   /* ── Boot ─────────────────────────────────────────────────── */
   document.documentElement.dataset.theme = LS.get('lx.theme', 'dark');
 
-  var cats = usedCats(LX.commands.concat(LX.quiz, LX.scenarios, LX.drills));
-  ['#quizCat', '#seedCat'].forEach(function (selId) {
-    var el = $(selId);
-    if (!el) return;
-    cats.forEach(function (c) {
-      var o = document.createElement('option');
-      o.value = c; o.textContent = catName(c);
-      el.appendChild(o);
-    });
-  });
+  rebuildCatSelects();
+
+  if (state.track !== 'all' && !LX.track.byId(state.track)) state.track = LX.tracks[0].id;
+  $('#trackName').textContent = trackLabel(state.track);
+  $('#trackBtn').hidden = LX.tracks.length < 2;
 
   renderAll();
   setView(state.view);

@@ -67,6 +67,11 @@
   }
 
   /* ── Card builders for each source ────────────────────────── */
+  function track() {
+    return (window.LXUtil && LXUtil.track) ? LXUtil.track() : 'all';
+  }
+  function inTrack(x) { return LX.track.inTrack(x, track()); }
+
   function cardFromCommand(name) {
     var c = LX.commands.filter(function (x) { return x.name === name; })[0];
     if (!c) return false;
@@ -251,8 +256,9 @@
 
     /* labs progress */
     var doneLabs = Object.keys(labs).length;
-    $('#revLabs').textContent = (LX.labs || []).length
-      ? doneLabs + ' of ' + LX.labs.length + ' labs attempted'
+    var labPool = (LX.labs || []).filter(inTrack);
+    $('#revLabs').textContent = labPool.length
+      ? doneLabs + ' of ' + labPool.length + ' labs attempted'
       : '';
 
     /* weak spots */
@@ -269,12 +275,16 @@
   /* ── Seeding ──────────────────────────────────────────────── */
   function seed() {
     var cat = $('#seedCat').value;
-    var pool = LX.commands.filter(function (c) { return cat === 'all' || c.cat === cat; });
+    var pool = LX.commands.filter(function (c) {
+      return inTrack(c) && (cat === 'all' || c.cat === cat);
+    });
     var added = 0;
     for (var i = 0; i < pool.length && added < 15; i++) {
       if (cardFromCommand(pool[i].name)) added++;
     }
-    var drills = LX.drills.filter(function (d) { return cat === 'all' || d.cat === cat; });
+    var drills = LX.drills.filter(function (d) {
+      return inTrack(d) && (cat === 'all' || d.cat === cat);
+    });
     for (var j = 0; j < drills.length && added < 20; j++) {
       if (cardFromDrill(drills[j].q)) added++;
     }

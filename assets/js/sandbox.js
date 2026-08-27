@@ -41,7 +41,9 @@
     if (!el) return;
     var esc = U().esc, done = progress();
     var query = (q || '').toLowerCase();
+    var tr = (U() && U().track) ? U().track() : 'all';
     var list = (LX.missions || []).filter(function (m) {
+      if (!LX.track.inTrack(m, tr)) return false;
       return !query || (m.title + ' ' + m.brief + ' ' + m.cat).toLowerCase().indexOf(query) !== -1;
     });
     if (!list.length) { el.innerHTML = '<p class="empty">No mission matches that search.</p>'; return; }

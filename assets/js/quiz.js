@@ -20,8 +20,13 @@
     return a;
   }
   function pick(arr, n) { return shuffle(arr.slice()).slice(0, n); }
+  function track() {
+    return (window.LXUtil && LXUtil.track) ? LXUtil.track() : 'all';
+  }
+  /* every generator funnels through here, so one clause scopes all five styles */
   function inScope(x, cat, level) {
-    return (cat === 'all' || x.cat === cat) && (level === 'all' || x.level === level);
+    return LX.track.inTrack(x, track()) &&
+      (cat === 'all' || x.cat === cat) && (level === 'all' || x.level === level);
   }
 
   /* ── Question generators ──────────────────────────────────── */

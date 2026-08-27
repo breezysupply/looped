@@ -45,7 +45,9 @@
     if (!el) return;
     var esc = U().esc, done = progress();
     var query = (q || '').toLowerCase();
+    var tr = (U() && U().track) ? U().track() : 'all';
     var list = all().filter(function (p) {
+      if (!LX.track.inTrack(p, tr)) return false;
       if (filter !== 'all' && p.kind !== filter) return false;
       return !query || pbText(p).indexOf(query) !== -1;
     });

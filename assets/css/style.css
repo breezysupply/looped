@@ -269,6 +269,55 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
 .review-item .rq { font-weight: 600; margin-bottom: 4px; }
 .review-item .ra { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
 
+/* ── Track pill + picker sheet ───────────────────────────────
+   Track is orthogonal to the Learn/Practice/Quiz/Review nav, so it lives in
+   the topbar rather than becoming a third level of tabs. */
+.track-pill {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: auto; margin-right: 8px;
+  padding: 5px 10px; min-height: 32px;
+  background: var(--bg-elev-2); color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: 999px;
+  font-size: 12.5px; font-weight: 650; cursor: pointer;
+  max-width: 45vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.track-caret { color: var(--muted); font-size: 10px; }
+
+.sheet {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0, 0, 0, .55);
+}
+.sheet-panel {
+  width: 100%; max-width: 560px;
+  max-height: 80vh; overflow-y: auto;
+  padding: 16px 14px calc(16px + var(--safe-b));
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+}
+.sheet-title {
+  margin: 0 0 10px; font-size: 11px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); font-weight: 650;
+}
+.track-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.track-row {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  padding: 12px; min-height: var(--tap);
+  background: var(--bg-elev-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px;
+  text-align: left; cursor: pointer;
+}
+.track-row.active { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.track-ico { flex: 0 0 auto; font-family: var(--mono); color: var(--accent); font-size: 14px; }
+.track-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.track-nm { font-size: 14.5px; font-weight: 650; }
+.track-row.active .track-nm { color: var(--accent); }
+.track-blurb { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.track-count {
+  flex: 0 0 auto; font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+
 /* ── Section sub-nav ────────────────────────────────────────── */
 .subnav {
   /* deliberately not sticky: .topbar already owns top:0, and two stacked

@@ -34,7 +34,10 @@
     if (!el) return;
     var esc = U().esc;
     var query = (q || '').toLowerCase();
-    var labs = LX.labs.filter(function (l) { return !query || labText(l).indexOf(query) !== -1; });
+    var tr = (U() && U().track) ? U().track() : 'all';
+    var labs = LX.labs.filter(function (l) {
+      return LX.track.inTrack(l, tr) && (!query || labText(l).indexOf(query) !== -1);
+    });
 
     if (!labs.length) { el.innerHTML = '<p class="empty">No lab matches that search.</p>'; return; }
 
