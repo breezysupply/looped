@@ -100,19 +100,23 @@ Object.keys(D.pbOut || {}).forEach(function (id) {
   }
 });
 
-/* ── every content file is both loaded and cached ───────────────────── */
+/* ── every script is cached, whether eager or lazily loaded ─────────── */
 const fs = require('fs');
-const html = fs.readFileSync(H.repoFile('index.html'), 'utf8');
 const sw = fs.readFileSync(H.repoFile('sw.js'), 'utf8');
-const inHtml = [...html.matchAll(/src="(assets\/js\/[^"]+)"/g)].map(m => m[1]);
+const runnable = H.allScripts();          /* eager tags + every track's files */
 const inSw = [...sw.matchAll(/'\.\/(assets\/js\/[^']+)'/g)].map(m => m[1]);
-inHtml.forEach(function (f) {
-  if (inSw.indexOf(f) === -1) fail('offline: ' + f + ' is loaded but not in sw.js ASSETS');
+runnable.forEach(function (f) {
+  if (inSw.indexOf(f) === -1) fail('offline: ' + f + ' can be loaded but is not in sw.js ASSETS');
   if (!fs.existsSync(H.repoFile(f))) fail('offline: ' + f + ' does not exist');
 });
 inSw.forEach(function (f) {
-  if (inHtml.indexOf(f) === -1) fail('offline: ' + f + ' is cached but never loaded');
+  if (runnable.indexOf(f) === -1) fail('offline: ' + f + ' is cached but no track loads it');
 });
+
+/* A shrunken library that still validates is the failure mode of lazy loading,
+   so assert the totals rather than trusting a green run. */
+const seen = Object.keys(POOLS).reduce(function (n, k) { return n + (POOLS[k] || []).length; }, 0);
+if (seen < 400) fail('only ' + seen + ' records loaded — a track is probably not being read');
 
 /* ── report ─────────────────────────────────────────────────────────── */
 const counts = Object.keys(POOLS).map(function (k) {

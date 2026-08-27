@@ -11,6 +11,13 @@ const { chromium } = require('playwright');
 
   await page.goto(H.URL, { waitUntil: 'networkidle' });
 
+  /* Labs belong to tracks and every track but the default loads lazily, so a
+     plain load sees only the Linux labs. Select All tracks and reload, and this
+     suite covers the whole library instead of a shrinking fraction of it. */
+  await page.evaluate(() => localStorage.setItem('lx.track', '"all"'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => LX.track.isLoaded('all'));
+
   // lab data sanity
   const info = await page.evaluate(() => {
     const problems = [];

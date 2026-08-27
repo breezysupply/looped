@@ -430,6 +430,11 @@ mark { background: var(--accent-dim); color: var(--accent); padding: 0 2px; bord
   resize: vertical;
 }
 
+/* while a track's content is being fetched — brief, and only on first switch */
+.loading-track .list,
+.loading-track .count { opacity: .4; transition: opacity .15s; }
+.loading-track .track-pill { opacity: .6; }
+
 .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
 
 @media (min-width: 640px) {

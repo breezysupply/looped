@@ -57,10 +57,42 @@ function loadContent(extra) {
   return global.LX;
 }
 
-/* The load order index.html uses. Read from index.html so the two cannot drift. */
+/* Every content file, in load order: the eager tags in index.html first, then
+   each track's own files from the registry. Scraping index.html alone would now
+   miss every lazy track and the validators would pass on a fraction of the
+   library without saying so. */
 function order() {
   const html = fs.readFileSync(repoFile('index.html'), 'utf8');
-  return [...html.matchAll(/src="assets\/js\/data\/([^"]+)"/g)].map(m => m[1]);
+  const eager = [...html.matchAll(/src="assets\/js\/(data\/[^"]+)"/g)].map(m => m[1]);
+  const out = eager.slice();
+  trackRegistry().forEach(function (t) {
+    (t.files || []).forEach(function (f) {
+      const rel = f.replace(/^assets\/js\//, '');
+      if (rel.indexOf('data/') === 0 && out.indexOf(rel) === -1) out.push(rel);
+    });
+  });
+  return out.map(f => f.replace(/^data\//, ''));
+}
+
+/* Read data/tracks.js without a DOM — the same trick tools/build.js uses. */
+function trackRegistry() {
+  const vm = require('vm');
+  const sandbox = {};
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(repoFile('assets/js/data/tracks.js'), 'utf8'), sandbox);
+  return sandbox.LX.tracks;
+}
+
+/* Everything a browser would ever execute, eager or lazy. */
+function allScripts() {
+  const html = fs.readFileSync(repoFile('index.html'), 'utf8');
+  const eager = [...html.matchAll(/src="(assets\/js\/[^"]+)"/g)].map(m => m[1]);
+  const out = eager.slice();
+  trackRegistry().forEach(function (t) {
+    (t.files || []).forEach(function (f) { if (out.indexOf(f) === -1) out.push(f); });
+  });
+  return out;
 }
 
 /* The four bottom tabs group several views each; tests address views by name. */
@@ -82,4 +114,4 @@ function overflow(page) {
 }
 
 module.exports = { ROOT, ARTIFACTS, PORT, URL, launchOptions, repoFile, shot,
-                   loadContent, order, go, overflow, GROUP_OF };
+                   loadContent, order, allScripts, trackRegistry, go, overflow, GROUP_OF };

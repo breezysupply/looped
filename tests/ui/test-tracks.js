@@ -12,6 +12,27 @@ const { chromium } = require('playwright');
   await p.evaluate(() => localStorage.clear());
   await p.reload({ waitUntil: 'networkidle' });
 
+  /* ── lazy loading ────────────────────────────────────────────────────
+     The default track is the only one in the document. A non-default track's
+     files must be absent until it is chosen, and its content genuinely absent
+     from the pools — a shrunken library that still renders is the failure mode
+     this whole phase risks. */
+  const srcs = () => p.evaluate(() =>
+    Array.from(document.scripts).map(s => (s.getAttribute('src') || '')).filter(Boolean));
+  const trackFiles = (id) => p.evaluate(t => LX.track.files(t), id);
+
+  const cnFiles = await trackFiles('containers');
+  const atBoot = await srcs();
+  console.log('containers files in registry:', cnFiles.length);
+  console.log('  none of them in the initial document:',
+    cnFiles.every(f => atBoot.indexOf(f) === -1));
+  console.log('  containers content absent from LX.commands:', await p.evaluate(() =>
+    LX.commands.filter(c => c.track === 'containers').length === 0));
+  console.log('  kubectl not registered in the shell:', await p.evaluate(() =>
+    !LXShell.registered('kubectl')));
+  console.log('  linux loaded, containers not:', await p.evaluate(() =>
+    LX.track.isLoaded('linux') && !LX.track.isLoaded('containers')));
+
   console.log('registry:', await p.evaluate(() => LX.tracks.map(t => t.id).join(', ')));
   console.log('default track pill:', await p.locator('#trackName').textContent());
   console.log('pill shown (more than one track):', await p.locator('#trackBtn').isVisible());
@@ -32,8 +53,17 @@ const { chromium } = require('playwright');
 
   // switching to an empty track must empty every list, not error
   await p.click('.track-row[data-track="containers"]');
-  await p.waitForTimeout(200);
+  await p.waitForTimeout(400);
   console.log('\nswitched to containers — pill:', await p.locator('#trackName').textContent());
+  const afterSwitch = await srcs();
+  const added = afterSwitch.filter(f => atBoot.indexOf(f) === -1);
+  console.log('  scripts injected:', added.length,
+    '| exactly the containers files:',
+    added.length === cnFiles.length && cnFiles.every(f => added.indexOf(f) !== -1));
+  console.log('  content arrived:', await p.evaluate(() =>
+    LX.commands.filter(c => c.track === 'containers').length));
+  console.log('  shell verbs arrived:', await p.evaluate(() =>
+    ['kubectl', 'docker', 'crictl'].every(v => LXShell.registered(v))));
   console.log('  sheet closed:', await p.locator('#trackSheet').isHidden());
   await H.go(p, 'commands');
   console.log('  commands:', await p.locator('#cmdCount').textContent(),
@@ -63,7 +93,9 @@ const { chromium } = require('playwright');
   // and back
   await p.click('#trackBtn');
   await p.click('.track-row[data-track="linux"]');
-  await p.waitForTimeout(200);
+  await p.waitForTimeout(300);
+  console.log('\nno re-injection on the way back:',
+    (await srcs()).length === afterSwitch.length);
   await H.go(p, 'commands');
   const back = await p.locator('#cmdCount').textContent();
   console.log('\nback on linux —', back, '| chips:', await p.locator('#catChips .chip').count());
@@ -88,5 +120,27 @@ const { chromium } = require('playwright');
   console.log('  all tracks:', await p.locator('#cmdCount').textContent());
 
   console.log('\nERRORS:', errs.length ? errs : 'none');
+
+  /* index.html no longer references the lazy files, so nothing but sw.js
+     ASSETS puts them in the cache. Prove it: a fresh profile that has only
+     ever seen the linux track, then offline, then a track it never opened. */
+  const off = await b.newContext({ viewport: { width: 390, height: 844 } });
+  const q = await off.newPage();
+  const offErrs = []; q.on('pageerror', e => offErrs.push(e.message));
+  await q.goto(H.URL, { waitUntil: 'networkidle' });
+  await q.evaluate(() => navigator.serviceWorker.ready);
+  await q.waitForTimeout(600);                 /* addAll finishes after ready */
+  await q.reload({ waitUntil: 'networkidle' });
+  await off.setOffline(true);
+  await q.click('#trackBtn');
+  await q.click('.track-row[data-track="containers"]');
+  await q.waitForTimeout(800);
+  await H.go(q, 'commands');
+  console.log('\noffline, track never opened before —',
+    await q.locator('#cmdCount').textContent(),
+    '| cards:', await q.locator('#cmdList .card').count());
+  console.log('  errors:', offErrs.length ? offErrs : 'none');
+  await off.setOffline(false);
+
   await b.close();
 })();

@@ -336,9 +336,16 @@
     return t ? t.short || t.name : id;
   }
 
+  /* A track that has not been loaded yet has no records in the pools, so a live
+     count would read 0 for exactly the tracks the picker is asking you to choose
+     between. Fall back to the tally tools/build.js generates into the registry. */
   function countsFor(id) {
+    if (id === 'all') {
+      return LX.track.ids().reduce(function (a, t) { return a + countsFor(t); }, 0);
+    }
+    if (!LX.track.isLoaded(id)) return (LX.trackCounts || {})[id] || 0;
     function n(arr) {
-      return (arr || []).filter(function (x) { return LX.track.inTrack(x, id); }).length;
+      return (arr || []).filter(function (x) { return LX.track.of(x) === id; }).length;
     }
     return n(LX.commands) + n(LX.playbooks) + n(LX.drills) + n(LX.labs) + n(LX.scenarios);
   }
@@ -381,9 +388,17 @@
     /* category filters belong to the track you left, so reset them */
     state.cat = 'all'; state.scenCat = 'all'; state.drillCat = 'all';
     $('#trackName').textContent = trackLabel(id);
-    rebuildCatSelects();
-    renderAll();
     openTrackSheet(false);
+
+    /* Only the default track ships in index.html; the rest arrive on first
+       switch. Already loaded is the common case and stays synchronous. */
+    if (LX.track.isLoaded(id)) { rebuildCatSelects(); renderAll(); return; }
+    document.body.classList.add('loading-track');
+    LX.track.load(id, function () {
+      document.body.classList.remove('loading-track');
+      rebuildCatSelects();
+      renderAll();
+    });
   }
 
   /* ── View switching ───────────────────────────────────────── */
@@ -587,14 +602,26 @@
   /* ── Boot ─────────────────────────────────────────────────── */
   document.documentElement.dataset.theme = LS.get('lx.theme', 'dark');
 
-  rebuildCatSelects();
-
   if (state.track !== 'all' && !LX.track.byId(state.track)) state.track = LX.tracks[0].id;
   $('#trackName').textContent = trackLabel(state.track);
   $('#trackBtn').hidden = LX.tracks.length < 2;
 
-  renderAll();
+  /* The default track is already here from index.html. Any other saved track
+     has to arrive before the first render, or the app opens empty. */
+  LX.tracks.forEach(function (t) { if (t['default']) LX.track.loaded[t.id] = true; });
   setView(state.view);
+  if (LX.track.isLoaded(state.track)) {
+    rebuildCatSelects();
+    renderAll();
+  } else {
+    document.body.classList.add('loading-track');
+    renderAll();                       /* paint the shell so it is not blank */
+    LX.track.load(state.track, function () {
+      document.body.classList.remove('loading-track');
+      rebuildCatSelects();
+      renderAll();
+    });
+  }
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
