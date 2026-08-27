@@ -15,7 +15,7 @@ an HTTP origin.
 ## Running the tests
 
 ```sh
-npm install               # playwright, for the UI suites only
+npm ci                    # playwright, for the UI suites only — installs from the lockfile
 npx playwright install chromium
 npm test                  # everything
 npm run test:data         # validators only: no browser, no server, ~2s
@@ -35,7 +35,12 @@ and they are the ones that matter most when writing content:
 and navigation flows, each asserting zero horizontal overflow at 390 px — the phone-layout
 regression that keeps recurring.
 
-Set `LX_CHROMIUM=/path/to/chrome` if Playwright cannot find a browser.
+Set `LX_CHROMIUM=/path/to/chrome` if Playwright cannot find a browser; the helper also probes
+`PLAYWRIGHT_BROWSERS_PATH` for a chromium build, which covers environments with one preinstalled
+at a different version.
+
+`package-lock.json` is committed and CI runs `npm ci` against it, so the Playwright version that
+runs there is the one that ran here. Node 20 or newer — Playwright requires it.
 
 ## Writing content
 

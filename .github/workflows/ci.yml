@@ -7,12 +7,14 @@ on:
 
 jobs:
   data:
-    # Validators only — no browser, no server. Fast enough to gate everything else.
+    # Validators only — no browser, no server, no dependencies. A couple of
+    # seconds, and it gates the expensive job below.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
       - run: node tools/build.js --check
       - run: node tests/run.js data
 
@@ -20,13 +22,15 @@ jobs:
     needs: data
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm install --no-audit --no-fund
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: node tests/run.js ui
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: screenshots
