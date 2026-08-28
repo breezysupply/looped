@@ -74,6 +74,23 @@ LX.tracks = [
       kms: 'KMS & Secrets', s3: 'S3', rds: 'RDS', obs: 'CloudTrail & Observability',
       org: 'Organizations & Control Tower', dr: 'Backup & DR', cost: 'Cost & Quotas'
     }
+  },
+  {
+    id: 'entra', name: 'Identity & M365', short: 'Identity', ico: '⬡',
+    blurb: 'Entra ID, Conditional Access and the Microsoft 365 control plane — past the portal, through Graph.',
+    files: [
+      'assets/js/data/entra-graph.js', 'assets/js/data/entra-identity.js',
+      'assets/js/data/entra-access.js', 'assets/js/data/entra-m365.js',
+      'assets/js/data/entra-playbooks.js', 'assets/js/data/entra-outputs.js',
+      'assets/js/data/entra-drills.js', 'assets/js/data/entra-labs.js'
+    ],
+    cats: {
+      graph: 'Graph & PowerShell', entra: 'Directory & Objects', ca: 'Conditional Access',
+      mfa: 'Authentication & MFA', rbac: 'Roles & PIM', hybrid: 'Hybrid Identity',
+      apps: 'Apps & Service Principals', fed: 'SAML, OIDC & SCIM',
+      lifecycle: 'Joiner, Mover, Leaver', intune: 'Intune & Devices',
+      exo: 'Exchange Online', purview: 'Purview & DLP', lic: 'Licensing'
+    }
   }
 ];
 
@@ -179,6 +196,7 @@ LX.track = {
 LX.trackCounts = {
   linux: 239,
   containers: 79,
-  aws: 83
+  aws: 83,
+  entra: 64
 };
 /* /generated */

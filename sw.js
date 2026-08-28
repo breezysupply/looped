@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-58116c67';
+var CACHE = 'looped-b9d42f01';
 var ASSETS = [
   './',
   './index.html',
@@ -49,7 +49,15 @@ var ASSETS = [
   './assets/js/data/aws-playbooks.js',
   './assets/js/data/aws-outputs.js',
   './assets/js/data/aws-drills.js',
-  './assets/js/data/aws-labs.js'
+  './assets/js/data/aws-labs.js',
+  './assets/js/data/entra-graph.js',
+  './assets/js/data/entra-identity.js',
+  './assets/js/data/entra-access.js',
+  './assets/js/data/entra-m365.js',
+  './assets/js/data/entra-playbooks.js',
+  './assets/js/data/entra-outputs.js',
+  './assets/js/data/entra-drills.js',
+  './assets/js/data/entra-labs.js'
 ];
 
 self.addEventListener('install', function (e) {

@@ -87,11 +87,18 @@ digit in a `top` header. `check-marks.js` enforces this; run it before committin
    `LXShell.util` hands over the helpers a command needs to behave like a built-in.
 4. `npm run build`, then `npm test`.
 
-Two worked examples now exist, and they are deliberately different shapes. The **containers**
-track has a simulated cluster, so it ships typed sandbox missions; the **aws** track has no
-simulator, so it teaches through sample output on every playbook step, read-the-output quiz items
-and multiple-choice labs. A domain without a simulator is not a lesser track — `LX.pbOut` is what
-stops a reader leaving the app to check what a command prints.
+Worked examples now exist in two deliberately different shapes. The **containers** track has a
+simulated cluster, so it ships typed sandbox missions; **aws** and **entra** have no simulator, so
+they teach through sample output on every playbook step, read-the-output quiz items and
+multiple-choice labs. A domain without a simulator is not a lesser track — `LX.pbOut` is what stops
+a reader leaving the app to check what a command prints.
+
+One thing to watch when adding a track: Flow mode resolves each playbook step to a library entry by
+matching the longest command-name prefix. A step whose command has no entry renders with no callout
+at all, which is the whole feature missing rather than a cosmetic gap. `test-flow.js` reports the
+match ratio per track and fails if a track resolves nothing; if a command is important enough to be
+a playbook step, it is important enough to be a `LX.commands` entry rather than a flag on a
+neighbouring one.
 
 The containers track is the worked example for simulation: `containers-*.js` for content,
 `shell-containers.js` for `kubectl`/`docker`/`crictl` against a simulated cluster, and
