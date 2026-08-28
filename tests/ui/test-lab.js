@@ -105,17 +105,25 @@ const { chromium } = require('playwright');
   // other tabs still fine
   await H.go(page, 'quiz');
   await page.click('#quizStartBtn');
-  /* On the rare miss, say why: start() bails with a toast when the pool is
-     empty, and a bare 30s selector timeout tells you nothing about which. */
-  const started = await page.waitForSelector('#quizStage .choice', { timeout: 15000 })
+  /* Wait for either rendering: most styles produce .choice buttons, but "build
+     the command" produces .token ones. Asserting on .choice alone failed
+     whenever the shuffle happened to put a build question first, which looked
+     like flakiness and was really the test knowing about one of two valid
+     shapes. On a genuine miss, say why: start() bails with a toast when the
+     pool is empty, and a bare selector timeout tells you nothing about which. */
+  const started = await page.waitForSelector('#quizStage .choice, #quizStage .token', { timeout: 15000 })
     .then(() => true).catch(() => false);
-  if (started) console.log('quiz still works: yes');
-  else {
+  if (started) {
+    const kind = await page.evaluate(() =>
+      document.querySelector('#quizStage .token') ? 'build' : 'choice');
+    console.log('quiz still works: yes | first question renders as:', kind);
+  } else {
     console.log('FAIL quiz produced no questions —',
       'panel hidden:', await page.locator('#quizStart').isHidden(),
       '| toast:', JSON.stringify(await page.locator('#toast').textContent().catch(() => '')),
       '| track:', await page.evaluate(() => LXUtil.track()),
-      '| cat/level:', await page.inputValue('#quizCat'), await page.inputValue('#quizLevel'));
+      '| cat/level:', await page.inputValue('#quizCat'), await page.inputValue('#quizLevel'),
+      '| stage:', JSON.stringify((await page.locator('#quizStage').innerHTML().catch(() => '')).slice(0, 200)));
   }
 
   const overflow = await page.evaluate(() =>

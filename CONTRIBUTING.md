@@ -93,7 +93,12 @@ they teach through sample output on every playbook step, read-the-output quiz it
 multiple-choice labs. A domain without a simulator is not a lesser track — `LX.pbOut` is what stops
 a reader leaving the app to check what a command prints.
 
-One thing to watch when adding a track: Flow mode resolves each playbook step to a library entry by
+Two things to watch when adding a track. Quiz styles do not all render the same way — most produce
+`.choice` buttons and "build the command" produces `.token` ones — so any assertion about a
+question having appeared must accept both. Asserting on one shape looks like flakiness and is
+really the test knowing about half the app.
+
+And Flow mode resolves each playbook step to a library entry by
 matching the longest command-name prefix. A step whose command has no entry renders with no callout
 at all, which is the whole feature missing rather than a cosmetic gap. `test-flow.js` reports the
 match ratio per track and fails if a track resolves nothing; if a command is important enough to be

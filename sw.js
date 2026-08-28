@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-b9d42f01';
+var CACHE = 'looped-7def1d0f';
 var ASSETS = [
   './',
   './index.html',
@@ -57,7 +57,15 @@ var ASSETS = [
   './assets/js/data/entra-playbooks.js',
   './assets/js/data/entra-outputs.js',
   './assets/js/data/entra-drills.js',
-  './assets/js/data/entra-labs.js'
+  './assets/js/data/entra-labs.js',
+  './assets/js/data/iac-core.js',
+  './assets/js/data/iac-state.js',
+  './assets/js/data/iac-modules.js',
+  './assets/js/data/iac-ops.js',
+  './assets/js/data/iac-playbooks.js',
+  './assets/js/data/iac-outputs.js',
+  './assets/js/data/iac-drills.js',
+  './assets/js/data/iac-labs.js'
 ];
 
 self.addEventListener('install', function (e) {

@@ -91,6 +91,22 @@ LX.tracks = [
       lifecycle: 'Joiner, Mover, Leaver', intune: 'Intune & Devices',
       exo: 'Exchange Online', purview: 'Purview & DLP', lic: 'Licensing'
     }
+  },
+  {
+    id: 'iac', name: 'Terraform & IaC', short: 'Terraform', ico: '◈',
+    blurb: 'Plan, state and drift — the difference between running apply and being trusted with the state file.',
+    files: [
+      'assets/js/data/iac-core.js', 'assets/js/data/iac-state.js',
+      'assets/js/data/iac-modules.js', 'assets/js/data/iac-ops.js',
+      'assets/js/data/iac-playbooks.js', 'assets/js/data/iac-outputs.js',
+      'assets/js/data/iac-drills.js', 'assets/js/data/iac-labs.js'
+    ],
+    cats: {
+      core: 'Init, Plan & Apply', state: 'State & Backends', modules: 'Modules',
+      vars: 'Variables & Outputs', drift: 'Drift & Refresh', 'import': 'Import & Moved',
+      workspace: 'Workspaces & Environments', providers: 'Providers & Versions',
+      policy: 'Policy as Code', ci: 'CI/CD', secrets: 'Secrets', test: 'Testing & Review'
+    }
   }
 ];
 
@@ -197,6 +213,7 @@ LX.trackCounts = {
   linux: 239,
   containers: 79,
   aws: 83,
-  entra: 64
+  entra: 64,
+  iac: 69
 };
 /* /generated */
