@@ -1,0 +1,30 @@
+{
+  "bundle": "inventory-sync",
+  "version": "2.4.0",
+  "files": [
+    {
+      "path": "README.txt",
+      "sha256": "5f5c0ed26ae746df53fec7e4e0fddb182916ee497d8a0e515d4053ee997c4b94"
+    },
+    {
+      "path": "bin/app",
+      "sha256": "1F039B164043DB47DBB667FC86F45F99334D0990888A7A1BD22988B7A9A84FC4",
+      "size": 239
+    },
+    {
+      "path": "bin/healthcheck.sh",
+      "sha256": "df7541ac3112a7aa379d51c748a82c79621698dcba40acbdaa09142d378a1377",
+      "size": 157
+    },
+    {
+      "path": "config/app.yaml",
+      "sha256": "cf6cfd9af0628e5cd5fc119f69a83fe47cc6e4ec7f9d3bbdf39f77642cea9716",
+      "size": 130
+    },
+    {
+      "path": "data/.keep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    }
+  ]
+}

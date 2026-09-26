@@ -107,6 +107,33 @@ LX.tracks = [
       workspace: 'Workspaces & Environments', providers: 'Providers & Versions',
       policy: 'Policy as Code', ci: 'CI/CD', secrets: 'Secrets', test: 'Testing & Review'
     }
+  },
+  {
+    id: 'onsite', name: 'Gallatin Onsite', short: 'Onsite', ico: '◎',
+    blurb: 'Final-onsite preparation: Kubernetes fundamentals and troubleshooting first, then networking, storage, identity, delivery, design and your own experience. The agenda is unknown — nothing here is an actual interview question.',
+    /* The incident labs run on a reconciling cluster model (k8s-model.js) that
+       the existing kubectl delegates to, so shell-containers.js comes too.
+       onsite-drills.js must follow the question files: it maps them into
+       LX.drills so Drills, stars and review work unchanged. */
+    files: [
+      'assets/js/k8s-model.js', 'assets/js/k8s-kubectl.js', 'assets/js/shell-containers.js',
+      'assets/js/data/onsite-lessons.js',
+      'assets/js/data/onsite-q-arch.js', 'assets/js/data/onsite-q-net.js',
+      'assets/js/data/onsite-q-trouble.js', 'assets/js/data/onsite-q-config.js',
+      'assets/js/data/onsite-q-delivery.js', 'assets/js/data/onsite-q-design.js',
+      'assets/js/data/onsite-q-behavior.js', 'assets/js/data/onsite-drills.js',
+      'assets/js/data/onsite-quiz.js',
+      'assets/js/data/onsite-labs.js', 'assets/js/data/onsite-design.js',
+      'assets/js/data/onsite-scripting.js', 'assets/js/data/onsite-reallabs.js',
+      'assets/js/data/onsite-stories.js', 'assets/js/data/onsite-path.js',
+      'assets/js/data/onsite-mock.js'
+    ],
+    cats: {
+      arch: 'Architecture & Workloads', net: 'Networking & Service Discovery',
+      trouble: 'Troubleshooting & Scheduling', config: 'Identity, Config & Storage',
+      delivery: 'Delivery & Disconnected', design: 'Design & Automation',
+      behavior: 'Behavioral', lab: 'Incident Labs'
+    }
   }
 ];
 

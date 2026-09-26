@@ -1,0 +1,301 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "ledger-7d8f6b5c9-fn4ks",
+        "namespace": "payments",
+        "uid": "cea9a129-6cf6-7859-fbeb-f8d849b6fc19",
+        "resourceVersion": "143841",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "ledger",
+          "pod-template-hash": "7d8f6b5c9"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "ledger-7d8f6b5c9",
+            "uid": "ee24e04f-31ea-1356-5f21-8e9a0c29c8bb",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "ledger-7d8f6b5c9-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "ledger",
+            "image": "registry.internal/payments/ledger:2.4.0-rc1",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "256Mi"
+              },
+              "limits": {
+                "memory": "256Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Pending",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [ledger]"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [ledger]"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.4.40",
+        "podIPs": [
+          {
+            "ip": "10.0.4.40"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "ledger",
+            "image": "registry.internal/payments/ledger:2.4.0-rc1",
+            "imageID": "",
+            "ready": false,
+            "restartCount": 0,
+            "started": false,
+            "state": {
+              "waiting": {
+                "reason": "ImagePullBackOff",
+                "message": "Back-off pulling image \"registry.internal/payments/ledger:2.4.0-rc1\""
+              }
+            },
+            "lastState": {}
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "ledger-7d8f6b5c9-zr7tx",
+        "namespace": "payments",
+        "uid": "478c0686-7a0f-024f-683e-35a70d426b66",
+        "resourceVersion": "288902",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "ledger",
+          "pod-template-hash": "7d8f6b5c9"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "ledger-7d8f6b5c9",
+            "uid": "ee24e04f-31ea-1356-5f21-8e9a0c29c8bb",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "ledger-7d8f6b5c9-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "ledger",
+            "image": "registry.internal/payments/ledger:2.4.0-rc1",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "256Mi"
+              },
+              "limits": {
+                "memory": "256Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Pending",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [ledger]"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [ledger]"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.4.41",
+        "podIPs": [
+          {
+            "ip": "10.0.4.41"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "ledger",
+            "image": "registry.internal/payments/ledger:2.4.0-rc1",
+            "imageID": "",
+            "ready": false,
+            "restartCount": 0,
+            "started": false,
+            "state": {
+              "waiting": {
+                "reason": "ErrImagePull",
+                "message": "failed to pull and unpack image \"registry.internal/payments/ledger:2.4.0-rc1\": failed to resolve reference \"registry.internal/payments/ledger:2.4.0-rc1\": registry.internal/payments/ledger:2.4.0-rc1: not found"
+              }
+            },
+            "lastState": {}
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

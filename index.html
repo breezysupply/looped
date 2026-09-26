@@ -43,6 +43,9 @@
 
 <main id="main">
 
+  <!-- ── Prep (onsite track only; rendered by onsite.js) ─────── -->
+  <section id="view-prep" role="tabpanel" tabindex="-1" class="view" aria-label="Prep"></section>
+
   <!-- ── Commands ─────────────────────────────────────────── -->
   <section id="view-commands" role="tabpanel" tabindex="-1" class="view active" aria-label="Commands">
     <div class="filters">
@@ -161,6 +164,18 @@
     <p class="blurb" id="sbIntro">A simulated box you type into for real. Commands actually run against a virtual filesystem — truncate a log and <code>df</code> really drops. Every lab has a version here where you type the commands yourself. Stuck? Type <code>/hint</code> in the terminal.</p>
     <div id="sbList" class="list"></div>
 
+    <div id="sbModePick" class="quiz-panel" hidden>
+      <p class="sim-banner" role="note"><b>Simulation</b> — a modelled cluster with a bounded kubectl command set. Nothing here touches a real cluster.</p>
+      <h2 id="sbModeTitle"></h2>
+      <p class="muted" id="sbModeText">Choose how to run this lab.</p>
+      <div class="mode-choices">
+        <button class="btn primary mode-btn" data-sb-mode="guided"><b>Guided</b><span>Named ticket, visible objectives, scenario commands, hints labelled conceptual → diagnostic → explicit.</span></button>
+        <button class="btn mode-btn" data-sb-mode="independent"><b>Independent</b><span>Neutral ticket, objectives hidden until met, generic commands only. Counts as unaided only if you use no hints.</span></button>
+      </div>
+      <p class="muted small" id="sbModeHistory"></p>
+      <button id="sbModeBack" class="btn ghost small">Back to missions</button>
+    </div>
+
     <div id="sbRun" hidden>
       <div class="lab-head">
         <div>
@@ -171,10 +186,16 @@
         <button id="sbExit" class="btn ghost small">Exit</button>
       </div>
       <div class="progress"><div id="sbBar" class="progress-fill"></div></div>
+      <p id="sbSimBanner" class="sim-banner" role="note" hidden><b>Simulation</b> · bounded command set · <span id="sbModeLabel"></span></p>
 
       <details id="sbBriefWrap" class="brief-wrap">
         <summary>Situation</summary>
         <p id="sbBrief" class="situation"></p>
+      </details>
+
+      <details id="sbSimWrap" class="brief-wrap" hidden>
+        <summary>What is simplified</summary>
+        <div id="sbSim" class="sim-notes"></div>
       </details>
 
       <details id="sbObjWrap" class="brief-wrap">

@@ -1,0 +1,341 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "worker-84c6d9f7b5-vx5qp",
+        "namespace": "batch",
+        "uid": "9e9b13f6-439a-6c6d-462b-63fb3507d971",
+        "resourceVersion": "594387",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "worker",
+          "pod-template-hash": "84c6d9f7b5"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "worker-84c6d9f7b5",
+            "uid": "004c935d-743f-0e9e-d7df-68c777ad0654",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "worker-84c6d9f7b5-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "worker",
+            "image": "registry.internal/batch/worker:4.0.0",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "512Mi"
+              },
+              "limits": {
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ],
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/live",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [worker]"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [worker]"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.5.14",
+        "podIPs": [
+          {
+            "ip": "10.0.5.14"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "worker",
+            "image": "registry.internal/batch/worker:4.0.0",
+            "imageID": "registry.internal/batch/worker@sha256:22569ab6ddcfc78c9fdaaaa39a2a19440f0ef27bd971e252898bf6ebe1dabb4c",
+            "ready": false,
+            "restartCount": 5,
+            "started": false,
+            "state": {
+              "waiting": {
+                "reason": "CrashLoopBackOff",
+                "message": "back-off 2m40s restarting failed container=worker pod=worker-84c6d9f7b5-vx5qp_batch(9e9b13f6-439a-6c6d-462b-63fb3507d971)"
+              }
+            },
+            "lastState": {
+              "terminated": {
+                "exitCode": 137,
+                "reason": "OOMKilled",
+                "startedAt": "2026-09-24T09:38:02Z",
+                "finishedAt": "2026-09-24T09:39:47Z",
+                "containerID": "containerd://2d7b396683777de5f1c7de06694c2dbcd0ec272579aa07384f66f465fd950a2e"
+              }
+            },
+            "containerID": "containerd://edda462751ee36f322d9302535eb9968d42ccdff118fdf8f90ef10ae10930485"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "report-api-c7f9b6d48-h2rwn",
+        "namespace": "batch",
+        "uid": "4419e400-ce69-c6ee-e209-829371b56b40",
+        "resourceVersion": "963076",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "report-api",
+          "pod-template-hash": "c7f9b6d48"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "report-api-c7f9b6d48",
+            "uid": "7efb49c6-c6fe-b16e-b73f-ff4960eb08b7",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "report-api-c7f9b6d48-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "report-api",
+            "image": "registry.internal/batch/report-api:1.2.0",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "512Mi"
+              },
+              "limits": {
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ],
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/live",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [report-api]"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "False",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T09:41:17Z",
+            "reason": "ContainersNotReady",
+            "message": "containers with unready status: [report-api]"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.5.15",
+        "podIPs": [
+          {
+            "ip": "10.0.5.15"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "report-api",
+            "image": "registry.internal/batch/report-api:1.2.0",
+            "imageID": "registry.internal/batch/report-api@sha256:42ac95fdb70cef909bdee3eaf6df6f47d098434ea8ff6ae7153dc85ce02241e1",
+            "ready": false,
+            "restartCount": 3,
+            "started": false,
+            "state": {
+              "waiting": {
+                "reason": "CrashLoopBackOff",
+                "message": "back-off 2m40s restarting failed container=report-api pod=report-api-c7f9b6d48-h2rwn_batch(4419e400-ce69-c6ee-e209-829371b56b40)"
+              }
+            },
+            "lastState": {
+              "terminated": {
+                "exitCode": 137,
+                "reason": "Error",
+                "startedAt": "2026-09-24T09:38:02Z",
+                "finishedAt": "2026-09-24T09:39:47Z",
+                "containerID": "containerd://12dbcab9f662ce9aad988df27a22912a3d1617b2b66392d1e17c243af215193a"
+              }
+            },
+            "containerID": "containerd://a3b89fed51049d3d1d4577fc2ed811a43e93a92f093520f83a4c08631c75b225"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

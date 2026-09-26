@@ -7,6 +7,9 @@ var bad = 0;
 LX.missions.forEach(function (m) {
   if (!m.objectives.length) return;
   if (only && m.id !== only) return;
+  /* onsite labs wait on a clock and derive reveals from state; they are played
+     through several paths in test-onsite-labs.js instead */
+  if (m.track === 'onsite') return;
   var w = LXShell.createWorld(m.world);
   var ctx = { w: w, ran: [], out: [], code: [], last: null };
   var met = {}, order = [];

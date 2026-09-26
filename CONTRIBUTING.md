@@ -30,6 +30,11 @@ and they are the ones that matter most when writing content:
 | `test-missions.js` | Every sandbox mission is solvable by its own `reveal` commands. |
 | `test-strict.js` | Fragments, typos and wrong-target commands do **not** complete an objective. |
 | `check-marks.js` | Every playbook output highlight appears in its output, is not so short it lands on unrelated digits, never only matches mid-token, and never nests. |
+| `test-k8s-model.js` | The onsite cluster model: reconciliation, rollout stall and undo scope, probe split, OOM vs other 137s, scheduling and binding reasons, RBAC, aliases, honest unsupported-command text, determinism. |
+| `test-onsite-labs.js` | Each onsite incident lab solves by its reveal ladder and by alternative fixes; wrong fixes, verifying first and typed success text do not complete it; independent tickets contain no spoilers; reset restores the seed. |
+| `test-onsite-content.js` | Onsite schema and counts, cross-references, official-domain references, the five stories verbatim, and an accuracy lint for the claims the track must never make. |
+| `test-python.js` | `labs/python`: every suite passes on its solution, fails on every `broken/` variant, and the starter fails on `NotImplementedError`. Reports SKIPPED (not passed) without python3. |
+| `test-kind-assets.js` | `labs/kind`: scripts parse, every kubectl call is pinned to the lab context, no hostPath/privileged/cluster-admin, images pinned by digest, preflight refuses a foreign context. |
 
 `tests/ui/` holds Playwright suites covering the lab, sandbox, quiz, review, playbook, flow-mode
 and navigation flows, each asserting zero horizontal overflow at 390 px — the phone-layout
@@ -131,6 +136,19 @@ safe to run twice.
 Review cards and starred items share one id space — `LXStore.idFor(kind, text)`, a slug plus a
 short hash. They used to be keyed by the content itself, so rewording a drill orphaned its card
 and quietly created a duplicate. Never key stored state on text a content edit can change.
+
+The onsite track keeps everything in one key, `lx.onsite` (notes, self-ratings, story details,
+mock history, real-lab reports). Sandbox evidence stays in `lx.sandbox`, with per-mode records under
+`modes` for onsite labs. Both are in `LXStore.KEYS`, so export includes them.
+
+## Onsite labs
+
+An onsite incident lab is a sandbox mission with a `world.k8sModel` seed and an `onsite` block.
+Objectives carry a `stage` — `evidence` (a command produced the proving output), `fix` (the model
+*state* is repaired) or `verify` (repaired, and the command just run shows it). Reveals may be
+functions of the current state so they name real pods. Add alternative-fix and wrong-fix cases to
+`tests/data/test-onsite-labs.js`, and list root-cause words in `onsite.spoilers` so the
+independent-mode ticket is checked for leaks.
 
 ## Style
 

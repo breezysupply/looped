@@ -578,15 +578,29 @@
       return;
     }
     var live = spec.liveness ? Object.assign({ kind: 'liveness' }, spec.liveness) : null;
+    /* a startup probe holds liveness off until the app has started, up to its own budget */
+    var startup = spec.startup ? Object.assign({ kind: 'startup' }, spec.startup) : null;
+    if (startup) {
+      var sBudget = (startup.initialDelay || 0) + (startup.period || 10) * (startup.failureThreshold || 3);
+      if (!probeOk(startup, prof) || (prof.startSec || 3) > sBudget) {
+        var g0 = prof.ignoresSigterm ? 30 : 0;
+        c.endAt = m.clock + sBudget + g0; c.endReason = 'Error'; c.endCode = prof.ignoresSigterm ? 137 : 143;
+        c.killedByLiveness = true; c.killedBy = 'Startup';
+        c.probeWhy = !probeOk(startup, prof) ? 'HTTP probe failed with statuscode: 404'
+          : 'Get "http://' + p.ip + ':' + prof.port + (startup.path || '/') + '": dial tcp ' + p.ip + ':' + prof.port + ': connect: connection refused';
+        return;
+      }
+    }
     if (live) {
       var initial = live.initialDelay == null ? 0 : live.initialDelay;
       var period = live.period || 10, fails = live.failureThreshold || 3;
-      var liveBad = !probeOk(live, prof) || (prof.startSec || 3) > initial + period * fails;
+      /* with a startup probe, liveness only begins once the app is up */
+      var liveBad = !probeOk(live, prof) || (!startup && (prof.startSec || 3) > initial + period * fails);
       if (liveBad) {
         var grace = prof.ignoresSigterm ? 30 : 0;
         c.endAt = m.clock + initial + period * fails + grace;
         c.endReason = 'Error'; c.endCode = prof.ignoresSigterm ? 137 : 143;
-        c.killedByLiveness = true;
+        c.killedByLiveness = true; c.killedBy = 'Liveness';
         c.probeWhy = !probeOk(live, prof)
           ? 'HTTP probe failed with statuscode: 404'
           : 'Get "http://' + p.ip + ':' + prof.port + (live.path || '/') + '": dial tcp ' + p.ip + ':' + prof.port + ': connect: connection refused';
@@ -670,8 +684,9 @@
     if (c.state === 'running' && c.endAt != null && m.clock >= c.endAt) {
       if (isInit && c.endCode === 0) { c.done = true; c.state = 'terminated'; c.reason = 'Completed'; return true; }
       if (c.killedByLiveness) {
-        event(m, 'Pod', p, 'Warning', 'Unhealthy', 'Liveness probe failed: ' + c.probeWhy);
-        event(m, 'Pod', p, 'Normal', 'Killing', 'Container ' + c.name + ' failed liveness probe, will be restarted');
+        var by = c.killedBy || 'Liveness';
+        event(m, 'Pod', p, 'Warning', 'Unhealthy', by + ' probe failed: ' + c.probeWhy);
+        event(m, 'Pod', p, 'Normal', 'Killing', 'Container ' + c.name + ' failed ' + by.toLowerCase() + ' probe, will be restarted');
       }
       c.lastState = { reason: c.endReason, exitCode: c.endCode, started: c.startedAt, finished: m.clock };
       c.prevLogs = c.logs; c.logs = [];

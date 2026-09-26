@@ -2,3 +2,5 @@ node_modules/
 tests/.artifacts/
 *.log
 .DS_Store
+__pycache__/
+*.pyc

@@ -42,7 +42,7 @@
 
   var KEYS = ['lx.cards', 'lx.saved', 'lx.stats', 'lx.streak', 'lx.topic', 'lx.weak',
               'lx.labs', 'lx.sandbox', 'lx.playbooks', 'lx.view', 'lx.groupview',
-              'lx.theme', 'lx.track', 'lx.pbmode', 'lx.schema'];
+              'lx.theme', 'lx.track', 'lx.pbmode', 'lx.schema', 'lx.onsite'];
 
   /* ── migrations ─────────────────────────────────────────────────────
      Each takes localStorage from version n-1 to n. They must be safe to run

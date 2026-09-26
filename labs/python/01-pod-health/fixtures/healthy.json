@@ -1,0 +1,632 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "web-6d4cf56db6-q2x8m",
+        "namespace": "shop",
+        "uid": "6a9517d5-61be-2b8b-826f-efab7d23ef3d",
+        "resourceVersion": "784983",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "web",
+          "pod-template-hash": "6d4cf56db6"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "web-6d4cf56db6",
+            "uid": "86733e4f-b9ed-a1ab-2c60-3317ab83249a",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "web-6d4cf56db6-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "registry.internal/shop/web:1.14.2",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "256Mi"
+              },
+              "limits": {
+                "memory": "256Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/healthz/ready",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/healthz/live",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.3.117",
+        "podIPs": [
+          {
+            "ip": "10.0.3.117"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "web",
+            "image": "registry.internal/shop/web:1.14.2",
+            "imageID": "registry.internal/shop/web@sha256:6d2946c6a11c6559fdba5b470871e9359a3e655fa501e6868fbf4515b24ce30f",
+            "ready": true,
+            "restartCount": 1,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T08:12:05Z"
+              }
+            },
+            "lastState": {
+              "terminated": {
+                "exitCode": 0,
+                "reason": "Completed",
+                "startedAt": "2026-09-24T08:12:03Z",
+                "finishedAt": "2026-09-24T08:12:05Z",
+                "containerID": "containerd://d995c045e56fec5bfc470e7dbe36c1bcc7fe67c42597b9e1d621bd9e52069e79"
+              }
+            },
+            "containerID": "containerd://136fa29b9ae9e83eae75471a45a94c91d7593b16e3becdc123a2b9d77c0b349e"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "web-6d4cf56db6-t9vbn",
+        "namespace": "shop",
+        "uid": "11e9c2f0-bcd4-120e-c066-753fb9b62445",
+        "resourceVersion": "373954",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "web",
+          "pod-template-hash": "6d4cf56db6"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "ReplicaSet",
+            "name": "web-6d4cf56db6",
+            "uid": "86733e4f-b9ed-a1ab-2c60-3317ab83249a",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "web-6d4cf56db6-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web",
+            "image": "registry.internal/shop/web:1.14.2",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "256Mi"
+              },
+              "limits": {
+                "memory": "256Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/healthz/ready",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/healthz/live",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.3.118",
+        "podIPs": [
+          {
+            "ip": "10.0.3.118"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "web",
+            "image": "registry.internal/shop/web:1.14.2",
+            "imageID": "registry.internal/shop/web@sha256:6d2946c6a11c6559fdba5b470871e9359a3e655fa501e6868fbf4515b24ce30f",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T08:12:05Z"
+              }
+            },
+            "lastState": {},
+            "containerID": "containerd://a54f556f3925e165395c7b2c1dc19b757d2f2e33e65288dac5fe684471bb2998"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "db-0",
+        "namespace": "shop",
+        "uid": "4d651f28-68b4-965a-d7a3-269628ca79ba",
+        "resourceVersion": "672159",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "db",
+          "statefulset.kubernetes.io/pod-name": "db-0",
+          "apps.kubernetes.io/pod-index": "0",
+          "controller-revision-hash": "db-5b9d8c7f6"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "StatefulSet",
+            "name": "db",
+            "uid": "5f2b9603-5475-ada4-1cf1-d782aaf241e8",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "db-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "postgres",
+            "image": "registry.internal/platform/postgres:15.8",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "1Gi"
+              },
+              "limits": {
+                "memory": "1Gi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 5432,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.3.52",
+        "podIPs": [
+          {
+            "ip": "10.0.3.52"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "postgres",
+            "image": "registry.internal/platform/postgres:15.8",
+            "imageID": "registry.internal/platform/postgres@sha256:fc507dbdfdeef908d74c02093ff34f00f118a7d2bd61abfd7578d5013773fae3",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T08:12:05Z"
+              }
+            },
+            "lastState": {},
+            "containerID": "containerd://3b033f3722f132b40aef0dbfe720c6639e010b7e5d8c97abac53c36aaab0f7f8"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "fluent-bit-x7k2p",
+        "namespace": "logging",
+        "uid": "429d7dc1-bb97-aa81-5233-abc7d9389483",
+        "resourceVersion": "865693",
+        "creationTimestamp": "2026-09-24T08:12:03Z",
+        "labels": {
+          "app.kubernetes.io/name": "fluent-bit",
+          "controller-revision-hash": "7c5d9b8f4",
+          "pod-template-generation": "3"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "DaemonSet",
+            "name": "fluent-bit",
+            "uid": "38dbd9a3-62f8-d8c7-2b42-e3655af0845a",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "generateName": "fluent-bit-"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "fluent-bit",
+            "image": "cr.fluentbit.io/fluent/fluent-bit:3.1.9",
+            "imagePullPolicy": "IfNotPresent",
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "memory": "128Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "ports": [
+              {
+                "containerPort": 2020,
+                "name": "http",
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "schedulerName": "default-scheduler",
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "tolerations": [
+          {
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ],
+        "nodeName": "ip-10-0-3-41.eu-west-1.compute.internal"
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "PodReadyToStartContainers",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "ContainersReady",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:05Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T08:12:03Z"
+          }
+        ],
+        "qosClass": "Burstable",
+        "hostIP": "10.0.3.41",
+        "hostIPs": [
+          {
+            "ip": "10.0.3.41"
+          }
+        ],
+        "startTime": "2026-09-24T08:12:03Z",
+        "podIP": "10.0.3.9",
+        "podIPs": [
+          {
+            "ip": "10.0.3.9"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "name": "fluent-bit",
+            "image": "cr.fluentbit.io/fluent/fluent-bit:3.1.9",
+            "imageID": "cr.fluentbit.io/fluent/fluent-bit@sha256:db1eb4508e0c1da62ed0c996cb05475979853fc65530c2561ddab8e6914009fe",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T08:12:05Z"
+              }
+            },
+            "lastState": {},
+            "containerID": "containerd://8d548ec15214db1e93243c2cbf40fd72c958cc7d26dad6d43857a53eb79f3fea"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

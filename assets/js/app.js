@@ -11,17 +11,30 @@
   /* Four bottom tabs; groups with more than one page get a segmented sub-nav. */
   var GROUPS = [
     { id: 'learn',    label: 'Learn',    views: [
-      { v: 'commands',  label: 'Commands'  },
-      { v: 'playbooks', label: 'Playbooks' },
+      /* track-scoped: only shown while that track is active */
+      { v: 'prep',      label: 'Prep', track: 'onsite' },
+      /* the onsite track teaches through Prep and has no command reference,
+         playbooks or multiple-choice labs, so those pages would be empty */
+      { v: 'commands',  label: 'Commands',  hideFor: ['onsite'] },
+      { v: 'playbooks', label: 'Playbooks', hideFor: ['onsite'] },
       { v: 'drills',    label: 'Drills'    }
     ] },
     { id: 'practice', label: 'Practice', views: [
-      { v: 'labs',    label: 'Labs'    },
+      { v: 'labs',    label: 'Labs', hideFor: ['onsite'] },
       { v: 'sandbox', label: 'Sandbox' }
     ] },
     { id: 'quiz',     label: 'Quiz',     views: [ { v: 'quiz',   label: 'Quiz'   } ] },
     { id: 'review',   label: 'Review',   views: [ { v: 'review', label: 'Review' } ] }
   ];
+  function visibleViews(g) {
+    return g.views.filter(function (x) {
+      return (!x.track || x.track === state.track) && (!x.hideFor || x.hideFor.indexOf(state.track) === -1);
+    });
+  }
+  function viewAllowed(v) {
+    var g = groupOf(v);
+    return visibleViews(g).some(function (x) { return x.v === v; });
+  }
   function groupOf(v) {
     for (var i = 0; i < GROUPS.length; i++) {
       for (var j = 0; j < GROUPS[i].views.length; j++) {
@@ -49,6 +62,7 @@
     drillCat: 'all',
     q: '',
     saved: LS.get('lx.saved', []),
+    returnView: null,             /* the page a track-scoped switch displaced */
     stats: LS.get('lx.stats', { taken: 0, correct: 0 })
   };
 
@@ -309,6 +323,7 @@
   function renderAll() {
     renderCommands(); renderScenarios(); renderDrills(); renderLabs();
     renderSaved(); renderStats();
+    if (window.LXOnsite && state.track === 'onsite') window.LXOnsite.render();
   }
 
   /* the quiz and seed dropdowns list the active track's categories */
@@ -392,6 +407,19 @@
 
     /* Only the default track ships in index.html; the rest arrive on first
        switch. Already loaded is the common case and stays synchronous. */
+    /* a track-scoped page (Prep) disappears when you leave its track, and is
+       where the Learn tab lands when you arrive on it */
+    var from = state.view;
+    if (state.returnView && state.returnView !== from && viewAllowed(state.returnView) && !viewAllowed(from)) {
+      /* coming back from a track that displaced this page: return to it */
+      setView(state.returnView); state.returnView = null;
+    } else if (!viewAllowed(from)) {
+      state.returnView = from;
+      setView(id === 'onsite' && groupOf(from).id === 'learn' ? 'prep' : visibleViews(groupOf(from))[0].v);
+    } else if (id === 'onsite' && groupOf(from).id === 'learn' && from !== 'prep') {
+      state.returnView = from;
+      setView('prep');
+    } else renderSubnav(groupOf(from), from);
     if (LX.track.isLoaded(id)) { rebuildCatSelects(); renderAll(); return; }
     document.body.classList.add('loading-track');
     LX.track.load(id, function () {
@@ -405,10 +433,11 @@
   function renderSubnav(g, v) {
     var el = $('#subnav');
     if (!el) return;
-    if (g.views.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
+    var views = visibleViews(g);
+    if (views.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
     el.setAttribute('role', 'tablist');
-    el.innerHTML = g.views.map(function (x) {
+    el.innerHTML = views.map(function (x) {
       var on = x.v === v;
       return '<button class="seg' + (on ? ' active' : '') + '" role="tab" data-view="' +
         esc(x.v) + '" aria-selected="' + (on ? 'true' : 'false') + '" tabindex="' +
@@ -418,6 +447,7 @@
 
   function setView(v) {
     if (!document.getElementById('view-' + v)) v = 'commands';
+    if (!viewAllowed(v)) v = visibleViews(groupOf(v))[0].v;
     var g = groupOf(v);
     state.view = v;
     state.lastInGroup[g.id] = v;
@@ -428,13 +458,15 @@
       var on = t.dataset.group === g.id;
       t.classList.toggle('active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
+      /* a group's first page can differ by track (Prep, hidden pages) */
+      if (on) t.setAttribute('aria-controls', 'view-' + v);
       /* roving tabindex: one stop for the whole bar, arrows move within it */
       t.setAttribute('tabindex', on ? '0' : '-1');
     });
     renderSubnav(g, v);
     var panel = document.getElementById('view-' + v);
     if (panel) {
-      panel.setAttribute('aria-label', g.views.length > 1 ? g.label + ': ' + v : g.label);
+      panel.setAttribute('aria-label', visibleViews(g).length > 1 ? g.label + ': ' + v : g.label);
     }
     /* Focus deliberately stays on the tab. Moving it into the panel broke
        arrow navigation — the next arrow key had no tab to move from — and
@@ -446,9 +478,9 @@
   function setGroup(id) {
     var g = groupOf(null);
     GROUPS.forEach(function (x) { if (x.id === id) g = x; });
-    var last = state.lastInGroup[g.id];
-    var ok = g.views.some(function (x) { return x.v === last; });
-    setView(ok ? last : g.views[0].v);
+    var last = state.lastInGroup[g.id], views = visibleViews(g);
+    var ok = views.some(function (x) { return x.v === last; });
+    setView(ok ? last : views[0].v);
   }
 
   /* ── Events ───────────────────────────────────────────────── */

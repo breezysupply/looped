@@ -24,7 +24,7 @@ const check = process.argv.includes('--check');
 const ENGINE_FIRST = ['assets/js/store.js', 'assets/js/shell.js'];
 const ENGINE_LAST = [
   'assets/js/lab.js', 'assets/js/quiz.js', 'assets/js/sandbox.js',
-  'assets/js/playbook.js', 'assets/js/review.js', 'assets/js/app.js'
+  'assets/js/playbook.js', 'assets/js/review.js', 'assets/js/onsite.js', 'assets/js/app.js'
 ];
 /* Shared by every track, so always eager. */
 const DATA_FIRST = ['assets/js/data/tracks.js', 'assets/js/data/objectives.js'];

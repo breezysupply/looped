@@ -1,0 +1,6 @@
+#!/bin/sh
+# Launcher for the inventory-sync service (fixture: stands in for a binary).
+set -eu
+here=$(cd "$(dirname "$0")/.." && pwd)
+export LD_LIBRARY_PATH="$here/lib"
+exec "$here/lib/inventory-sync" --config "$here/config/app.yaml" "$@"

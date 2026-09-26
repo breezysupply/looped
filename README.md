@@ -18,6 +18,7 @@ studying never dilutes the one you are. **All tracks** mixes them deliberately.
 | --- | --- |
 | **Linux** | 131 commands, 22 playbooks, 35 scenarios, 45 drills, 6 labs, 8 typed missions |
 | **Containers & Networking** | 48 commands, 9 playbooks with sample output for every step, 20 drills, 12 hazard questions, 15 recall items, 5 typed missions against a simulated cluster |
+| **Gallatin Onsite** | A preparation track for one final onsite: a Prep hub (study path, 16 lessons, 60 questions, 4 design scenarios, 3 Python exercises, 10 real kind labs, 5 experience stories, mock sessions, progress, notes) plus 10 incident labs on a reconciling cluster model — see below |
 
 Tracks planned after that: AWS core, Identity & M365, IaC & automation, Security & compliance,
 Azure, AI platform administration. Content is tagged to certification objectives (CKA, AWS SAA,
@@ -40,6 +41,44 @@ Four sections at the bottom, several pages each:
 
 Everything is searchable from one box at the top, across pages, and it tells you where the other
 hits are.
+
+## The Gallatin Onsite track
+
+Built for one interview: a final onsite for an Infrastructure Engineer role whose exact agenda is
+**unknown**. Nothing in the track is presented as an actual interview question, and nothing assumes
+a Kubernetes distribution, GitOps tool, cloud or interview format. Priorities follow the brief:
+P0 Kubernetes fundamentals and workload troubleshooting, P1 networking / storage / identity /
+delivery / disconnected operations, P2 design and scripting, P3 behavioural.
+
+Open it from the track pill → **Gallatin Onsite**; Learn opens on **Prep**.
+
+| Prep section | What it holds |
+| --- | --- |
+| **Path** | An *Essential* route (6 sessions) and a *Deep* one (16), with prerequisites. A session is complete when every item in it has evidence. The interview date is whatever you enter in Notes — no deadline is invented |
+| **Lessons** | 16 concept lessons, foundations first, 10 with diagrams, each ending in a self-check |
+| **Questions** | 60 questions (10 architecture, 10 networking, 10 troubleshooting, 8 identity/config/storage, 8 delivery/disconnected, 8 design/automation, 6 behavioural), each with context, what is evaluated, a spoken answer, a deeper explanation, 2–4 follow-ups, misconceptions, evidence, a rubric that accepts sound alternatives, an AWS analogy with where it breaks, and kubernetes.io references. Answers stay hidden until you ask |
+| **Sim labs** | 10 incident labs (below) |
+| **Design** | 4 interviewer-led scenarios: requirements first, then design, revealed constraints, reference architecture, tradeoffs and a rubric |
+| **Scripting** | 3 Python exercises (`labs/python/`) with fixtures, tests, hidden solutions and deliberately broken variants the tests must catch |
+| **Real labs** | 10 kind labs for your Mac (`labs/kind/`) with a dedicated cluster, namespace and context, a preflight that refuses any other context, fault injection, verify scripts and reset. What actually ran during development is in `labs/kind/EXECUTION.md` |
+| **Stories** | Your five sanitised experiences, bridged to Kubernetes, with blanks for the details only you can supply (stored in this browser only) |
+| **Mock** | 15 / 30 / 45 / 60-minute sessions, one prompt at a time, with follow-ups, hints, reveal and self-rating |
+| **Progress** | Evidence in separate tiers — studied, answered before revealing, guided simulation, simulation without hints, real lab reported, verify script reported — with no score and no prediction |
+| **Notes** | Interview date, recruiter clarifications, which formats are confirmed, and topic priority overrides that re-rank the path |
+
+**Incident labs** run in the Sandbox on `assets/js/k8s-model.js`, a small deterministic model of a
+namespace with real controllers — deleting a pod reconciles, a rollout stalls behind
+`maxUnavailable`, readiness and liveness fail differently, OOMKilled is distinguishable from other
+exit-137 kills, PVCs bind, RBAC denies. `assets/js/k8s-kubectl.js` is a bounded kubectl over it;
+anything outside the supported set says so rather than pretending. Each lab has a **Guided** mode
+(named ticket, visible objectives, a hint ladder labelled conceptual → diagnostic → explicit) and an
+**Independent** mode (neutral ticket, hidden objectives). Objectives are evidence, repaired *state*
+and verification after the repair — typing the expected text never completes one — and the
+debrief is qualitative: evidence before change, blast radius, remediation, verification.
+
+What this track cannot do: there is no AI grading, so answers are self-assessed; real-lab results
+are self-reported because a static app cannot see your cluster; and a simulation or a local lab is
+practice, not production experience. The UI says each of these where it matters.
 
 ## Using it on your phone
 
@@ -95,6 +134,11 @@ assets/js/playbook.js          # playbook walker: step reveal, branches, expand 
 assets/js/lab.js               # interactive lab engine: terminal, steps, debrief
 assets/js/quiz.js              # five question styles, three modes
 assets/js/review.js            # spaced repetition, flashcards, streak, mastery stats
+assets/js/onsite.js            # the onsite track's Prep hub (only shown on that track)
+assets/js/k8s-model.js         # deterministic Kubernetes model behind the onsite incident labs
+assets/js/k8s-kubectl.js       # bounded kubectl + the simulated lab-registry helper over it
+labs/python/                   # onsite Python exercises: starters, fixtures, tests, solutions
+labs/kind/                     # onsite real-cluster labs for kind; EXECUTION.md = what really ran
 tests/                         # validators (node) + Playwright suites; see CONTRIBUTING.md
 assets/js/data/
   tracks.js                    # the track registry — categories live here, not in app.js

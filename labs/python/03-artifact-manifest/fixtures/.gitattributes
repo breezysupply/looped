@@ -1,0 +1,3 @@
+# The bundle is hashed byte-for-byte by the tests: never convert line endings.
+bundle/** -text
+manifests/** -text

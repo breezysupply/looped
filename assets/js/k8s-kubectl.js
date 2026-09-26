@@ -162,6 +162,7 @@
     if (c.resources) v.resources = c.resources;
     if (c.readiness) v.readinessProbe = probeView(c.readiness);
     if (c.liveness) v.livenessProbe = probeView(c.liveness);
+    if (c.startup) v.startupProbe = probeView(c.startup);
     return v;
   }
   function probeView(p) {
@@ -566,7 +567,7 @@
       return '  ' + c.name + ':\n    Image:          ' + c.image + '\n' +
         ((spec.ports || []).length ? '    Port:           ' + spec.ports.map(function (x) { return x.containerPort + '/TCP' + (x.name ? ' (' + x.name + ')' : ''); }).join(', ') + '\n' : '') +
         st + last + '    Ready:          ' + (c.state === 'running' && c.ready ? 'True' : 'False') + '\n    Restart Count:  ' + c.restarts + '\n' +
-        resStr(spec.resources) + probeStr('Liveness', spec.liveness, prof) + probeStr('Readiness', spec.readiness, prof) +
+        resStr(spec.resources) + probeStr('Liveness', spec.liveness, prof) + probeStr('Readiness', spec.readiness, prof) + probeStr('Startup', spec.startup, prof) +
         (env ? '    Environment Variables from:\n' + env : '') + (envv ? '    Environment:\n' + envv : '    Environment:    <none>\n');
     }
     if (p.init.length) s += 'Init Containers:\n' + p.init.map(function (c, i) { return cont(c, p.spec.initContainers[i]); }).join('');
@@ -604,7 +605,7 @@
       var olds = rs.filter(function (r) { return r !== cur && r.replicas > 0; });
       var tpl = d.template.containers.map(function (c) {
         return '   ' + c.name + ':\n    Image:      ' + c.image + '\n' + resStr(c.resources).replace(/^ {4}/gm, '    ') +
-          probeStr('Liveness', c.liveness, K.profileFor(m, c.image)) + probeStr('Readiness', c.readiness, K.profileFor(m, c.image)) +
+          probeStr('Liveness', c.liveness, K.profileFor(m, c.image)) + probeStr('Readiness', c.readiness, K.profileFor(m, c.image)) + probeStr('Startup', c.startup, K.profileFor(m, c.image)) +
           (c.envFrom ? '    Environment Variables from:\n' + c.envFrom.map(function (f) { return '      ' + (f.configMapRef || f.secretRef) + '  ' + (f.configMapRef ? 'ConfigMap' : 'Secret') + '\n'; }).join('') : '');
       }).join('');
       return ok('Name:                   ' + d.name + '\nNamespace:              ' + d.ns +
@@ -888,6 +889,7 @@
     Object.keys(c).forEach(function (k) {
       if (k === 'readinessProbe') out.readiness = probeIn(c[k]);
       else if (k === 'livenessProbe') out.liveness = probeIn(c[k]);
+      else if (k === 'startupProbe') out.startup = probeIn(c[k]);
       else if (k === 'envFrom') out.envFrom = c[k].map(function (f) { return f.configMapRef ? { configMapRef: f.configMapRef.name, optional: f.configMapRef.optional } : { secretRef: f.secretRef.name }; });
       else if (k === 'env') out.env = c[k].map(function (e) {
         if (e.valueFrom && e.valueFrom.configMapKeyRef) return { name: e.name, configMapKey: e.valueFrom.configMapKeyRef };
@@ -900,8 +902,11 @@
   }
   function probeIn(p) {
     if (p === null) return null;
-    var h = p.httpGet || {};
-    return { path: h.path, port: h.port, initialDelay: p.initialDelaySeconds, period: p.periodSeconds, failureThreshold: p.failureThreshold };
+    var h = p.httpGet || {}, out = {};
+    /* only fields the patch names, so a partial probe patch merges instead of erasing */
+    [['path', h.path], ['port', h.port], ['initialDelay', p.initialDelaySeconds], ['period', p.periodSeconds],
+     ['failureThreshold', p.failureThreshold]].forEach(function (kv) { if (kv[1] !== undefined) out[kv[0]] = kv[1]; });
+    return out;
   }
   function podSpecIn(s) {
     var out = {};
@@ -1290,6 +1295,9 @@
       m.pods.filter(function (p) { return p.node === n.name && p.owner; }).forEach(function (p) { K.removePod(m, p); });
       K.reconcile(m);
       return ok('node/' + n.name + ' cordoned\nnode/' + n.name + ' drained\n');
+    }
+    if (o.pos[0] === 'uncordon' && n.unschedulable) {
+      K.risky(m, raw, 'Uncordoning a node someone else cordoned can put work onto a node under maintenance; nodes are shared, cluster-scoped objects.');
     }
     n.unschedulable = o.pos[0] === 'cordon';
     K.reconcile(m);
