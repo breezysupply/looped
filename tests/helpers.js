@@ -45,6 +45,9 @@ function loadContent(extra) {
   };
   if (extra && extra.shell) {
     global.LXShell = require(repoFile('assets/js/shell.js'));
+    /* the onsite labs' cluster model, before the kubectl verb that delegates to it */
+    require(repoFile('assets/js/k8s-model.js'));
+    require(repoFile('assets/js/k8s-kubectl.js'));
     /* track extensions register their verbs through LXShell.register */
     fs.readdirSync(repoFile('assets/js')).forEach(function (f) {
       if (/^shell-.*\.js$/.test(f)) require(repoFile('assets/js', f));

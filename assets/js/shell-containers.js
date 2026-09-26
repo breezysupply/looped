@@ -285,6 +285,9 @@
 
   /* ── the command ─────────────────────────────────────────────── */
   LXShell.register('kubectl', function (w, a) {
+    /* onsite labs carry a reconciling cluster model; everything else keeps the
+       static fixtures below */
+    if (w.k8sModel && window.LXK8s && window.LXK8s.run) return window.LXK8s.run(w, a, U);
     var verb = a[0];
     var k = K(w);
     if (!verb) return err('kubectl controls the Kubernetes cluster manager.\n\nUsage: kubectl [command]');

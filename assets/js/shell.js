@@ -1591,7 +1591,10 @@
       docker: seed.docker ? JSON.parse(JSON.stringify(seed.docker)) : null,
       cniReady: seed.cniReady,
       io: seed.io ? JSON.parse(JSON.stringify(seed.io)) : null, extra: seed.extra || null,
-      cores: seed.cores || 4, ip: seed.ip
+      cores: seed.cores || 4, ip: seed.ip,
+      /* the onsite track's reconciling cluster model: built fresh from the
+         seed on every createWorld, which is what makes /reset exact */
+      k8sModel: seed.k8sModel && global.LXK8s ? global.LXK8s.create(seed.k8sModel) : null
     };
     w.env = { HOME: '/home/' + w.user, USER: w.user, PWD: w.cwd, SHELL: '/bin/bash',
               PATH: '/usr/local/bin:/usr/bin:/bin' };
@@ -1645,7 +1648,8 @@
               /* what a registered command needs to look native */
               util: { ok: ok, err: err, flags: flags, pad: pad, lines: lines,
                       basename: basename, dirname: dirname, mountOf: mountOf,
-                      sizeOf: sizeOf, mkfile: mkfile, mkdirp: mkdirp, walk: walk } };
+                      sizeOf: sizeOf, mkfile: mkfile, mkdirp: mkdirp, walk: walk,
+                      node: node, resolve: resolve } };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   global.LXShell = api;
