@@ -1,0 +1,54 @@
+# Lab 07: thumbnailer. Each batch holds its images in the main process's
+# memory: about 100 MiB at peak since the batch size was raised yesterday.
+# Memory limit: 48Mi.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thumbnailer
+  labels: { app: thumbnailer, looped.lab/id: "07" }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: thumbnailer }
+  template:
+    metadata:
+      labels: { app: thumbnailer, looped.lab/id: "07" }
+    spec:
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: worker
+        image: docker.io/library/busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+        command: ["sh", "-c"]
+        args:
+        - |
+          trap 'exit 0' TERM
+          n=0
+          echo ok > /tmp/alive
+          while true; do
+            n=$((n + 1))
+            echo "$(date -u +%H:%M:%S) batch $n: loading 500 images into memory"
+            # stand-in for the batch working set, held by this process (PID 1):
+            # 48 MiB of data, about 100 MiB peak while it is read in
+            batch=$(head -c 48m /dev/zero | tr '\0' x)
+            echo "$(date -u +%H:%M:%S) batch $n complete (${#batch} bytes rendered)"
+            unset batch
+            sleep 10 & wait $!
+          done
+        readinessProbe:
+          exec: { command: ["cat", "/tmp/alive"] }
+          periodSeconds: 5
+        livenessProbe:
+          exec: { command: ["cat", "/tmp/alive"] }
+          periodSeconds: 10
+        resources:
+          requests: { cpu: 10m, memory: 32Mi }
+          limits: { memory: 48Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }

@@ -1,0 +1,11 @@
+# Lab 03: the orders Service as it was before this morning's change.
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  labels: { app: orders-api, looped.lab/id: "03" }
+spec:
+  selector:
+    app: orders-api
+  ports:
+  - { name: http, port: 8080, targetPort: http }

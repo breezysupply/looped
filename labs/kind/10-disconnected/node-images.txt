@@ -1,0 +1,3 @@
+# Images this lab imports into the kind nodes. inject.sh and reset.sh remove
+# them from the looped-onsite nodes so the lab starts broken every time.
+registry.invalid/looped/edge-gateway:4.2

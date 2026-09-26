@@ -1,0 +1,31 @@
+# Reference fix for lab 01: run the toolbox under a controller.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-debug
+  labels: { app: catalog-debug, looped.lab/id: "01" }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: catalog-debug }
+  template:
+    metadata:
+      labels: { app: catalog-debug, looped.lab/id: "01" }
+    spec:
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: toolbox
+        image: docker.io/library/busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+        command: ["sh", "-c", "echo toolbox ready; trap 'exit 0' TERM; while true; do sleep 5 & wait $!; done"]
+        resources:
+          requests: { cpu: 10m, memory: 8Mi }
+          limits: { memory: 16Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }

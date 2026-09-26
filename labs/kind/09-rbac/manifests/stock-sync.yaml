@@ -1,0 +1,61 @@
+# Lab 09: stock-sync lists the stock ConfigMaps through the Kubernetes API
+# every 5 seconds, using its ServiceAccount's projected token and the
+# cluster CA mounted into the pod.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-sync
+  labels: { app: stock-sync, looped.lab/id: "09" }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stock-sync }
+  template:
+    metadata:
+      labels: { app: stock-sync, looped.lab/id: "09" }
+    spec:
+      serviceAccountName: stock-sync
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: sync
+        image: docker.io/curlimages/curl:8.16.0@sha256:463eaf6072688fe96ac64fa623fe73e1dbe25d8ad6c34404a669ad3ce1f104b6
+        command: ["sh", "-c"]
+        args:
+        - |
+          trap 'exit 0' TERM
+          SA=/var/run/secrets/kubernetes.io/serviceaccount
+          NSP=$(cat $SA/namespace)
+          URL="https://kubernetes.default.svc/api/v1/namespaces/$NSP/configmaps?labelSelector=inventory%3Dstock"
+          echo "$(date -u +%H:%M:%S) stock-sync starting; reading ConfigMaps in namespace $NSP via the API"
+          while true; do
+            date -u +%s > /work/heartbeat
+            code=$(curl -sS -o /work/resp -w '%{http_code}' --max-time 5 \
+              --cacert $SA/ca.crt -H "Authorization: Bearer $(cat $SA/token)" "$URL" 2>/work/err) || code="000"
+            if [ "$code" = 200 ]; then
+              n=$(grep -o '"name": *"stock-levels-[a-z]*"' /work/resp | wc -l)
+              echo "$(date -u +%H:%M:%S) sync ok: read $n stock ConfigMaps"
+            else
+              echo "$(date -u +%H:%M:%S) sync failed: HTTP $code $(grep -o '"message": *"[^"]*"' /work/resp 2>/dev/null)$(cat /work/err)"
+            fi
+            sleep 5 & wait $!
+          done
+        readinessProbe:
+          exec: { command: ["cat", "/work/heartbeat"] }
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { memory: 32Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        volumeMounts:
+        - { name: work, mountPath: /work }
+      volumes:
+      - name: work
+        emptyDir: {}

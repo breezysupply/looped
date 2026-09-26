@@ -1,0 +1,3 @@
+# Objects a fix for lab 01 may create without the looped.lab/id label; reset.sh deletes them by name.
+deployment/catalog-debug
+pod/catalog-debug

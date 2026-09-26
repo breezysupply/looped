@@ -1,0 +1,10 @@
+# Lab 02: the Service in front of payments-api.
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-api
+  labels: { app: payments-api, looped.lab/id: "02" }
+spec:
+  selector: { app: payments-api }
+  ports:
+  - { name: http, port: 8080, targetPort: http }

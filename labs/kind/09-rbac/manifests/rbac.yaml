@@ -1,0 +1,31 @@
+# Lab 09: identity and permissions for stock-sync, migrated last week from
+# namespace inventory-old.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: stock-sync
+  labels: { app: stock-sync, looped.lab/id: "09" }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: configmap-reader
+  labels: { app: stock-sync, looped.lab/id: "09" }
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: stock-sync-configmap-reader
+  labels: { app: stock-sync, looped.lab/id: "09" }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: configmap-reader
+subjects:
+- kind: ServiceAccount
+  name: stock-sync
+  namespace: inventory-old

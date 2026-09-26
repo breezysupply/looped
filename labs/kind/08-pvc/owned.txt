@@ -1,0 +1,2 @@
+# Objects a fix for lab 08 may create without the looped.lab/id label; reset.sh deletes them by name.
+persistentvolumeclaim/ledger-data

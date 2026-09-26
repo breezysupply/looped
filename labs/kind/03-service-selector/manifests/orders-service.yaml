@@ -1,0 +1,12 @@
+# Lab 03: the orders Service after this morning's "label cleanup" change.
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  labels: { app: orders-api, tier: backend, looped.lab/id: "03" }
+spec:
+  selector:
+    app: orders-api
+    tier: backend
+  ports:
+  - { name: http, port: 8080, targetPort: http }

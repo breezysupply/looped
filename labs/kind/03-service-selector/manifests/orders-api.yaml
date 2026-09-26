@@ -1,0 +1,47 @@
+# Lab 03: orders-api, 3 replicas. Pod template labels: app=orders-api.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  labels: { app: orders-api, looped.lab/id: "03" }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: orders-api }
+  template:
+    metadata:
+      labels: { app: orders-api, looped.lab/id: "03" }
+    spec:
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: api
+        image: docker.io/library/busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "orders-api ok ($HOSTNAME)" > /www/index.html
+          echo ok > /www/healthz
+          echo "orders-api listening on :8080"
+          exec httpd -f -p 8080 -h /www
+        ports:
+        - { name: http, containerPort: 8080 }
+        readinessProbe:
+          httpGet: { path: /healthz, port: http }
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { memory: 32Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        volumeMounts:
+        - { name: www, mountPath: /www }
+      volumes:
+      - name: www
+        emptyDir: {}

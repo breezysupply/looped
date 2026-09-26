@@ -1,0 +1,18 @@
+# Lab 09: the ConfigMaps stock-sync reads.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stock-levels-east
+  labels: { inventory: stock, looped.lab/id: "09" }
+data:
+  widgets: "412"
+  gadgets: "37"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stock-levels-west
+  labels: { inventory: stock, looped.lab/id: "09" }
+data:
+  widgets: "198"
+  gadgets: "5"

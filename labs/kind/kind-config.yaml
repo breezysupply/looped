@@ -1,0 +1,20 @@
+# kind cluster for the Looped onsite labs.
+#   kind create cluster --config labs/kind/kind-config.yaml   (setup.sh does this for you)
+#
+# - The cluster name is fixed: every lab script refuses any other cluster/context.
+# - Node image pinned by multi-arch index digest (linux/amd64 + linux/arm64). This is
+#   the image kind v0.33.0 uses by default for Kubernetes v1.37.0; use kind v0.33.0 or newer.
+# - The API server listens on 127.0.0.1 only (kind's default, stated explicitly here).
+# - No extraPortMappings, no extraMounts (no host paths are shared with the nodes).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: looped-onsite
+networking:
+  apiServerAddress: "127.0.0.1"
+nodes:
+- role: control-plane
+  image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+- role: worker
+  image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+  labels:
+    pool: general

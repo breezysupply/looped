@@ -1,0 +1,23 @@
+# Lab 08: storage claims copied from the existing environment.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ledger-data
+  labels: { app: ledger-db, looped.lab/id: "08" }
+spec:
+  storageClassName: fast-ssd
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: { storage: 1Gi }
+---
+# Belongs to a batch job that has not been scheduled yet. Do not touch.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ledger-scratch
+  labels: { app: ledger-batch, looped.lab/id: "08" }
+spec:
+  storageClassName: standard
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: { storage: 1Gi }

@@ -1,0 +1,8 @@
+# Reference fix for lab 06: the ConfigMap release 3.0.0 expects.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notify-config
+  labels: { looped.lab/id: "06" }
+data:
+  endpoint: "https://notify.example.internal/v1/send"

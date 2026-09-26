@@ -1,0 +1,11 @@
+# Reference fix for lab 08: the same claim, on a StorageClass that exists here.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ledger-data
+  labels: { app: ledger-db, looped.lab/id: "08" }
+spec:
+  storageClassName: standard
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: { storage: 1Gi }

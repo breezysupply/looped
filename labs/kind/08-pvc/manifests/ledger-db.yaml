@@ -1,0 +1,51 @@
+# Lab 08: ledger-db (a stand-in: it only writes a marker file; no real database).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger-db
+  labels: { app: ledger-db, looped.lab/id: "08" }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: ledger-db }
+  template:
+    metadata:
+      labels: { app: ledger-db, looped.lab/id: "08" }
+    spec:
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: db
+        image: docker.io/library/busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+        command: ["sh", "-c"]
+        args:
+        - |
+          trap 'exit 0' TERM
+          echo "$(date -u +%H:%M:%S) ledger-db starting; data directory /data"
+          if [ ! -f /data/ledger.init ]; then
+            date -u > /data/ledger.init && echo "$(date -u +%H:%M:%S) initialized an empty ledger in /data"
+          fi
+          echo "$(date -u +%H:%M:%S) ledger-db ready"
+          while true; do sleep 30 & wait $!; done
+        readinessProbe:
+          exec: { command: ["test", "-f", "/data/ledger.init"] }
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { memory: 32Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        volumeMounts:
+        - { name: data, mountPath: /data }
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: ledger-data

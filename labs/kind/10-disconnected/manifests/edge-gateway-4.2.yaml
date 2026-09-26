@@ -1,0 +1,53 @@
+# Lab 10: edge-gateway release 4.2.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-gateway
+  labels: { app: edge-gateway, looped.lab/id: "10" }
+  annotations:
+    kubernetes.io/change-cause: "release 4.2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: edge-gateway }
+  template:
+    metadata:
+      labels: { app: edge-gateway, looped.lab/id: "10" }
+    spec:
+      terminationGracePeriodSeconds: 5
+      nodeSelector: { pool: general }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+      - name: gateway
+        image: registry.invalid/looped/edge-gateway:4.2  # lab-fault: site-mirror name; not present on the node until imported
+        # The site cluster never reaches the internet: use what is on the node.
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "edge-gateway $APP_VERSION ok" > /www/index.html
+          echo ok > /www/healthz
+          echo "edge-gateway $APP_VERSION listening on :8080"
+          exec httpd -f -p 8080 -h /www
+        env:
+        - { name: APP_VERSION, value: "4.2" }
+        ports:
+        - { name: http, containerPort: 8080 }
+        readinessProbe:
+          httpGet: { path: /healthz, port: http }
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { memory: 32Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        volumeMounts:
+        - { name: www, mountPath: /www }
+      volumes:
+      - name: www
+        emptyDir: {}
