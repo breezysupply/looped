@@ -140,7 +140,23 @@ function renderSw(sw, assets, cache) {
       `var ASSETS = [\n${list}\n];`);
 }
 
+/* The opposite case: a file the registry (or the engine list) names that is
+   not on disk. Without this the build dies on a raw ENOENT stack trace. */
+function missing() {
+  const owner = {};
+  tracks().forEach(t => (t.files || []).forEach(f => { if (!owner[f]) owner[f] = t.id; }));
+  return allFiles()
+    .filter(f => !fs.existsSync(path.join(ROOT, f)))
+    .map(f => f + (owner[f] ? '  (track: ' + owner[f] + ')' : '  (engine list in tools/build.js)'));
+}
+
 /* ── run ─────────────────────────────────────────────────────────────── */
+const absent = missing();
+if (absent.length) {
+  console.error('the track registry lists files that do not exist:\n  ' + absent.join('\n  '));
+  process.exit(1);
+}
+
 const orphans = unclaimed();
 if (orphans.length) {
   console.error('not claimed by any track in data/tracks.js — these would never load:\n  ' +
