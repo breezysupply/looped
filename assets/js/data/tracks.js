@@ -241,6 +241,7 @@ LX.trackCounts = {
   containers: 79,
   aws: 83,
   entra: 64,
-  iac: 69
+  iac: 69,
+  onsite: 60
 };
 /* /generated */

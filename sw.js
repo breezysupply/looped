@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-7def1d0f';
+var CACHE = 'looped-59664cd4';
 var ASSETS = [
   './',
   './index.html',
@@ -32,6 +32,7 @@ var ASSETS = [
   './assets/js/sandbox.js',
   './assets/js/playbook.js',
   './assets/js/review.js',
+  './assets/js/onsite.js',
   './assets/js/app.js',
   './assets/js/shell-containers.js',
   './assets/js/data/containers-docker.js',
@@ -65,7 +66,26 @@ var ASSETS = [
   './assets/js/data/iac-playbooks.js',
   './assets/js/data/iac-outputs.js',
   './assets/js/data/iac-drills.js',
-  './assets/js/data/iac-labs.js'
+  './assets/js/data/iac-labs.js',
+  './assets/js/k8s-model.js',
+  './assets/js/k8s-kubectl.js',
+  './assets/js/data/onsite-lessons.js',
+  './assets/js/data/onsite-q-arch.js',
+  './assets/js/data/onsite-q-net.js',
+  './assets/js/data/onsite-q-trouble.js',
+  './assets/js/data/onsite-q-config.js',
+  './assets/js/data/onsite-q-delivery.js',
+  './assets/js/data/onsite-q-design.js',
+  './assets/js/data/onsite-q-behavior.js',
+  './assets/js/data/onsite-drills.js',
+  './assets/js/data/onsite-quiz.js',
+  './assets/js/data/onsite-labs.js',
+  './assets/js/data/onsite-design.js',
+  './assets/js/data/onsite-scripting.js',
+  './assets/js/data/onsite-reallabs.js',
+  './assets/js/data/onsite-stories.js',
+  './assets/js/data/onsite-path.js',
+  './assets/js/data/onsite-mock.js'
 ];
 
 self.addEventListener('install', function (e) {

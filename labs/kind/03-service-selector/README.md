@@ -36,7 +36,7 @@ would undo), and prove requests from storefront work.
    kubectl --context kind-looped-onsite -n looped-lab get service orders -o wide
    kubectl --context kind-looped-onsite -n looped-lab describe service orders
    kubectl --context kind-looped-onsite -n looped-lab get endpointslices -l kubernetes.io/service-name=orders -o yaml
-   kubectl --context kind-looped-onsite -n looped-lab exec deployment/storefront -- nslookup orders
+   kubectl --context kind-looped-onsite -n looped-lab exec deployment/storefront -- nslookup orders.looped-lab.svc.cluster.local
    ```
 
    Work the request path in order: does the name resolve (DNS)? to which
@@ -46,7 +46,10 @@ would undo), and prove requests from storefront work.
    - storefront switches from `-> orders-api ok (…)` to
      `FAILED: wget: can't connect to remote host (10.96.x.x): Connection refused`
      within a few seconds of the change.
-   - `nslookup orders` returns the Service's ClusterIP: DNS is working.
+   - The lookup returns the Service's ClusterIP: DNS is working. (With the
+     short name, busybox's `nslookup orders` also tries the other search
+     domains, prints NXDOMAIN for those and exits 1 even though it found the
+     answer; the full name avoids that noise.)
    - The Service's selector has two keys; the pods carry only one of them. The
      EndpointSlice for `orders` has no endpoints (`<unset>`), and
      `describe service` shows `Endpoints:` empty.

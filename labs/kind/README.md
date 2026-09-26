@@ -182,7 +182,9 @@ setup (once) → inject → investigate → fix → verify → reset
    applies the broken state. Re-running it always starts the lab over.
 3. **Investigate.** Each README lists read-only commands to start with and
    what you should see, including how long it takes to appear (probe periods,
-   back-off and image pull retries are real timers here).
+   back-off and image pull retries are real timers here). Note: kubectl 1.37
+   `describe` prints events by default only when it describes a single
+   object, so the READMEs add `--show-events=true` to `describe … -l …`.
 4. **Fix it** your way. There is usually more than one valid fix.
 5. **Verify:** `labs/kind/NN-name/verify.sh` — checks the cluster's *state*
    (not the commands you typed). It prints `PASS …` and exits 0, or prints

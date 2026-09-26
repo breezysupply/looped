@@ -23,6 +23,9 @@ set -euo pipefail
 command -v python3 >/dev/null || die "python3 is required by this harness helper"
 arch=$(docker version --format '{{.Server.Arch}}')
 platform="linux/$arch"
+# Raw index documents are cached here (verified against the pinned digest on use).
+CACHE_DIR="${LOOPED_HARNESS_CACHE:-${HOME:-/tmp}/.cache/looped-harness}"
+mkdir -p "$CACHE_DIR"
 nodes=$(kind get nodes --name "$CLUSTER")
 [ -n "$nodes" ] || die "cluster $CLUSTER has no nodes"
 
@@ -33,11 +36,18 @@ for ref in "$@"; do
   repo="${name_tag%:*}"               # docker.io/library/busybox
   work=$(mktemp -d)
   info "preload $ref ($platform)"
-  docker pull --quiet --platform "$platform" "$repo@$digest" >/dev/null
+  # Registry requests are rate-limited: reuse what is already local.
+  if ! docker image inspect "$repo@$digest" >/dev/null 2>&1; then
+    docker pull --quiet --platform "$platform" "$repo@$digest" >/dev/null
+  fi
   docker image save --platform "$platform" -o "$work/save.tar" "$repo@$digest"
   mkdir "$work/oci"
   tar -xf "$work/save.tar" -C "$work/oci"
-  docker buildx imagetools inspect --raw "$repo@$digest" > "$work/index.raw"
+  cached="$CACHE_DIR/${digest/:/-}.json"
+  if [ ! -s "$cached" ]; then
+    docker buildx imagetools inspect --raw "$repo@$digest" > "$cached.tmp" && mv "$cached.tmp" "$cached"
+  fi
+  cp "$cached" "$work/index.raw"
   python3 - "$work/oci" "$work/index.raw" "$digest" "$name_tag" "$repo" <<'PY'
 import hashlib, json, os, sys
 oci, raw_path, digest, name_tag, repo = sys.argv[1:]

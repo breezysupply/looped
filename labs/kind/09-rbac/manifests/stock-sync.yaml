@@ -41,7 +41,7 @@ spec:
               n=$(grep -o '"name": *"stock-levels-[a-z]*"' /work/resp | wc -l)
               echo "$(date -u +%H:%M:%S) sync ok: read $n stock ConfigMaps"
             else
-              echo "$(date -u +%H:%M:%S) sync failed: HTTP $code $(grep -o '"message": *"[^"]*"' /work/resp 2>/dev/null)$(cat /work/err)"
+              echo "$(date -u +%H:%M:%S) sync failed: HTTP $code $(grep -oE '"message": *"([^"\\]|\\.)*"' /work/resp 2>/dev/null)$(cat /work/err)"
             fi
             sleep 5 & wait $!
           done

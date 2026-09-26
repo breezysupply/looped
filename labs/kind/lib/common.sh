@@ -129,15 +129,18 @@ reset_lab() {
   return 0
 }
 
-# remove_node_images <file>: crictl rmi each listed image on each node of the
-# lab cluster (nodes named looped-onsite-*; anything else is skipped).
+# remove_node_images <file>: remove each listed image NAME from each node of
+# the lab cluster (nodes named looped-onsite-*; anything else is skipped).
+# 'ctr images rm' deletes only that name; content still referenced by other
+# names (lab 10's image shares its content with the pinned busybox) stays.
+# ('crictl rmi' would remove the image by ID, taking busybox with it.)
 remove_node_images() {
   local node img
   for node in $(kind get nodes --name "$CLUSTER" 2>/dev/null); do
     case "$node" in "$CLUSTER"-*) ;; *) continue ;; esac
     while IFS= read -r img; do
       case "$img" in ''|'#'*) continue ;; esac
-      docker exec "$node" crictl rmi "$img" >/dev/null 2>&1 || true
+      docker exec "$node" ctr --namespace k8s.io images rm "$img" >/dev/null 2>&1 || true
     done < "$1"
   done
 }

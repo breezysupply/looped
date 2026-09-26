@@ -36,7 +36,7 @@ fixing forward — and prove it. Explain why checkout still looks normal.
    kubectl --context kind-looped-onsite -n looped-lab get deployment payments-api
    kubectl --context kind-looped-onsite -n looped-lab get replicaset -l app=payments-api
    kubectl --context kind-looped-onsite -n looped-lab get pods -l app=payments-api
-   kubectl --context kind-looped-onsite -n looped-lab describe pod -l app=payments-api | grep -A12 Events
+   kubectl --context kind-looped-onsite -n looped-lab describe pod --show-events=true -l app=payments-api | grep -A12 Events
    kubectl --context kind-looped-onsite -n looped-lab rollout status deployment/payments-api --timeout=10s
    kubectl --context kind-looped-onsite -n looped-lab rollout history deployment/payments-api
    kubectl --context kind-looped-onsite -n looped-lab get deployment payments-api -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'

@@ -40,7 +40,7 @@ All commands run from the repo root.
    kubectl --context kind-looped-onsite -n looped-lab get deployment,replicaset,pods -o wide
    kubectl --context kind-looped-onsite -n looped-lab get pods -l app=catalog -o jsonpath='{range .items[*]}{.metadata.name}{"  owner="}{.metadata.ownerReferences[0].kind}/{.metadata.ownerReferences[0].name}{"  created="}{.metadata.creationTimestamp}{"\n"}{end}'
    kubectl --context kind-looped-onsite -n looped-lab get events --sort-by=.lastTimestamp
-   kubectl --context kind-looped-onsite -n looped-lab describe replicaset -l app=catalog
+   kubectl --context kind-looped-onsite -n looped-lab describe replicaset --show-events=true -l app=catalog
    kubectl --context kind-looped-onsite -n looped-lab get pod catalog-debug
    ```
 
@@ -51,6 +51,9 @@ All commands run from the repo root.
    - `catalog` shows 3/3 ready within a few seconds of the deletion, with
      **new pod names** and young ages. The ReplicaSet's events show
      `SuccessfulCreate` for each replacement.
+   - For a few seconds the deleted pods may still be listed (for example with
+     STATUS `Error` or `Terminating`, because the web server exits non-zero on
+     SIGTERM) next to their replacements.
    - `catalog-debug`: `Error from server (NotFound)`. Nothing recreated it.
    - Timing: replacements are created almost immediately; they become Ready
      after the readiness probe passes (probe period 5 s), usually within 10–20 s
