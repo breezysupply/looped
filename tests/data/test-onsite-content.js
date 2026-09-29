@@ -212,7 +212,25 @@ cases.forEach(c => {
   ok(!/(readiness probe|inode|intermediate|throttl|webhook|forwarder|diskpressure|disk pressure|\bca\b)/.test(lead), x + 'title and opening do not give the cause away', lead);
 });
 
-const RES = { 'case': cIds, walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
+/* ── conversations around the technical loops ─────────────────── */
+const talk = D.onsiteTalk || [], tIds = talk.map(t => t.id);
+ok(['talk-arrival', 'talk-cofounder', 'talk-lunch', 'talk-hm', 'talk-close'].every(id => tIds.indexOf(id) !== -1), 'talk: arrival, co-founder, lunch, hiring manager and close');
+ok(new Set(tIds).size === tIds.length, 'talk: ids unique');
+talk.forEach(t => {
+  const x = t.id + ': ';
+  ok(str(t.slot) && str(t.title) && arr(t.listen, 1) && arr(t.prepare, 1) && Array.isArray(t.ask) && Array.isArray(t.notes), x + 'slot, title, listening points, prompts to prepare');
+  ok(t.prepare.every(p => str(p.q) && arr(p.structure, 1) && Array.isArray(p.fields)), x + 'every prompt has a structure');
+  t.prepare.forEach(p => {
+    if (p.story) ok(stIds.indexOf(p.story) !== -1, x + 'story ' + p.story + ' resolves');
+    if (p.question) ok(qIds.indexOf(p.question) !== -1, x + 'question ' + p.question + ' resolves');
+  });
+  ok(t.ask.every(q => /\?$/.test(q)), x + 'questions to ask are questions');
+  ok(!/\b\d+\s*(%|percent|regions|customers|engineers|clusters)\b/i.test(JSON.stringify(t.prepare)), x + 'no invented metrics');
+});
+['talk-cofounder', 'talk-lunch', 'talk-hm'].forEach(id => ok(((talk.filter(t => t.id === id)[0] || {}).ask || []).length >= 4, id + ': at least four questions to choose from'));
+ok(talk.filter(t => /^talk-(arrival|cofounder|hm)$/.test(t.id)).every(t => /\((CTO|Director)[^)]*\)/.test(t.title)), 'talk: interviewers identified by role only');
+
+const RES = { talk: tIds, 'case': cIds, walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
 const fun = (D.onsitePath || {}).fundamentals || [];
 ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
 ok(hands.filter(h => !h.beyond).every(h => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === h.id))), 'path fundamentals: includes every hands-on scenario within the team\'s focus');
@@ -226,6 +244,7 @@ ok(fun.every(x => x.items.some(it => it.kind === 'hands' || it.kind === 'mock'))
 const day = (D.onsitePath || {}).day || [];
 ok(day.length === 5 && day.every(x => /^\d{1,2}:\d{2}–\d{1,2}:\d{2} EDT$/.test(x.slot)), 'path day: five loops, each with its time slot', day.map(x => x.slot));
 ok(day.every(x => x.items.length >= 2), 'path day: every loop has practice attached');
+ok(['talk-cofounder', 'talk-lunch', 'talk-hm', 'talk-close'].every(id => day.some(x => x.items.some(it => it.kind === 'talk' && it.id === id))), 'path day: conversation prep is on the day path');
 const allItems = [].concat.apply([], ['fundamentals', 'essential', 'deep', 'day'].map(k => [].concat.apply([], ((D.onsitePath || {})[k] || []).map(x => x.items))));
 ok(allItems.filter(it => it.kind === 'script').every(it => it.optional === true), 'path: Python exercises are optional (no coding loop on the agenda)');
 ['day', 'fundamentals', 'essential', 'deep'].forEach(k => {
@@ -257,7 +276,7 @@ function collect(x, where, key) {
 }
 Q.forEach(q => collect(q, q.id)); L.forEach(l => collect(l, l.id)); design.forEach(d => collect(d, d.id));
 stories.forEach(s => collect(s, s.id)); LABS.forEach(m => collect({ t: m.title, b: m.brief, o: m.onsite, obj: m.objectives.map(o => [o.text, o.hint, o.hint2]) }, m.id));
-real.forEach(r => collect(r, r.id));
+real.forEach(r => collect(r, r.id)); talk.forEach(t => collect(t, t.id));
 const NEG = /(\b(not|n't|never|no|nor|without|isn't|doesn't|don't|won't|cannot|can't|neither|myth|misconception|wrong|false|mistake|assum\w*|believ\w*|think\w*|claim\w*|says?|saying|stat\w*|calls?)\b|["“'‘])[^.]{0,60}$/i;
 const LINT = [
   [/readiness (probe )?(failure|failing|fails)[^.]{0,20}\brestart(s|ed)? the container/i, 'readiness failure restarts the container'],

@@ -23,7 +23,7 @@
 
   function st() {
     var s = U().LS.get(KEY, {}) || {};
-    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks', 'cases'].forEach(function (k) {
+    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks', 'cases', 'talk'].forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     });
     if (!Array.isArray(s.mocks)) s.mocks = [];
@@ -34,7 +34,7 @@
 
   var SECTIONS = [
     ['path', 'Path'], ['hands', 'Hands-on'], ['cases', 'Cases'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
-    ['design', 'Design'], ['scripting', 'Scripting'], ['real', 'Real labs'], ['stories', 'Stories'],
+    ['design', 'Design'], ['scripting', 'Scripting'], ['real', 'Real labs'], ['stories', 'Stories'], ['talk', 'Talk'],
     ['mock', 'Mock'], ['progress', 'Progress'], ['notes', 'Notes']
   ];
   var TOPICS = ['arch', 'net', 'trouble', 'config', 'delivery', 'design', 'behavior'];
@@ -107,6 +107,7 @@
       case 'hands': return !!(s.hands[id] && s.hands[id].status);
       case 'walk': return !!(s.walks[id] && s.walks[id].reviewed);
       case 'case': return !!(s.cases[id] && s.cases[id].revealed);
+      case 'talk': return !!(s.talk[id] && s.talk[id].ready);
     }
     return false;
   }
@@ -124,10 +125,11 @@
       case 'hands': x = byId('onsiteHands', id); return x ? x.title : id;
       case 'walk': x = byId('onsiteWalks', id); return x ? x.title : id;
       case 'case': x = byId('onsiteCases', id); return x ? x.title : id;
+      case 'talk': x = byId('onsiteTalk', id); return x ? x.title : id;
     }
     return id;
   }
-  var KIND_WORD = { 'case': 'Case', walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
+  var KIND_WORD = { talk: 'Talk prep', 'case': 'Case', walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
 
   /* ── priority from notes ─────────────────────────────────────── */
   var FORMAT_TOPICS = {
@@ -403,6 +405,49 @@
     if (ui.detail && byId('onsiteCases', ui.detail)) return renderCase(byId('onsiteCases', ui.detail));
     if (!list('onsiteCases').length) return '<p class="empty">The troubleshooting cases are not available in this build.</p>';
     return renderCasesList();
+  }
+
+  /* ── The conversations around the technical loops ──────────── */
+  function renderTalkList() {
+    var s = st();
+    return '<p class="blurb">The conversations on your agenda that are not technical interviews — the co-founder, lunch and the hiring manager — plus arrival and the close. Roles only; no names are stored in Looped.</p>' +
+      '<p class="muted small">"What they may be listening for" is a reasonable guess from the role and the format, not inside knowledge. Your notes and chosen questions stay in this browser.</p>' +
+      '<div class="list">' + list('onsiteTalk').map(function (x) {
+        var r = s.talk[x.id] || {}, picked = (r.picked || []).length;
+        return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
+          '<p class="muted small time-slot">' + esc(x.slot) + '</p><p class="card-title plain">' + esc(x.title) + '</p>' +
+          '<div class="card-meta">' + badge(x.prepare.length + ' to prepare') + (x.ask.length ? badge(picked + ' questions chosen') : '') + (r.ready ? badge('✓ ready', 'done') : '') + '</div></div>' +
+          '<button class="lab-go" data-prep-open="talk:' + esc(x.id) + '" aria-label="Open ' + esc(x.title) + '">▶</button></div></article>';
+      }).join('') + '</div>';
+  }
+  function renderTalk() {
+    var x = ui.detail && byId('onsiteTalk', ui.detail);
+    if (!x) return renderTalkList();
+    var r = st().talk[x.id] || {}, f = r.fields || {}, picked = r.picked || [];
+    return back() + '<p class="muted small time-slot">' + esc(x.slot) + '</p><h2 class="prep-h">' + esc(x.title) + '</h2>' +
+      label('What they may be listening for (a reasonable guess)') + ul(x.listen) +
+      x.prepare.map(function (pr, pi) {
+        return '<h3 class="prep-h3">' + inline(pr.q) + '</h3><ol class="steps-why">' + pr.structure.map(function (st_) { return '<li>' + inline(st_) + '</li>'; }).join('') + '</ol>' +
+          ((pr.story || pr.question) ? '<div class="chip-links">' +
+            (pr.story ? '<button class="chip small" data-prep-open="story:' + esc(pr.story) + '">Story: ' + esc(titleOf('story', pr.story)) + '</button>' : '') +
+            (pr.question ? '<button class="chip small" data-prep-open="question:' + esc(pr.question) + '">Practise the question</button>' : '') + '</div>' : '') +
+          (pr.fields || []).map(function (lab, fi) {
+            var key = pi + '.' + fi, idn = 'talk-' + esc(x.id) + '-' + pi + '-' + fi;
+            return '<label class="prep-label" for="' + idn + '">' + inline(lab) + '</label>' +
+              '<textarea id="' + idn + '" class="notes-input" rows="2" data-prep-talk="' + esc(x.id) + '|' + key + '">' + esc(f[key] || '') + '</textarea>';
+          }).join('');
+      }).join('') +
+      (x.ask.length ? label('Questions to ask — pick the two or three you most want answered') +
+        '<div class="checklist">' + x.ask.map(function (q, qi) {
+          var on = picked.indexOf(qi) !== -1;
+          return '<label><input type="checkbox" data-prep-tpick="' + esc(x.id) + ':' + qi + '"' + (on ? ' checked' : '') + '> ' + esc(q) + '</label>';
+        }).join('') + '</div>' +
+        '<label class="prep-label" for="talk-own-' + esc(x.id) + '">A question of your own</label>' +
+        '<textarea id="talk-own-' + esc(x.id) + '" class="notes-input" rows="2" data-prep-talk="' + esc(x.id) + '|own">' + esc(f.own || '') + '</textarea>' : '') +
+      (x.notes.length ? label('Notes for this part of the day') + ul(x.notes) : '') +
+      '<p class="muted small">Stored only in this browser (and in any export you make).</p>' +
+      '<div class="done-btns"><button class="btn ghost small" data-prep-talksave="' + esc(x.id) + '">Save notes</button>' +
+        '<button class="btn' + (r.ready ? '' : ' primary') + '" data-prep-talkready="' + esc(x.id) + '" aria-pressed="' + !!r.ready + '">' + (r.ready ? '✓ Ready — undo' : 'Mark ready') + '</button></div>';
   }
 
   /* ── Lessons ─────────────────────────────────────────────────── */
@@ -1006,7 +1051,7 @@
   }
 
   var SECTION_RENDER = {
-    path: renderPath, hands: renderHands, cases: renderCases, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
+    path: renderPath, hands: renderHands, cases: renderCases, talk: renderTalk, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
     scripting: renderScripting, real: renderReal, stories: renderStories, mock: renderMock, progress: renderProgress, notes: renderNotes
   };
 
@@ -1019,7 +1064,7 @@
       }
       return;
     }
-    var section = { 'case': 'cases', walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
+    var section = { talk: 'talk', 'case': 'cases', walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
     if (!section) return;
     if (U().track() !== 'onsite') return;
     U().go('prep');
@@ -1067,6 +1112,17 @@
     $$('[data-prep-story]', root()).forEach(function (t) {
       var parts = t.dataset.prepStory.split(':'), sr = s.stories[parts[0]] = s.stories[parts[0]] || {};
       sr.fields = sr.fields || {}; sr.fields[parts[1]] = t.value;
+    });
+    $$('[data-prep-talk]', root()).forEach(function (t) {
+      var parts = t.dataset.prepTalk.split('|'), tr = s.talk[parts[0]] = s.talk[parts[0]] || {};
+      tr.fields = tr.fields || {}; tr.fields[parts[1]] = t.value;
+    });
+    $$('[data-prep-tpick]', root()).forEach(function (cb) {
+      var tp = cb.dataset.prepTpick.split(':'), tr2 = s.talk[tp[0]] = s.talk[tp[0]] || {};
+      tr2.picked = tr2.picked || [];
+      var qi = Number(tp[1]), at = tr2.picked.indexOf(qi);
+      if (cb.checked && at === -1) tr2.picked.push(qi);
+      if (!cb.checked && at !== -1) tr2.picked.splice(at, 1);
     });
     var hyp = $('[data-prep-chyp]', root());
     if (hyp) { var hr0 = s.cases[hyp.dataset.prepChyp] = s.cases[hyp.dataset.prepChyp] || {}; hr0.hyp = hyp.value; }
@@ -1133,6 +1189,9 @@
       else s.real[rp2[0]] = { status: rp2[1], at: Date.now() };
       save(s); render(); return;
     }
+    if ((b = t.closest('[data-prep-talksave]'))) { keepNote(s); save(s); U().toast('Saved in this browser'); return; }
+    if ((b = t.closest('[data-prep-talkready]'))) { keepNote(s); var tr3 = s.talk[b.dataset.prepTalkready] = s.talk[b.dataset.prepTalkready] || {}; tr3.ready = tr3.ready ? 0 : Date.now(); save(s); render(); return; }
+    if (t.closest('[data-prep-tpick]')) { keepNote(s); save(s); return; }
     if ((b = t.closest('[data-prep-cctx]'))) { keepNote(s); var c0 = s.cases[b.dataset.prepCctx] = s.cases[b.dataset.prepCctx] || {}; c0.context = true; save(s); render(); return; }
     if ((b = t.closest('[data-prep-cask]'))) {
       keepNote(s); var cp = b.dataset.prepCask.split(':'), c1 = s.cases[cp[0]] = s.cases[cp[0]] || {};

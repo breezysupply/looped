@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
 
     /* ── every section renders, fits, and has something in it ── */
     const sections = await p.$$eval('[data-prep-section]', xs => xs.map(x => x.dataset.prepSection).filter((v, i, a) => a.indexOf(v) === i));
-    ok(sections.length === 13, W + ': thirteen Prep sections', sections);
+    ok(sections.length === 14, W + ': fourteen Prep sections', sections);
     for (const s of sections) {
       await p.click('.prep-nav [data-prep-section="' + s + '"]');
       const len = await p.$eval('#prepBody', el => el.textContent.trim().length);
@@ -147,6 +147,25 @@ const { chromium } = require('playwright');
     ok(await overflow() <= 0, W + ': case has no overflow', await overflow());
     await p.click('[data-prep-creset="ons-case-01"]');
     ok(!((await ls()).cases['ons-case-01'].revealed), W + ': a case can be worked again');
+
+    /* ── conversation prep: fill, pick questions, mark ready ── */
+    await p.click('.prep-nav [data-prep-section="path"]');
+    await p.click('[data-prep-path="day"]');
+    ok(await p.$('.path-item[data-prep-open="talk:talk-cofounder"]') !== null, W + ': Onsite day links the co-founder conversation prep');
+    await p.click('.path-item[data-prep-open="talk:talk-cofounder"]');
+    ok(await p.$eval('#prepBody', el => /Why this role, and why now/.test(el.textContent) && /reasonable guess/.test(el.textContent)), W + ': conversation prep opens with its prompts and the guess caveat');
+    await p.fill('[data-prep-talk="talk-cofounder|1.0"]', 'Disconnected delivery is the work I know.');
+    await p.check('[data-prep-tpick="talk-cofounder:0"]');
+    await p.check('[data-prep-tpick="talk-cofounder:3"]');
+    await p.click('[data-prep-talkready="talk-cofounder"]');
+    const tk = (await ls()).talk['talk-cofounder'];
+    ok(tk && tk.ready && tk.fields['1.0'] === 'Disconnected delivery is the work I know.' && tk.picked.sort().join() === '0,3', W + ': conversation notes, chosen questions and ready state persist', JSON.stringify(tk));
+    ok(await p.$eval('[data-prep-tpick="talk-cofounder:3"]', el => el.checked) && await p.$eval('[data-prep-talk="talk-cofounder|1.0"]', el => /Disconnected/.test(el.value)), W + ': re-render keeps the choices');
+    ok(await overflow() <= 0, W + ': conversation prep has no overflow', await overflow());
+    await p.click('.prep-nav [data-prep-section="talk"]');
+    ok(await p.$eval('#prepBody', el => /2 questions chosen/.test(el.textContent) && /✓ ready/.test(el.textContent)), W + ': Talk list shows chosen questions and ready state');
+    await p.click('.prep-nav [data-prep-section="path"]');
+    await p.click('[data-prep-path="fundamentals"]');
 
     /* ── mock: start, move through, finish, save ── */
     await p.click('.prep-nav [data-prep-section="mock"]');

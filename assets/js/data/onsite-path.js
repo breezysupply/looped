@@ -23,7 +23,8 @@ LX.onsitePath = {
   day: [
     { id: 'day-1', slot: '11:00–11:30 EDT', title: 'Co-founder conversation (CTO, virtual)', mins: 60, priority: 'P3', topics: ['behavior'], prereqs: [],
       why: 'Thirty minutes with a technical founder, on video. Expect motivation, judgment and how you think about the problems the company works on — prepare a short, honest story of your background and your Kubernetes ramp-up.',
-      items: [{ kind: 'question', id: 'ons-q-behavior-05' }, { kind: 'question', id: 'ons-q-behavior-02' },
+      items: [{ kind: 'talk', id: 'talk-arrival' }, { kind: 'talk', id: 'talk-cofounder' },
+              { kind: 'question', id: 'ons-q-behavior-05' }, { kind: 'question', id: 'ons-q-behavior-02' },
               { kind: 'story', id: 'ons-story-transfer' }, { kind: 'story', id: 'ons-story-dns' }] },
     { id: 'day-2', slot: '11:30–12:30 EDT', title: 'Infrastructure architecture & system design (60 min)', mins: 240, priority: 'P2', topics: ['design'], prereqs: [],
       why: 'A full hour. Establish requirements before tools, draw the design, handle the constraints the interviewer adds, and be ready to walk through infrastructure you have actually built.',
@@ -35,7 +36,7 @@ LX.onsitePath = {
               { kind: 'mock', id: 'mock-design-60' }] },
     { id: 'day-3', slot: '12:30–1:30 EDT', title: 'Lunch with the architecture interviewer', mins: 20, priority: 'P3', topics: ['behavior'], prereqs: [],
       why: 'Relaxed, but still part of the day. Have a few genuine questions about how the team works, and a short, human version of how you share operational knowledge.',
-      items: [{ kind: 'question', id: 'ons-q-behavior-04' }, { kind: 'story', id: 'ons-story-runbook' }] },
+      items: [{ kind: 'talk', id: 'talk-lunch' }, { kind: 'question', id: 'ons-q-behavior-04' }, { kind: 'story', id: 'ons-story-runbook' }] },
     { id: 'day-4', slot: '1:30–2:30 EDT', title: 'Infrastructure troubleshooting (60 min, one interviewer remote)', mins: 240, priority: 'P0', topics: ['trouble', 'net'], prereqs: [],
       why: 'A full hour, with one interviewer on video. Narrate as you go, ask for evidence explicitly, state hypotheses and what would disprove them, keep changes small, and verify from the user\'s side.',
       items: [{ kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'question', id: 'ons-q-net-04' },
@@ -48,7 +49,8 @@ LX.onsitePath = {
               { kind: 'mock', id: 'mock-trouble-60' }] },
     { id: 'day-5', slot: '2:30–3:00 EDT', title: 'Hiring-manager conversation (Director, Engineering)', mins: 60, priority: 'P3', topics: ['behavior'], prereqs: [],
       why: 'Ownership, judgment under ambiguity and how you work with others — then your questions, and a clear close.',
-      items: [{ kind: 'question', id: 'ons-q-behavior-01' }, { kind: 'question', id: 'ons-q-behavior-03' },
+      items: [{ kind: 'talk', id: 'talk-hm' }, { kind: 'talk', id: 'talk-close' },
+              { kind: 'question', id: 'ons-q-behavior-01' }, { kind: 'question', id: 'ons-q-behavior-03' },
               { kind: 'question', id: 'ons-q-behavior-06' }, { kind: 'story', id: 'ons-story-scope' },
               { kind: 'story', id: 'ons-story-capacity' }] }
   ],
