@@ -185,9 +185,12 @@
     var when = days > 1 ? days + ' days until' : days === 1 ? '1 day until' : days === 0 ? 'Today is' : Math.abs(days) + ' days since';
     return '<p class="muted">' + esc(when) + ' the date you entered (' + esc(s.date) + (s.dateConfirmed ? ', confirmed' : ', not yet confirmed') + ').</p>';
   }
+  /* optional items (e.g. Python, with no coding loop on the agenda) never
+     hold a session open */
   function sessionState(sess) {
-    var done = sess.items.filter(function (it) { return ev(it.kind, it.id, it.mode); }).length;
-    return { done: done, total: sess.items.length, complete: done === sess.items.length };
+    var req = sess.items.filter(function (it) { return !it.optional; });
+    var done = req.filter(function (it) { return ev(it.kind, it.id, it.mode); }).length;
+    return { done: done, total: req.length, complete: done === req.length };
   }
   function suggested(sessions) {
     var byId_ = {}; sessions.forEach(function (x) { byId_[x.id] = x; });
@@ -207,13 +210,16 @@
     var sessions = P[which] || [];
     var next = suggested(sessions);
     var total = sessions.reduce(function (a, x) { return a + x.mins; }, 0);
-    return '<p class="blurb"><b>Fundamentals</b> follows the team\'s preparation note — navigating a cluster, deploying and running an app, exposing it, updating, configuring and troubleshooting — with hands-on practice on a real cluster. <b>Essential</b> and <b>Deep</b> are the broader routes. The exact onsite agenda is unknown — nothing here is an actual Gallatin question.</p>' +
+    var dayNote = which === 'day' ? '<p class="verify-note">Your confirmed agenda, loop by loop. Times are as the invitation gave them (EDT) — confirm the local time with the recruiter. Each block gathers the practice for that conversation; work the troubleshooting and design blocks hardest.</p>' : '';
+    return '<p class="blurb"><b>Onsite day</b> follows your confirmed agenda, one block per interview. <b>Fundamentals</b> follows the team\'s preparation note — navigating a cluster, deploying and running an app, exposing it, updating, configuring and troubleshooting — with hands-on practice on a real cluster. <b>Essential</b> and <b>Deep</b> are the broader routes. The exact onsite agenda is unknown — nothing here is an actual Gallatin question.</p>' +
       dateLine() +
       '<div class="seg-row" role="group" aria-label="Path">' +
+        '<button class="chip' + (which === 'day' ? ' active' : '') + '" data-prep-path="day" aria-pressed="' + (which === 'day') + '">Onsite day · ' + (P.day || []).length + ' loops</button>' +
         '<button class="chip' + (which === 'fundamentals' ? ' active' : '') + '" data-prep-path="fundamentals" aria-pressed="' + (which === 'fundamentals') + '">Fundamentals · ' + (P.fundamentals || []).length + ' sessions</button>' +
         '<button class="chip' + (which === 'essential' ? ' active' : '') + '" data-prep-path="essential" aria-pressed="' + (which === 'essential') + '">Essential · ' + P.essential.length + ' sessions</button>' +
         '<button class="chip' + (which === 'deep' ? ' active' : '') + '" data-prep-path="deep" aria-pressed="' + (which === 'deep') + '">Deep · ' + P.deep.length + ' sessions</button>' +
       '</div>' +
+      dayNote +
       '<p class="count">About ' + Math.round(total / 60) + ' hours in total. A session is complete when every item in it has evidence.</p>' +
       sessions.map(function (x, i) {
         var s = sessionState(x), isNext = next && next.id === x.id;
@@ -224,8 +230,9 @@
         }).filter(Boolean);
         return '<article class="card path-card' + (isNext ? ' next' : '') + (s.complete ? ' complete' : '') + '">' +
           '<div class="card-main">' +
-            '<p class="card-title plain">' + (i + 1) + '. ' + esc(x.title) + '</p>' +
-            '<div class="card-meta">' + badge(x.priority) + badge('~' + x.mins + ' min') +
+            (x.slot ? '<p class="muted small time-slot">' + esc(x.slot) + '</p>' : '') +
+            '<p class="card-title plain">' + (x.slot ? '' : (i + 1) + '. ') + esc(x.title) + '</p>' +
+            '<div class="card-meta">' + badge(x.priority) + badge('~' + x.mins + ' min' + (x.slot ? ' of prep' : '')) +
               badge(s.done + ' / ' + s.total + ' with evidence', s.complete ? 'done' : '') +
               (isNext ? badge('suggested next', 'next') : '') +
               (boosts.indexOf('up') !== -1 ? badge('raised by your notes', 'up') : '') +
@@ -236,7 +243,7 @@
               var done = ev(it.kind, it.id, it.mode);
               return '<li><button class="path-item' + (done ? ' done' : '') + '" data-prep-open="' + it.kind + ':' + esc(it.id) + (it.mode ? ':' + it.mode : '') + '">' +
                 '<span class="pi-tick" aria-hidden="true">' + (done ? '✓' : '○') + '</span>' +
-                '<span class="pi-kind">' + esc(KIND_WORD[it.kind]) + (it.mode ? ' · ' + esc(it.mode) : '') + '</span>' +
+                '<span class="pi-kind">' + esc(KIND_WORD[it.kind]) + (it.mode ? ' · ' + esc(it.mode) : '') + (it.optional ? ' · optional' : '') + '</span>' +
                 '<span class="pi-title">' + esc(titleOf(it.kind, it.id)) + '</span>' +
                 '<span class="sr-only">' + (done ? ' — has evidence' : ' — not yet') + '</span></button></li>';
             }).join('') + '</ul>' +
@@ -521,7 +528,8 @@
   function renderScripting() {
     if (ui.detail) return renderScript(byId('onsiteScripting', ui.detail));
     var s = st();
-    return '<p class="blurb">Three Python exercises from infrastructure work, with fixtures and tests in <code>labs/python/</code>. Run them on your machine; the app cannot run them, so "tests pass" is your report.</p>' +
+    return '<p class="verify-note">Your agenda has no coding interview, so these are optional — do them only once the troubleshooting and design blocks feel solid.</p>' +
+      '<p class="blurb">Three Python exercises from infrastructure work, with fixtures and tests in <code>labs/python/</code>. Run them on your machine; the app cannot run them, so "tests pass" is your report.</p>' +
       '<div class="list">' + list('onsiteScripting').map(function (x) {
         var r = s.scripting[x.id] || {};
         return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +

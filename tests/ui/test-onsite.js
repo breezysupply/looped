@@ -47,6 +47,11 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="path"]');
     ok(await p.$eval('[data-prep-path="fundamentals"]', el => el.getAttribute('aria-pressed') === 'true'), W + ': Fundamentals is the default path');
     ok(await p.$$eval('.path-item[data-prep-open^="hands:"]', xs => xs.length) >= 9, W + ': Fundamentals links every hands-on scenario');
+    await p.click('[data-prep-path="day"]');
+    const slots = await p.$$eval('.path-card .time-slot', xs => xs.map(x => x.textContent));
+    ok(slots.length === 5 && /EDT/.test(slots[0]) && await p.$eval('#prepBody', el => /confirm the local time/.test(el.textContent)), W + ': Onsite day shows five timed loops and the time-zone note', slots);
+    ok(await overflow() <= 0, W + ': Onsite day has no overflow', await overflow());
+    await p.click('[data-prep-path="fundamentals"]');
 
     /* ── hands-on: hint, reveal, done, report, environment notes ── */
     await p.click('.path-item[data-prep-open="hands:ons-hands-05"]');

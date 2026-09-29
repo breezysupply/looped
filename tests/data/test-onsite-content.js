@@ -182,7 +182,12 @@ ok(hIds.every(id => deepIds.indexOf(id) !== -1 || fun.some(x => x.items.some(it 
 ok(hands.some(h => /\bk (get|delete) ds\b/.test(h.tasks.map(t => lines(t.cmd)).join('\n'))), 'hands-on: DaemonSet get/delete practised with the k alias');
 ok(hands.some(h => /etcdctl (member list|endpoint health|snapshot save)/.test(h.tasks.map(t => lines(t.cmd)).join('\n'))), 'hands-on: etcdctl practised');
 ok(fun.every(x => x.items.some(it => it.kind === 'hands' || it.kind === 'mock')), 'path fundamentals: every session has real-cluster or timed practice');
-['fundamentals', 'essential', 'deep'].forEach(k => {
+const day = (D.onsitePath || {}).day || [];
+ok(day.length === 5 && day.every(x => /^\d{1,2}:\d{2}–\d{1,2}:\d{2} EDT$/.test(x.slot)), 'path day: five loops, each with its time slot', day.map(x => x.slot));
+ok(day.every(x => x.items.length >= 2), 'path day: every loop has practice attached');
+const allItems = [].concat.apply([], ['fundamentals', 'essential', 'deep', 'day'].map(k => [].concat.apply([], ((D.onsitePath || {})[k] || []).map(x => x.items))));
+ok(allItems.filter(it => it.kind === 'script').every(it => it.optional === true), 'path: Python exercises are optional (no coding loop on the agenda)');
+['day', 'fundamentals', 'essential', 'deep'].forEach(k => {
   const sess = (D.onsitePath || {})[k] || [];
   ok(sess.length >= (k === 'deep' ? 10 : 4), 'path ' + k + ': has sessions', sess.length);
   const seen = [];

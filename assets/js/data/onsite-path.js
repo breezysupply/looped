@@ -16,6 +16,38 @@ LX.onsitePath = {
      kubectl — rather than cluster management or etcd. Hands-on items are done
      on a real practice cluster (Killercoda or Docker Desktop); the sim labs
      keep troubleshooting in the mix. */
+  /* The confirmed onsite agenda, one block per loop — roles only, no names.
+     Times are as the invitation gave them (EDT); confirm the local time for
+     an Austin office. Later phases add architecture walkthroughs, the
+     interviewer-led troubleshooting cases and conversation prep here. */
+  day: [
+    { id: 'day-1', slot: '11:00–11:30 EDT', title: 'Co-founder conversation (CTO, virtual)', mins: 60, priority: 'P3', topics: ['behavior'], prereqs: [],
+      why: 'Thirty minutes with a technical founder, on video. Expect motivation, judgment and how you think about the problems the company works on — prepare a short, honest story of your background and your Kubernetes ramp-up.',
+      items: [{ kind: 'question', id: 'ons-q-behavior-05' }, { kind: 'question', id: 'ons-q-behavior-02' },
+              { kind: 'story', id: 'ons-story-transfer' }, { kind: 'story', id: 'ons-story-dns' }] },
+    { id: 'day-2', slot: '11:30–12:30 EDT', title: 'Infrastructure architecture & system design (60 min)', mins: 240, priority: 'P2', topics: ['design'], prereqs: [],
+      why: 'A full hour. Establish requirements before tools, draw the design, handle the constraints the interviewer adds, and be ready to walk through infrastructure you have actually built.',
+      items: [{ kind: 'design', id: 'ons-design-artifacts' }, { kind: 'design', id: 'ons-design-multicluster' },
+              { kind: 'design', id: 'ons-design-stateful' }, { kind: 'design', id: 'ons-design-remediation' },
+              { kind: 'question', id: 'ons-q-design-01' }, { kind: 'question', id: 'ons-q-design-02' },
+              { kind: 'question', id: 'ons-q-delivery-01' }, { kind: 'question', id: 'ons-q-delivery-02' },
+              { kind: 'mock', id: 'mock-60' }] },
+    { id: 'day-3', slot: '12:30–1:30 EDT', title: 'Lunch with the architecture interviewer', mins: 20, priority: 'P3', topics: ['behavior'], prereqs: [],
+      why: 'Relaxed, but still part of the day. Have a few genuine questions about how the team works, and a short, human version of how you share operational knowledge.',
+      items: [{ kind: 'question', id: 'ons-q-behavior-04' }, { kind: 'story', id: 'ons-story-runbook' }] },
+    { id: 'day-4', slot: '1:30–2:30 EDT', title: 'Infrastructure troubleshooting (60 min, one interviewer remote)', mins: 240, priority: 'P0', topics: ['trouble', 'net'], prereqs: [],
+      why: 'A full hour, with one interviewer on video. Narrate as you go, ask for evidence explicitly, state hypotheses and what would disprove them, keep changes small, and verify from the user\'s side.',
+      items: [{ kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'question', id: 'ons-q-net-04' },
+              { kind: 'question', id: 'ons-q-trouble-06' }, { kind: 'question', id: 'ons-q-trouble-07' },
+              { kind: 'lab', id: 'ons-lab-02', mode: 'independent' }, { kind: 'lab', id: 'ons-lab-03', mode: 'independent' },
+              { kind: 'lab', id: 'ons-lab-07', mode: 'independent' }, { kind: 'hands', id: 'ons-hands-08' },
+              { kind: 'mock', id: 'mock-30' }] },
+    { id: 'day-5', slot: '2:30–3:00 EDT', title: 'Hiring-manager conversation (Director, Engineering)', mins: 60, priority: 'P3', topics: ['behavior'], prereqs: [],
+      why: 'Ownership, judgment under ambiguity and how you work with others — then your questions, and a clear close.',
+      items: [{ kind: 'question', id: 'ons-q-behavior-01' }, { kind: 'question', id: 'ons-q-behavior-03' },
+              { kind: 'question', id: 'ons-q-behavior-06' }, { kind: 'story', id: 'ons-story-scope' },
+              { kind: 'story', id: 'ons-story-capacity' }] }
+  ],
   fundamentals: [
     { id: 'fun-1', title: 'Find your way around a cluster', mins: 60, priority: 'P0', topics: ['arch'], prereqs: [],
       why: 'Context, namespaces, resource kinds, explain, output formats, labels, events — the reads everything else depends on.',
@@ -149,7 +181,8 @@ LX.onsitePath = {
       items: [{ kind: 'lesson', id: 'les-disconnected' }, { kind: 'question', id: 'ons-q-delivery-01' }, { kind: 'question', id: 'ons-q-delivery-02' },
               { kind: 'question', id: 'ons-q-delivery-04' }, { kind: 'question', id: 'ons-q-delivery-05' }, { kind: 'question', id: 'ons-q-delivery-06' },
               { kind: 'question', id: 'ons-q-delivery-08' }, { kind: 'lab', id: 'ons-lab-10', mode: 'independent' }, { kind: 'real', id: 'ons-real-10' },
-              { kind: 'script', id: 'ons-py-03' }, { kind: 'design', id: 'ons-design-artifacts' }] },
+              /* no coding loop on the agenda: the Python exercises are optional */
+              { kind: 'script', id: 'ons-py-03', optional: true }, { kind: 'design', id: 'ons-design-artifacts' }] },
     { id: 'deep-14', title: 'Operating many clusters and stateful services', mins: 105, priority: 'P2', topics: ['design'], prereqs: ['deep-12', 'deep-13'],
       why: 'Design conversations: requirements first, then tradeoffs, failure modes and ownership.',
       items: [{ kind: 'design', id: 'ons-design-multicluster' }, { kind: 'design', id: 'ons-design-stateful' },
@@ -159,7 +192,7 @@ LX.onsitePath = {
       why: 'Safe automation and remediation — plus the Python you would actually write for it.',
       items: [{ kind: 'design', id: 'ons-design-remediation' }, { kind: 'question', id: 'ons-q-design-01' }, { kind: 'question', id: 'ons-q-design-05' },
               { kind: 'question', id: 'ons-q-design-06' }, { kind: 'question', id: 'ons-q-design-07' },
-              { kind: 'script', id: 'ons-py-01' }, { kind: 'script', id: 'ons-py-02' }] },
+              { kind: 'script', id: 'ons-py-01', optional: true }, { kind: 'script', id: 'ons-py-02', optional: true }] },
     { id: 'deep-16', title: 'Your experience, told precisely', mins: 90, priority: 'P3', topics: ['behavior'], prereqs: ['deep-2', 'deep-13'],
       why: 'Five stories, the details only you can supply, and a full-length practice session.',
       items: [{ kind: 'story', id: 'ons-story-scope' }, { kind: 'story', id: 'ons-story-dns' }, { kind: 'story', id: 'ons-story-transfer' },
