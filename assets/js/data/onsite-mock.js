@@ -35,6 +35,14 @@ LX.onsiteMock = [
       { kind: 'question', pool: ['ons-q-delivery-01', 'ons-q-delivery-02', 'ons-q-delivery-05', 'ons-q-delivery-06'] },
       { kind: 'question', pool: ['ons-q-behavior-05', 'ons-q-behavior-02'] }
     ] },
+  { id: 'mock-trouble-60', title: 'Infrastructure troubleshooting (full hour)', mins: 60,
+    blurb: 'Shaped like the troubleshooting loop on your agenda: two interviewer-led cases (you ask for the evidence), one simulated incident in independent mode, and a verbal question. Practise narrating as if one interviewer were on video.',
+    slots: [
+      { kind: 'case', pool: ['ons-case-01', 'ons-case-03', 'ons-case-02', 'ons-case-06'] },
+      { kind: 'lab', pool: ['ons-lab-02', 'ons-lab-03', 'ons-lab-07', 'ons-lab-04', 'ons-lab-06'] },
+      { kind: 'case', pool: ['ons-case-08', 'ons-case-05', 'ons-case-04', 'ons-case-07'] },
+      { kind: 'question', pool: ['ons-q-trouble-09', 'ons-q-net-10', 'ons-q-trouble-10'] }
+    ] },
   { id: 'mock-design-60', title: 'Architecture & system design (full hour)', mins: 60,
     blurb: 'Shaped like the architecture loop on your agenda: walk through a system you worked on, then one design problem led by the interviewer, paced for an hour.',
     slots: [

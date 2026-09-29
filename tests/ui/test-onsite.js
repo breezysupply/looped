@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
 
     /* ── every section renders, fits, and has something in it ── */
     const sections = await p.$$eval('[data-prep-section]', xs => xs.map(x => x.dataset.prepSection).filter((v, i, a) => a.indexOf(v) === i));
-    ok(sections.length === 12, W + ': twelve Prep sections', sections);
+    ok(sections.length === 13, W + ': thirteen Prep sections', sections);
     for (const s of sections) {
       await p.click('.prep-nav [data-prep-section="' + s + '"]');
       const len = await p.$eval('#prepBody', el => el.textContent.trim().length);
@@ -131,6 +131,22 @@ const { chromium } = require('playwright');
     const wk = (await ls()).walks['ons-walk-bringup'];
     ok(wk && wk.reviewed && wk.fields['0.1'] === 'I owned the readiness validation.', W + ': walkthrough notes and rehearsal persist', JSON.stringify(wk));
     ok(await overflow() <= 0, W + ': walkthrough has no overflow', await overflow());
+
+    /* ── interviewer-led case: ask, hypothesise, reveal, debrief ── */
+    await p.evaluate(() => LXOnsite.open('case', 'ons-case-01'));
+    ok(await p.$eval('#prepBody', el => /Interviewer:/.test(el.textContent) && !/The cause/.test(el.textContent)), W + ': case opens with the interviewer\'s symptom and no answer');
+    await p.click('[data-prep-cctx="ons-case-01"]');
+    const askIds = await p.$$eval('[data-prep-cask^="ons-case-01:"]', xs => xs.slice(0, 2).map(x => x.dataset.prepCask));
+    for (const a of askIds) await p.click('[data-prep-cask="' + a + '"]');
+    ok(await p.$$eval('#prepBody .followup pre', xs => xs.length) === 2, W + ': each ask reveals its evidence');
+    await p.fill('#caseHyp', 'Leading hypothesis and how I would disprove it.');
+    await p.click('[data-prep-creveal="ons-case-01"]');
+    const cr = (await ls()).cases['ons-case-01'];
+    ok(cr && cr.revealed && cr.asked.length === 2 && /Leading hypothesis/.test(cr.hyp), W + ': case progress persists', JSON.stringify(cr));
+    ok(await p.$eval('#prepBody', el => /The cause/.test(el.textContent) && /Key evidence/.test(el.textContent) && /no score/.test(el.textContent)), W + ': debrief shows the cause and a qualitative scorecard');
+    ok(await overflow() <= 0, W + ': case has no overflow', await overflow());
+    await p.click('[data-prep-creset="ons-case-01"]');
+    ok(!((await ls()).cases['ons-case-01'].revealed), W + ': a case can be worked again');
 
     /* ── mock: start, move through, finish, save ── */
     await p.click('.prep-nav [data-prep-section="mock"]');

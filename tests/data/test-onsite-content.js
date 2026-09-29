@@ -190,7 +190,29 @@ design.forEach(d => {
   ok(/requirement/i.test(d.stages60[0]), d.id + ': the hour starts with requirements');
 });
 
-const RES = { walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
+/* ── interviewer-led cases ─────────────────────────────────────── */
+const cases = D.onsiteCases || [], cIds = cases.map(c => c.id);
+ok(cases.length >= 8, 'cases: at least eight', cases.length);
+ok(new Set(cIds).size === cIds.length, 'cases: ids unique');
+ok(cases.some(c => c.domain !== 'kubernetes') && cases.some(c => c.domain === 'kubernetes'), 'cases: a mix of Kubernetes and wider infrastructure');
+cases.forEach(c => {
+  const x = c.id + ': ', ids = c.asks.map(a => a.id);
+  ok(str(c.title) && str(c.opening, 40) && str(c.context, 20) && [1, 2, 3].indexOf(c.level) !== -1 && c.mins > 0, x + 'title, opening, context, level, minutes');
+  ok(arr(c.asks, 10, 14) && new Set(ids).size === ids.length && c.asks.every(a => str(a.label) && str(a.group) && str(a.shows, 10) && str(a.reads, 10)), x + '10–14 distinct asks, each with evidence and a reading');
+  ok(c.asks.filter(a => a.herring).length >= 2 && c.asks.filter(a => a.key).length >= 3, x + 'key asks and fair red herrings');
+  ok(c.asks.some(a => /change/i.test(a.label)) && c.asks.some(a => /(scope|affected|who|which)/i.test(a.label)), x + 'asks about recent changes and scope');
+  ok(arr(c.efficient, 3) && c.efficient.every(id => c.asks.some(a => a.id === id && a.key)), x + 'efficient path uses key asks');
+  ok(str(c.cause, 20) && str(c.mechanism, 60) && str(c.fix, 40) && str(c.verify, 20), x + 'cause, mechanism, fix, verify');
+  ok(arr(c.followups, 2, 4) && c.rubric && arr(c.rubric.strong, 3) && arr(c.rubric.acceptable, 1) && arr(c.rubric.redFlags, 2), x + 'follow-ups and rubric');
+  (c.lessons || []).forEach(id => ok(lIds.indexOf(id) !== -1, x + 'lesson ' + id + ' resolves'));
+  (c.questions || []).forEach(id => ok(qIds.indexOf(id) !== -1, x + 'question ' + id + ' resolves'));
+  (c.refs || []).forEach(r => ok(REF.test(r.u), x + 'reference on an official domain: ' + r.u));
+  (c.alsoPractise || []).forEach(a => ok(D.track.byId(a.track), x + 'track ' + a.track + ' exists'));
+  const lead = (c.title + ' ' + c.opening).toLowerCase();
+  ok(!/(readiness probe|inode|intermediate|throttl|webhook|forwarder|diskpressure|disk pressure|\bca\b)/.test(lead), x + 'title and opening do not give the cause away', lead);
+});
+
+const RES = { 'case': cIds, walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
 const fun = (D.onsitePath || {}).fundamentals || [];
 ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
 ok(hands.filter(h => !h.beyond).every(h => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === h.id))), 'path fundamentals: includes every hands-on scenario within the team\'s focus');
