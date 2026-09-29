@@ -127,7 +127,8 @@
     if (res.out) print(esc(res.out.replace(/\n$/, '')));
     if (res.err) print(esc(res.err.replace(/\n$/, '')), 'term-out term-err');
 
-    run.ran.push(line);
+    /* objectives read commands as kubectl; `k` is the same command */
+    run.ran.push(line.replace(/^\s*k(\s)/, 'kubectl$1'));
     run.out.push((res.out || '') + (res.err || ''));
     run.code.push(res.code || 0);
     run.last = { cmd: line, out: (res.out || '') + (res.err || '') };

@@ -44,11 +44,14 @@ const kubeconfig = path.join(work, 'kubeconfig');
 fs.writeFileSync(kubeconfig, kc, { mode: 0o600 });
 const ENV = Object.assign({}, process.env, { KUBECONFIG: kubeconfig });
 
+/* the scenarios use the `k` alias; aliases do not expand in `bash -c`, so a
+   function stands in for it */
+const K_FN = 'k() { kubectl "$@"; }\n';
 function sh(cmd, timeoutSec) {
-  const r = spawnSync('bash', ['-c', cmd], { cwd: work, env: ENV, encoding: 'utf8', timeout: (timeoutSec || 240) * 1000 });
+  const r = spawnSync('bash', ['-c', K_FN + cmd], { cwd: work, env: ENV, encoding: 'utf8', timeout: (timeoutSec || 240) * 1000 });
   return { code: r.status, out: (r.stdout || '') + (r.stderr || '') };
 }
-const READONLY = /^\s*(kubectl\s+(get|describe|logs|exec|top|explain|api-resources|config|rollout\s+(status|history)|wait)\b|curl\b|cat\b|echo\b|sleep\b|NODE_\w+=)/;
+const READONLY = /^\s*((kubectl|k)\s+(get|describe|logs|exec|top|explain|api-resources|config|rollout\s+(status|history)|wait)\b|etcdctl\s+(member|endpoint|get|version)\b|curl\b|cat\b|echo\b|sleep\b|NODE_\w+=)/;
 function readOnlyPart(cmd) {
   const lines = cmd.split('\n');
   /* heredocs are one unit; if the command has one, retry only what follows it */
@@ -69,13 +72,17 @@ for (const s of LX.onsiteHands) {
     const r = sh(join(c));
     if (r.code !== 0) { console.log('  setup failed: ' + join(c) + '\n' + r.out); res.ok = false; }
   }
+  /* a task marked `defines` (a shell variable or function the learner keeps
+     using) is replayed before every later task in the scenario */
+  let prelude = '';
   s.tasks.forEach(function (t, i) {
-    const cmd = join(t.test || t.cmd);
+    const cmd = prelude + join(t.test || t.cmd);
     if (cmd === 'skip') { res.tasks.push({ i: i, skipped: true }); return; }
     const re = new RegExp(t.re || '.*', 'm');
     const t0 = Date.now();
     let r = sh(cmd), tries = 1;
-    const retry = readOnlyPart(cmd);
+    const retryPart = readOnlyPart(join(t.test || t.cmd));
+    const retry = retryPart ? prelude + retryPart : null;
     while (!re.test(r.out) && retry && (Date.now() - t0) / 1000 < (t.wait || 60)) {
       sleep(3); r = sh(retry); tries++;
     }
@@ -83,6 +90,7 @@ for (const s of LX.onsiteHands) {
     const secs = Math.round((Date.now() - t0) / 1000);
     res.tasks.push({ i: i, pass: pass, tries: tries, secs: secs, used: t.test ? 'test' : 'cmd' });
     console.log('  ' + (pass ? 'ok  ' : 'FAIL') + ' ' + (i + 1) + '. ' + t.do.slice(0, 70) + (t.test ? '  [test variant]' : '') + '  (' + secs + 's, ' + tries + ' run' + (tries > 1 ? 's' : '') + ')');
+    if (t.defines) prelude += join(t.cmd).split('\n').filter(l => !/^\s*etcdctl\s/.test(l)).join('\n') + '\n';
     if (!pass) { res.ok = false; console.log('      wanted /' + t.re + '/, got:\n      ' + r.out.trim().split('\n').slice(-12).join('\n      ')); }
   });
   let chk = sh(join(s.check.cmd)), ctries = 1; const c0 = Date.now();

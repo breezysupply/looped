@@ -146,7 +146,7 @@ ok(str(intro.warning, 40) && /practice/.test(intro.warning) && /work cluster/.te
   ok(/^https:\/\/(killercoda\.com|docs\.docker\.com)\//.test(e.url), 'hands-on: environment link on its official site: ' + e.url));
 /* a mutating kubectl line must name the practice namespace (or be about the
    namespace itself); nothing may delete another namespace or use --all */
-const MUTATE = /^\s*kubectl\s+(create|apply|delete|scale|set|expose|run|patch|label|annotate|rollout\s+(undo|restart)|edit|replace)\b/;
+const MUTATE = /^\s*(kubectl|k)\s+(create|apply|delete|scale|set|expose|run|patch|label|annotate|rollout\s+(undo|restart)|edit|replace)\b/;
 hands.forEach(h => {
   const w = h.id + ': ';
   ok(/^ons-hands-\d\d$/.test(h.id) && str(h.title) && str(h.goal, 40) && /^P[0-3]$/.test(h.priority) && h.mins > 0, w + 'id, title, goal, priority, minutes');
@@ -161,20 +161,26 @@ hands.forEach(h => {
   all.forEach(l => {
     if (/--context\b/.test(l)) ok(false, w + 'commands stay environment-neutral (no --context)', l);
     if (/--all(-namespaces)?\b|\s-A\b/.test(l) && MUTATE.test(l)) ok(false, w + 'no mutating command across all namespaces', l);
-    if (/kubectl\s+delete\s+(ns|namespaces?)\b/.test(l)) ok(/delete\s+(ns|namespaces?)\s+practice\s*$/.test(l.trim()), w + 'only the practice namespace is ever deleted', l);
-    if (MUTATE.test(l) && !/kubectl\s+(create|delete)\s+(ns|namespaces?)\s+practice\b/.test(l)) {
-      ok(/(-n|--namespace)[ =]practice\b/.test(l) || /-f\s+-\s*$/.test(l) && /kubectl\s+apply\s+-f\s+-/.test(l), w + 'mutating command names -n practice', l);
+    if (/\b(kubectl|k)\s+delete\s+(ns|namespaces?)\b/.test(l)) ok(/delete\s+(ns|namespaces?)\s+practice\s*$/.test(l.trim()), w + 'only the practice namespace is ever deleted', l);
+    if (MUTATE.test(l) && !/\b(kubectl|k)\s+(create|delete)\s+(ns|namespaces?)\s+practice\b/.test(l)) {
+      ok(/(-n|--namespace)[ =]practice\b/.test(l) || /-f\s+-\s*$/.test(l) && /\b(kubectl|k)\s+apply\s+-f\s+-/.test(l), w + 'mutating command names -n practice', l);
     }
   });
   /* the apply -f - lines are fed by commands that set the namespace */
-  all.forEach((l, i) => { if (/\|\s*kubectl\s+apply\s+-f\s+-/.test(l)) ok(/-n practice|namespace practice/.test(l), w + 'piped apply is scoped to practice', l); });
+  all.forEach((l, i) => { if (/\|\s*(kubectl|k)\s+apply\s+(-n practice\s+)?-f\s+-/.test(l)) ok(/-n practice|namespace practice/.test(l), w + 'piped apply is scoped to practice', l); });
 });
 
 /* ── path and mock resolve ─────────────────────────────────────── */
 const RES = { lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
 const fun = (D.onsitePath || {}).fundamentals || [];
 ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
-ok(hIds.every(id => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === id))), 'path fundamentals: includes every hands-on scenario');
+ok(hands.filter(h => !h.beyond).every(h => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === h.id))), 'path fundamentals: includes every hands-on scenario within the team\'s focus');
+ok(hands.filter(h => h.beyond).every(h => !fun.some(x => x.items.some(it => it.id === h.id))), 'path fundamentals: leaves out what the team said not to worry about');
+ok(hands.filter(h => h.beyond).every(h => /beyond the team/i.test(h.goal)), 'hands-on: out-of-focus scenarios say so');
+const deepIds = ((D.onsitePath || {}).deep || []).reduce((a, x) => a.concat(x.items.map(it => it.id)), []);
+ok(hIds.every(id => deepIds.indexOf(id) !== -1 || fun.some(x => x.items.some(it => it.id === id))), 'path: every hands-on scenario is on some path');
+ok(hands.some(h => /\bk (get|delete) ds\b/.test(h.tasks.map(t => lines(t.cmd)).join('\n'))), 'hands-on: DaemonSet get/delete practised with the k alias');
+ok(hands.some(h => /etcdctl (member list|endpoint health|snapshot save)/.test(h.tasks.map(t => lines(t.cmd)).join('\n'))), 'hands-on: etcdctl practised');
 ok(fun.every(x => x.items.some(it => it.kind === 'hands' || it.kind === 'mock')), 'path fundamentals: every session has real-cluster or timed practice');
 ['fundamentals', 'essential', 'deep'].forEach(k => {
   const sess = (D.onsitePath || {})[k] || [];

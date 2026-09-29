@@ -1323,7 +1323,7 @@
     var verb = o.pos[0];
     var raw = 'kubectl ' + a.join(' ');
     if (!verb || verb === 'help' || o.f['--help']) {
-      return ok('kubectl — SIMULATION with a bounded command set.\nSupported: ' + SUPPORTED + '.\n' +
+      return ok('kubectl — SIMULATION with a bounded command set. `k` works as an alias.\nSupported: ' + SUPPORTED + '.\n' +
         'Everything you see is derived from a small model of this namespace; see the lab notes for what is simplified.\n');
     }
     if (o.f['--context'] && o.f['--context'] !== m.context) {

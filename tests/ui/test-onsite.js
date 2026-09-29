@@ -110,7 +110,7 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="progress"]');
     const prog = await p.$eval('#prepBody', el => el.textContent);
     ok(/Studied a concept\s*1 \/ 16/.test(prog) && /Answered independently\s*1 \/ 60/.test(prog), W + ': tiers count what was done', prog.slice(0, 500));
-    ok(/Reported a hands-on PASS check\s*1 \/ 9/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
+    ok(/Reported a hands-on PASS check\s*1 \/ 11/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
     ok(/Automatically verified real-lab check/.test(prog) && /Not available/.test(prog) && !/readiness score:|%/.test(prog), W + ': no machine-verified claim and no percentage score');
 
     /* ── mock: start, move through, finish, save ── */
@@ -142,7 +142,7 @@ const { chromium } = require('playwright');
     const run = async (cmd) => { await p.fill('#sbInput', cmd); await p.press('#sbInput', 'Enter'); };
     await run('kubectl port-forward svc/orders 8080:80');
     ok(await p.$eval('#sbTerm', el => /not supported in this simulation/.test(el.textContent)), W + ': unsupported command answered honestly');
-    await run('kubectl get endpoints orders');
+    await run('k get endpoints orders');
     ok(await p.$eval('#sbObjCount', el => /^1 \//.test(el.textContent)), W + ': evidence objective met by a real read', await p.$eval('#sbObjCount', el => el.textContent));
     ok(await overflow() <= 0, W + ': lab has no horizontal overflow', await overflow());
     await p.click('#sbReset');

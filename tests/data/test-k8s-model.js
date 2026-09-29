@@ -378,6 +378,12 @@ function pods(w, app) { return M(w).pods.filter(p => !app || p.labels.app === ap
   ok(pods(again).map(p => p.name).join() === names, 'reset: a fresh world from the seed is the original state');
 })();
 
+/* ── 15a. `k` is kubectl ─────────────────────────────────────────── */
+(function () {
+  const a = world(seed()), b = world(seed());
+  ok(k(a, 'k get pods -n shop').out === k(b, 'kubectl get pods -n shop').out, 'alias: k is kubectl');
+})();
+
 /* ── 15. the containers track's static kubectl is untouched ────── */
 (function () {
   const w = LXShell.createWorld({});

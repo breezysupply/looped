@@ -284,7 +284,11 @@
   }
 
   /* ── the command ─────────────────────────────────────────────── */
-  LXShell.register('kubectl', function (w, a) {
+  /* `k` is the alias most practice environments (and engineers) define for
+     kubectl; accept it everywhere kubectl is accepted */
+  LXShell.register('k', function (w, a, stdin) { return KUBECTL(w, a, stdin); });
+  LXShell.register('kubectl', KUBECTL);
+  function KUBECTL(w, a) {
     /* onsite labs carry a reconciling cluster model; everything else keeps the
        static fixtures below */
     if (w.k8sModel && window.LXK8s && window.LXK8s.run) return window.LXK8s.run(w, a, U);
@@ -534,7 +538,7 @@
     if (verb === 'version') return ok('Client Version: v1.30.4\nServer Version: v1.30.4-eks-a1b2c3d\n');
 
     return err('error: unknown command "' + verb + '" for "kubectl"');
-  });
+  }
 
   /* ── docker, enough of it for the container half ─────────────── */
   LXShell.register('docker', function (w, a) {

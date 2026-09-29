@@ -59,6 +59,24 @@ LX.onsiteHands = [
         "env": null
       },
       {
+        "do": "Set up the `k` shortcut for kubectl, with Tab completion still working.",
+        "hint": "A shell alias, plus kubectl's completion script registered for the alias.",
+        "cmd": [
+          "alias k=kubectl",
+          "source <(kubectl completion bash)",
+          "complete -o default -F __start_kubectl k",
+          "k get nodes"
+        ],
+        "expect": "`k get nodes` prints exactly what `kubectl get nodes` does, and `k get po<Tab>` completes.",
+        "why": "`k` is the alias most practice environments and engineers use. Looped's scenarios mostly spell out `kubectl` so they read clearly — type `k` whenever you like; the simulated labs accept it too. Add these lines to your shell's startup file to keep them.",
+        "env": {
+          "killercoda": "bash. `k` is often already defined — `type k` tells you. Add the lines to ~/.bashrc to keep them.",
+          "desktop": "macOS uses zsh: `alias k=kubectl`, then `source <(kubectl completion zsh)` (if completion is not set up yet, run `autoload -Uz compinit && compinit` first). Add them to ~/.zshrc."
+        },
+        "test": "k get nodes",
+        "re": "Ready"
+      },
+      {
         "do": "List the nodes with their roles, versions and internal IPs.",
         "hint": "`get nodes`, with the wide output format.",
         "cmd": "kubectl get nodes -o wide",
@@ -352,6 +370,164 @@ LX.onsiteHands = [
     "sims": [
       "ons-lab-01"
     ],
+    "track": "onsite"
+  },
+  {
+    "id": "ons-hands-10",
+    "title": "Run one pod per node with a DaemonSet",
+    "mins": 25,
+    "priority": "P1",
+    "topic": "deploy",
+    "goal": "See the DaemonSets every cluster already runs, create your own node agent, find out why it skips the control-plane node, let it run everywhere, update it, and delete it — using the `k` alias throughout.",
+    "setup": [
+      "kubectl create namespace practice --dry-run=client -o yaml | kubectl apply -f -"
+    ],
+    "tasks": [
+      {
+        "do": "List every DaemonSet in the cluster.",
+        "hint": "`get ds` across all namespaces. (If `k` is not set up, see the first scenario, or type kubectl.)",
+        "cmd": "k get ds -A",
+        "expect": "System DaemonSets in kube-system — typically `kube-proxy` and the network plugin's agent (its name depends on the cluster). DESIRED, CURRENT and READY usually equal the number of nodes.",
+        "why": "DaemonSets are for things every node needs: networking, log shipping, monitoring agents. A node missing one of them is often a broken node.",
+        "re": "kube-proxy",
+        "env": null
+      },
+      {
+        "do": "Describe kube-proxy's DaemonSet and read how many nodes it is meant to cover.",
+        "hint": "`describe ds` in kube-system; look for the scheduled counts.",
+        "cmd": "k describe ds kube-proxy -n kube-system | head -12",
+        "expect": "`Desired Number of Nodes Scheduled` and `Current Number of Nodes Scheduled` equal to your node count, and a Pods Status line with the Running count.",
+        "why": "A DaemonSet has no replica count. The number of pods follows the number of eligible nodes: add a node and a pod appears on it.",
+        "re": "Desired Number of Nodes Scheduled",
+        "env": null
+      },
+      {
+        "do": "Create your own DaemonSet, `node-agent`, that logs which node it runs on.",
+        "hint": "There is no `k create daemonset`; apply a manifest. Paste the block.",
+        "cmd": [
+          "k apply -n practice -f - <<'EOF'",
+          "apiVersion: apps/v1",
+          "kind: DaemonSet",
+          "metadata:",
+          "  name: node-agent",
+          "spec:",
+          "  selector:",
+          "    matchLabels:",
+          "      app: node-agent",
+          "  template:",
+          "    metadata:",
+          "      labels:",
+          "        app: node-agent",
+          "    spec:",
+          "      terminationGracePeriodSeconds: 5",
+          "      containers:",
+          "      - name: agent",
+          "        image: busybox:1.37",
+          "        command: [\"sh\", \"-c\", \"echo agent running on $NODE_NAME; sleep 3600\"]",
+          "        env:",
+          "        - name: NODE_NAME",
+          "          valueFrom:",
+          "            fieldRef:",
+          "              fieldPath: spec.nodeName",
+          "        resources:",
+          "          requests:",
+          "            cpu: 10m",
+          "            memory: 16Mi",
+          "EOF",
+          "k get ds,pods -n practice -o wide"
+        ],
+        "expect": "`daemonset.apps/node-agent created`, then one `node-agent-…` pod per *worker* node — compare its NODE column with `k get nodes`.",
+        "why": "The DaemonSet controller creates one pod per eligible node and pins it there (with node affinity); the scheduler does not spread them.",
+        "env": {
+          "killercoda": "With a controlplane and node01, expect one agent, on node01.",
+          "desktop": "Docker Desktop's single node usually runs workloads, so expect one agent there."
+        },
+        "re": "node-agent-\\S+\\s+1/1\\s+Running",
+        "wait": 90
+      },
+      {
+        "do": "Read the agent's logs from every pod at once.",
+        "hint": "`logs` accepts a label selector; `--prefix` shows which pod each line came from.",
+        "cmd": "k logs -n practice -l app=node-agent --prefix",
+        "expect": "`[pod/node-agent-…/agent] agent running on <node>` for each pod.",
+        "why": "The pod learned its node name from the Downward API (`fieldRef: spec.nodeName`) — a common pattern for node agents.",
+        "re": "agent running on",
+        "env": null
+      },
+      {
+        "do": "Find out why no agent runs on the control-plane node.",
+        "hint": "Look at each node's taints.",
+        "cmd": "k get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints[*].key",
+        "expect": "On clusters that keep workloads off the control plane, that node lists `node-role.kubernetes.io/control-plane`; worker nodes list none.",
+        "why": "A taint repels pods that do not tolerate it. DaemonSet pods get some tolerations automatically (for example for not-ready and unreachable nodes), but not this one.",
+        "env": {
+          "killercoda": "The controlplane node usually carries the control-plane taint.",
+          "desktop": "The single node usually has no taint — which is why the agent already runs there. The next task changes nothing visible for you, but read why."
+        },
+        "re": "node-role.kubernetes.io/control-plane"
+      },
+      {
+        "do": "Let the agent run on the control-plane node too, and watch the rollout.",
+        "hint": "Add a toleration for that taint to the pod template, then check rollout status.",
+        "cmd": [
+          "k patch ds node-agent -n practice --type=merge -p '{\"spec\":{\"template\":{\"spec\":{\"tolerations\":[{\"key\":\"node-role.kubernetes.io/control-plane\",\"operator\":\"Exists\",\"effect\":\"NoSchedule\"}]}}}}'",
+          "k rollout status ds/node-agent -n practice",
+          "k get pods -n practice -l app=node-agent -o wide"
+        ],
+        "expect": "`daemon set \"node-agent\" successfully rolled out` and one agent per node, including the control-plane node.",
+        "why": "Changing the template rolls the DaemonSet one node at a time by default (RollingUpdate, maxUnavailable 1). Real node agents often tolerate every taint so no node goes unmonitored.",
+        "re": "successfully rolled out",
+        "env": null
+      },
+      {
+        "do": "Delete one agent pod and see where its replacement lands.",
+        "hint": "Delete by name, then list with -o wide.",
+        "cmd": [
+          "k delete pod -n practice $(k get pod -n practice -l app=node-agent -o jsonpath='{.items[0].metadata.name}')",
+          "k get pods -n practice -l app=node-agent -o wide"
+        ],
+        "expect": "After a few seconds (the manifest gives pods 5 seconds to stop; the default is 30), a new pod with a new name appears — on the same node the deleted one was on.",
+        "why": "Like a ReplicaSet, the DaemonSet controller replaces missing pods; unlike one, it places the replacement on the specific node that lacks an agent.",
+        "re": "node-agent-\\S+\\s+(0/1|1/1)",
+        "env": null
+      },
+      {
+        "do": "Look at the DaemonSet's rollout history.",
+        "hint": "The same `rollout` subcommands work on DaemonSets.",
+        "cmd": "k rollout history ds/node-agent -n practice",
+        "expect": "Revisions 1 and 2 — the original and the one with the toleration.",
+        "why": "`rollout undo ds/...` works too, and restores only the pod template, exactly as for Deployments.",
+        "re": "REVISION",
+        "env": null
+      },
+      {
+        "do": "Delete the DaemonSet and confirm its pods go with it.",
+        "hint": "`delete ds`, then list the pods by label.",
+        "cmd": [
+          "k delete ds node-agent -n practice",
+          "k get pods -n practice -l app=node-agent"
+        ],
+        "expect": "`daemonset.apps \"node-agent\" deleted`, then the pods Terminating, and shortly `No resources found`.",
+        "why": "Deleting the owner deletes what it owns (garbage collection through ownerReferences). Deleting a system DaemonSet like kube-proxy would do the same on every node — which is why you only ever do this in your own namespace.",
+        "re": "deleted",
+        "env": null
+      }
+    ],
+    "check": {
+      "cmd": "c=$(k get events -n practice --field-selector involvedObject.kind=DaemonSet,reason=SuccessfulCreate -o name | wc -l); left=$(k get pods -n practice -l app=node-agent -o name | wc -l); if k get ds node-agent -n practice >/dev/null 2>&1; then echo 'FAIL: node-agent still exists — finish the last task'; elif [ \"$c\" -ge 2 ] && [ \"$left\" -eq 0 ]; then echo PASS; else echo \"FAIL: $c DaemonSet pod creations seen, $left pods left\"; fi",
+      "expect": "PASS"
+    },
+    "cleanup": "# the last task already deleted node-agent",
+    "talk": "\"A DaemonSet runs one pod per eligible node — networking, logging, monitoring agents. The count follows the nodes, taints decide eligibility, updates roll node by node, and deleting it removes the agent everywhere.\"",
+    "lessons": [
+      "les-workloads",
+      "les-scheduling"
+    ],
+    "questions": [
+      "ons-q-arch-07",
+      "ons-q-arch-08"
+    ],
+    "sims": [],
     "track": "onsite"
   },
   {
@@ -1080,6 +1256,162 @@ LX.onsiteHands = [
       "ons-q-arch-09",
       "ons-q-trouble-02",
       "ons-q-trouble-03"
+    ],
+    "sims": [],
+    "track": "onsite"
+  },
+  {
+    "id": "ons-hands-11",
+    "title": "Look inside etcd with etcdctl",
+    "mins": 30,
+    "priority": "P3",
+    "topic": "etcd",
+    "beyond": true,
+    "goal": "Beyond the team's stated focus, but common in practice scenarios: find etcd, see how the API server reaches it, check its health, see how objects (and an unencrypted Secret) are stored, and take and inspect a snapshot. Restore is explained, not run.",
+    "setup": [
+      "kubectl create namespace practice --dry-run=client -o yaml | kubectl apply -f -"
+    ],
+    "tasks": [
+      {
+        "do": "Find the etcd pod.",
+        "hint": "On kubeadm-built clusters, etcd is a static pod in kube-system labelled `component=etcd`.",
+        "cmd": "k get pods -n kube-system -l component=etcd -o wide",
+        "expect": "One `etcd-<node>` pod on the control-plane node.",
+        "why": "The API server is etcd's only client in normal operation. Everything `kubectl get` returns was read from here.",
+        "env": {
+          "killercoda": "etcd runs as a static pod on controlplane.",
+          "desktop": "If nothing is listed, this Kubernetes does not expose etcd to you — do this scenario on Killercoda instead."
+        },
+        "re": "etcd-\\S+\\s+1/1\\s+Running"
+      },
+      {
+        "do": "See how the API server is configured to reach etcd.",
+        "hint": "Read the kube-apiserver pod's command-line flags that mention etcd.",
+        "cmd": "k get pod -n kube-system -l component=kube-apiserver -o yaml | grep -- '--etcd'",
+        "expect": "`--etcd-servers=https://127.0.0.1:2379` plus `--etcd-cafile`, `--etcd-certfile` and `--etcd-keyfile`.",
+        "why": "etcd requires mutual TLS: the API server proves who it is with a client certificate, and checks etcd's certificate against a CA.",
+        "re": "--etcd-servers",
+        "env": null
+      },
+      {
+        "do": "Find etcd's own certificate, key, CA and data directory.",
+        "hint": "Same idea, on the etcd pod.",
+        "cmd": "k get pod -n kube-system -l component=etcd -o yaml | grep -E -- '--(listen-client-urls|cert-file|key-file|trusted-ca-file|data-dir)'",
+        "expect": "Paths under `/etc/kubernetes/pki/etcd/` and `--data-dir=/var/lib/etcd`.",
+        "why": "Every etcdctl command needs the endpoint and these three files — that is most of what makes etcdctl feel awkward.",
+        "re": "--cert-file",
+        "env": null
+      },
+      {
+        "do": "Define an `etcdctl` helper that runs inside the etcd pod with the right endpoint and certificates.",
+        "hint": "Store the pod name in a variable, then wrap `kubectl exec ... -- etcdctl` in a shell function.",
+        "cmd": [
+          "ETCD_POD=$(k get pods -n kube-system -l component=etcd -o jsonpath='{.items[0].metadata.name}')",
+          "etcdctl() { kubectl exec -n kube-system \"$ETCD_POD\" -- etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \"$@\"; }",
+          "etcdctl version"
+        ],
+        "expect": "`etcdctl version: 3.x.x` and the API version.",
+        "why": "Running etcdctl inside the etcd pod works the same on any kubeadm-style cluster and needs nothing installed. On a real control-plane host you would usually run a locally installed etcdctl with the same flags.",
+        "env": {
+          "killercoda": "The function shadows any etcdctl installed on the host, for this shell session only.",
+          "desktop": "Works in zsh as written."
+        },
+        "defines": true,
+        "re": "etcdctl version"
+      },
+      {
+        "do": "List etcd's cluster members.",
+        "hint": "`member list`, as a table.",
+        "cmd": "etcdctl member list -w table",
+        "expect": "One member, `started`, with its peer and client URLs. Production control planes usually run three or five.",
+        "why": "etcd is a Raft cluster: writes need a majority of members, which is why member counts are odd.",
+        "re": "started",
+        "env": null
+      },
+      {
+        "do": "Check etcd's health and status.",
+        "hint": "`endpoint health` and `endpoint status`.",
+        "cmd": [
+          "etcdctl endpoint health",
+          "etcdctl endpoint status -w table"
+        ],
+        "expect": "`https://127.0.0.1:2379 is healthy`, then a table with the version, DB size, IS LEADER true and the Raft term.",
+        "why": "Health confirms it answers; status shows whether it is the leader and how big the database is — a database over its size quota stops accepting writes.",
+        "re": "is healthy",
+        "env": null
+      },
+      {
+        "do": "See how Kubernetes lays out its objects as keys.",
+        "hint": "Keys live under /registry/<resource>/<namespace>/<name>. List keys only.",
+        "cmd": [
+          "etcdctl get /registry/namespaces/practice --keys-only",
+          "etcdctl get /registry/deployments --prefix --keys-only"
+        ],
+        "expect": "`/registry/namespaces/practice`, then one key per Deployment in the cluster, such as `/registry/deployments/kube-system/coredns`.",
+        "why": "The values are stored as protobuf, not YAML — read objects through the API server, never by editing etcd.",
+        "re": "/registry/namespaces/practice",
+        "env": null
+      },
+      {
+        "do": "Create a Secret, then read its raw value straight out of etcd.",
+        "hint": "Create it with kubectl, then `etcdctl get` its key and search the bytes for the value.",
+        "cmd": [
+          "k create secret generic etcd-demo -n practice --from-literal=token=not-a-real-token",
+          "etcdctl get /registry/secrets/practice/etcd-demo | grep -a -o 'not-a-real-token' || echo 'value not visible — encryption at rest is probably configured'"
+        ],
+        "expect": "`not-a-real-token` on a cluster without encryption at rest (typical for practice clusters).",
+        "why": "Base64 in the API is not what protects Secrets. Unless the API server is configured to encrypt Secrets at rest (the stored value then starts with `k8s:enc:`), anyone who can read etcd or its backups can read them.",
+        "test": [
+          "k create secret generic etcd-demo -n practice --from-literal=token=not-a-real-token --dry-run=client -o yaml | k apply -n practice -f -",
+          "etcdctl get /registry/secrets/practice/etcd-demo | grep -a -o 'not-a-real-token' || echo 'value not visible — encryption at rest is probably configured'"
+        ],
+        "re": "not-a-real-token|not visible",
+        "env": null
+      },
+      {
+        "do": "Take a snapshot and inspect it.",
+        "hint": "`snapshot save` writes a file; in etcd 3.5 and later, `etcdutl snapshot status` inspects it.",
+        "cmd": [
+          "etcdctl snapshot save /tmp/looped-snap.db",
+          "kubectl exec -n kube-system \"$ETCD_POD\" -- etcdutl snapshot status /tmp/looped-snap.db -w table"
+        ],
+        "expect": "`Snapshot saved at /tmp/looped-snap.db`, then a table with HASH, REVISION, TOTAL KEYS and TOTAL SIZE.",
+        "why": "The file is inside the etcd container here, so it disappears when that container restarts. A real backup is copied off the node, stored securely (it contains every Secret), and restored in a drill before you rely on it.",
+        "re": "TOTAL KEYS|TOTAL SIZE",
+        "env": null
+      },
+      {
+        "do": "Read how a restore works — but do not run one.",
+        "hint": "Look at the restore command's help.",
+        "cmd": "kubectl exec -n kube-system \"$ETCD_POD\" -- etcdutl snapshot restore --help | head -15",
+        "expect": "Usage for `etcdutl snapshot restore <filename>` with options such as `--data-dir`.",
+        "why": "A restore writes a new data directory from the snapshot; you then point etcd at it (on kubeadm, by editing the etcd static-pod manifest) and let the control plane come back. It rewinds the whole cluster to that moment, so it is a disaster-recovery step — practise it only on a throwaway cluster.",
+        "re": "restore",
+        "env": null
+      }
+    ],
+    "check": {
+      "cmd": [
+        "ETCD_POD=$(k get pods -n kube-system -l component=etcd -o jsonpath='{.items[0].metadata.name}')",
+        "etcdctl() { kubectl exec -n kube-system \"$ETCD_POD\" -- etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key \"$@\"; }",
+        "etcdctl endpoint health 2>&1 | grep -q 'is healthy' && echo PASS || echo 'FAIL: etcdctl could not reach a healthy etcd — check the pod name and certificate paths'"
+      ],
+      "expect": "PASS"
+    },
+    "cleanup": [
+      "k delete secret etcd-demo -n practice",
+      "unset -f etcdctl; unset ETCD_POD"
+    ],
+    "talk": "\"etcd is the cluster's only source of truth and only the API server talks to it, over mutual TLS. I'd check health and leader status with etcdctl, take snapshots and copy them off the node, keep them as secret as the Secrets inside them, and practise restores before I need one.\"",
+    "lessons": [
+      "les-reconcile",
+      "les-config",
+      "les-failure"
+    ],
+    "questions": [
+      "ons-q-arch-05",
+      "ons-q-config-03",
+      "ons-q-design-04"
     ],
     "sims": [],
     "track": "onsite"

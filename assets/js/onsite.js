@@ -263,7 +263,7 @@
         var r = s.hands[h.id] || {}, done = Object.keys(r.tasks || {}).filter(function (k) { return r.tasks[k]; }).length;
         return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
           '<p class="card-title plain">' + (i + 1) + '. ' + esc(h.title) + '</p><p class="card-sum">' + inline(h.goal) + '</p>' +
-          '<div class="card-meta">' + badge('real cluster') + badge(h.priority) + badge('~' + h.mins + ' min') +
+          '<div class="card-meta">' + badge('real cluster') + (h.beyond ? badge('beyond the team\'s focus') : '') + badge(h.priority) + badge('~' + h.mins + ' min') +
             badge(done + ' / ' + h.tasks.length + ' tasks') +
             (r.status === 'checked' ? badge('✓ PASS reported', 'done') : r.status === 'done' ? badge('✓ completed (reported)', 'done') : '') + '</div></div>' +
           '<button class="lab-go" data-prep-open="hands:' + esc(h.id) + '" aria-label="Open ' + esc(h.title) + '">▶</button></div></article>';
@@ -279,6 +279,7 @@
       '<h2 class="prep-h">' + esc(h.title) + '</h2>' +
       '<div class="card-meta">' + badge(h.priority) + badge('~' + h.mins + ' min') + badge(h.tasks.length + ' tasks') + '</div>' +
       '<p class="lead">' + inline(h.goal) + '</p>' +
+      (h.beyond ? '<p class="verify-note">The team said not to worry about advanced topics such as etcd, so this scenario is not on the Fundamentals path. Do it after the fundamentals, if at all.</p>' : '') +
       '<div class="chips" role="group" aria-label="Your environment">' + ['killercoda', 'desktop'].map(function (e) {
         var on = env === e;
         return '<button class="chip' + (on ? ' active' : '') + '" data-prep-henv="' + e + '" aria-pressed="' + on + '">' + envName[e] + '</button>';
