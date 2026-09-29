@@ -90,6 +90,7 @@
                     toast: function (m) { toast(m); },
                     go: function (v) { setView(v); },
                     track: function () { return state.track; },
+                    setTrack: function (id) { setTrack(id); },
                     findById: findById, idOf: idOf };
 
   function toast(msg) {

@@ -975,3 +975,8 @@ table.tiers select { max-width: 100%; height: 36px; background: var(--bg-elev-2)
 .cmd-block pre.term { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 64px; font-size: 12px; }
 .copy-btn { position: absolute; top: 6px; right: 6px; }
 .time-slot { margin: 0 0 2px; font-family: var(--mono); letter-spacing: .2px; }
+/* interviewer-led cases */
+.case-group { margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .3px; }
+.case-asks { display: flex; flex-wrap: wrap; gap: 6px; }
+.case-asks .chip { white-space: normal; text-align: left; height: auto; line-height: 1.3; padding-top: 6px; padding-bottom: 6px; }
+.case-asks .chip[disabled] { opacity: .6; cursor: default; }

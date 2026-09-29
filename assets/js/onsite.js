@@ -23,7 +23,7 @@
 
   function st() {
     var s = U().LS.get(KEY, {}) || {};
-    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks'].forEach(function (k) {
+    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks', 'cases'].forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     });
     if (!Array.isArray(s.mocks)) s.mocks = [];
@@ -33,7 +33,7 @@
   function sandbox() { return U().LS.get('lx.sandbox', {}) || {}; }
 
   var SECTIONS = [
-    ['path', 'Path'], ['hands', 'Hands-on'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
+    ['path', 'Path'], ['hands', 'Hands-on'], ['cases', 'Cases'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
     ['design', 'Design'], ['scripting', 'Scripting'], ['real', 'Real labs'], ['stories', 'Stories'],
     ['mock', 'Mock'], ['progress', 'Progress'], ['notes', 'Notes']
   ];
@@ -106,6 +106,7 @@
       case 'mock': return s.mocks.some(function (x) { return x.preset === id; });
       case 'hands': return !!(s.hands[id] && s.hands[id].status);
       case 'walk': return !!(s.walks[id] && s.walks[id].reviewed);
+      case 'case': return !!(s.cases[id] && s.cases[id].revealed);
     }
     return false;
   }
@@ -122,10 +123,11 @@
       case 'mock': x = byId('onsiteMock', id); return x ? x.title + ' (' + x.mins + ' min)' : id;
       case 'hands': x = byId('onsiteHands', id); return x ? x.title : id;
       case 'walk': x = byId('onsiteWalks', id); return x ? x.title : id;
+      case 'case': x = byId('onsiteCases', id); return x ? x.title : id;
     }
     return id;
   }
-  var KIND_WORD = { walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
+  var KIND_WORD = { 'case': 'Case', walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
 
   /* ── priority from notes ─────────────────────────────────────── */
   var FORMAT_TOPICS = {
@@ -159,7 +161,10 @@
       return;
     }
     if (!ui.section) ui.section = (st().ui && st().ui.section) || 'path';
-    var nav = '<div class="chips prep-nav" role="group" aria-label="Prep sections">' + SECTIONS.map(function (x) {
+    /* a section whose content has not shipped yet is not shown at all */
+    var sections = SECTIONS.filter(function (x) { return x[0] !== 'cases' || list('onsiteCases').length; });
+    if (!sections.some(function (x) { return x[0] === ui.section; })) ui.section = 'path';
+    var nav = '<div class="chips prep-nav" role="group" aria-label="Prep sections">' + sections.map(function (x) {
       var on = x[0] === ui.section;
       return '<button class="chip' + (on ? ' active' : '') + '" data-prep-section="' + x[0] + '" aria-pressed="' + on + '">' + esc(x[1]) + '</button>';
     }).join('') + '</div>';
@@ -324,6 +329,80 @@
           var on = r.status === o[0];
           return '<button class="chip' + (on ? ' active' : '') + '" data-prep-hstatus="' + esc(h.id) + ':' + o[0] + '" aria-pressed="' + on + '">' + esc(o[1]) + '</button>';
         }).join('') + '</div>';
+  }
+
+  /* ── Interviewer-led troubleshooting cases ────────────────────── */
+  var TRACK_NAME = { linux: 'Linux', containers: 'Containers & Networking', aws: 'AWS' };
+  function renderCasesList() {
+    var s = st();
+    return '<p class="blurb">Troubleshooting the way it often runs in an interview: the interviewer describes a symptom and holds the evidence; you ask for it one piece at a time. Choose what to ask for, say your hypothesis out loud, then reveal the cause and compare.</p>' +
+      '<div class="verify-note"><b>With an interviewer on video:</b> narrate what you are checking and why before you ask; ask for evidence explicitly ("can you show me the pod events?"); summarise what you know every few minutes; say what would prove you wrong; keep fixes small and say how you would verify them.</div>' +
+      '<p class="muted small">Evidence is example output written for practice — not an actual interview. Nothing is graded automatically.</p>' +
+      '<div class="list">' + list('onsiteCases').map(function (c, i) {
+        var r = s.cases[c.id] || {};
+        return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
+          '<p class="card-title plain">' + (i + 1) + '. ' + esc(c.title) + '</p><p class="card-sum">' + inline(c.opening) + '</p>' +
+          '<div class="card-meta">' + badge(c.domain) + badge(['', 'foundation', 'working', 'advanced'][c.level] || '') + badge('~' + c.mins + ' min') +
+            (r.revealed ? badge('✓ worked · ' + (r.asked || []).length + ' asks', 'done') : (r.asked && r.asked.length ? badge('in progress') : '')) + '</div></div>' +
+          '<button class="lab-go" data-prep-open="case:' + esc(c.id) + '" aria-label="Open case">▶</button></div></article>';
+      }).join('') + '</div>';
+  }
+  function renderCase(c) {
+    var s = st(), r = s.cases[c.id] || {}, asked = r.asked || [], byAsk = {};
+    c.asks.forEach(function (a) { byAsk[a.id] = a; });
+    var groups = [];
+    c.asks.forEach(function (a) { if (groups.indexOf(a.group) === -1) groups.push(a.group); });
+    var h = back() + '<p class="muted small">Interviewer-led case · ' + esc(c.domain) + ' · practice, not an actual interview question</p>' +
+      '<h2 class="prep-h">' + esc(c.title) + '</h2>' +
+      '<div class="situation-box"><p><b>Interviewer:</b> ' + inline(c.opening) + '</p></div>' +
+      (r.context ? '<p><b>The setup:</b> ' + inline(c.context) + '</p>' : '<button class="btn ghost small" data-prep-cctx="' + esc(c.id) + '">Ask about the setup</button>') +
+      label('What you have asked for (' + asked.length + ')') +
+      (asked.length ? asked.map(function (id, i) {
+        var a = byAsk[id];
+        return a ? '<div class="followup"><p><b>' + (i + 1) + '. You:</b> ' + inline(a.label) + '</p><pre class="term term-static evidence">' + esc(a.shows) + '</pre>' +
+          (r.revealed ? '<p class="muted small">' + (a.key ? '<b>Key evidence.</b> ' : a.herring ? '<b>Plausible, but not the cause.</b> ' : '') + inline(a.reads) + '</p>' : '') + '</div>' : '';
+      }).join('') : '<p class="muted">Nothing yet. Say what you would check first, and why — then ask.</p>');
+    if (!r.revealed) {
+      h += label('Ask the interviewer for…') + groups.map(function (g) {
+        return '<p class="muted small case-group">' + esc(g) + '</p><div class="case-asks">' + c.asks.filter(function (a) { return a.group === g; }).map(function (a) {
+          var used = asked.indexOf(a.id) !== -1;
+          return '<button class="chip' + (used ? ' active' : '') + '" data-prep-cask="' + esc(c.id) + ':' + esc(a.id) + '"' + (used ? ' disabled aria-pressed="true"' : ' aria-pressed="false"') + '>' + esc(a.label) + '</button>';
+        }).join('') + '</div>';
+      }).join('') +
+      '<label class="prep-label" for="caseHyp">Your hypothesis, what would disprove it, and — when you are ready — your fix and how you would verify it</label>' +
+      '<textarea id="caseHyp" class="notes-input" rows="4" data-prep-chyp="' + esc(c.id) + '" placeholder="Say it out loud first. Not graded.">' + esc(r.hyp || '') + '</textarea>' +
+      '<div class="done-btns"><button class="btn primary" data-prep-creveal="' + esc(c.id) + '">I have my answer — reveal the cause</button>' +
+        (asked.length ? '<button class="btn ghost small" data-prep-creset="' + esc(c.id) + '">Start over</button>' : '') + '</div>';
+      return h;
+    }
+    var keys = c.asks.filter(function (a) { return a.key; }), foundKeys = keys.filter(function (a) { return asked.indexOf(a.id) !== -1; });
+    var herr = c.asks.filter(function (a) { return a.herring && asked.indexOf(a.id) !== -1; });
+    h += label('The cause') + '<div class="tip">' + md(c.cause) + '</div>' +
+      label('Why it happened') + md(c.mechanism) +
+      label('A safe fix') + md(c.fix) + label('How to verify it') + md(c.verify) +
+      label('How you worked (no score)') + '<dl class="scorecard">' +
+        '<div><dt>Key evidence</dt><dd>You asked for ' + foundKeys.length + ' of ' + keys.length + ' pieces of key evidence, in ' + asked.length + ' asks.</dd></div>' +
+        '<div><dt>Detours</dt><dd>' + (herr.length ? herr.length + ' plausible-but-irrelevant check' + (herr.length > 1 ? 's' : '') + ' — fine if brief and said out loud as ruling something out.' : 'None of the red herrings.') + '</dd></div>' +
+      '</dl>' +
+      '<p class="muted small">One efficient order (others are just as good): ' + c.efficient.map(function (id) { return byAsk[id] ? esc(byAsk[id].label) : id; }).join(' → ') + '</p>' +
+      (r.hyp ? label('What you wrote') + '<div class="situation-box">' + md(r.hyp) + '</div>' : '') +
+      label('Follow-ups the interviewer might add') + (c.followups || []).map(function (f) {
+        return '<details class="brief-wrap"><summary>' + inline(f.q) + '</summary><div class="situation">' + md(f.guidance) + '</div></details>';
+      }).join('') +
+      label('Rubric') + '<div class="rubric"><p><b>Strong</b></p>' + ul(c.rubric.strong) + '<p><b>Also sound</b></p>' + ul(c.rubric.acceptable) + '<p><b>Red flags</b></p>' + ul(c.rubric.redFlags) + '</div>' +
+      rateBlock('c', c.id, r.ratings || []) +
+      ((c.alsoPractise || []).length ? label('Also practise in Looped') + (c.alsoPractise || []).map(function (x) {
+        return '<p>' + inline(x.what) + ' <button class="btn ghost small" data-prep-track="' + esc(x.track) + '">Open the ' + esc(TRACK_NAME[x.track] || x.track) + ' track</button></p>';
+      }).join('') : '') +
+      '<div class="chip-links">' + (c.lessons || []).map(function (l) { return '<button class="chip small" data-prep-open="lesson:' + esc(l) + '">' + esc(titleOf('lesson', l)) + '</button>'; }).join('') + '</div>' +
+      related(c.questions) + refs(c.refs) + verifyNote(c.verify_note) +
+      '<div class="done-btns"><button class="btn" data-prep-creset="' + esc(c.id) + '">Work it again</button></div>';
+    return h;
+  }
+  function renderCases() {
+    if (ui.detail && byId('onsiteCases', ui.detail)) return renderCase(byId('onsiteCases', ui.detail));
+    if (!list('onsiteCases').length) return '<p class="empty">The troubleshooting cases are not available in this build.</p>';
+    return renderCasesList();
   }
 
   /* ── Lessons ─────────────────────────────────────────────────── */
@@ -749,6 +828,12 @@
         '<p>Work it in the simulator in <b>independent</b> mode, narrating your reasoning as you go. Come back here when done.</p>' +
         '<div class="done-btns"><button class="btn primary small" data-prep-open="lab:' + esc(it.id) + ':independent">Open the lab</button></div>' +
         '<textarea class="notes-input" rows="3" data-prep-mocknote="' + m.idx + '" aria-label="Notes for this prompt" placeholder="What you checked, in order, and why.">' + esc(it.note) + '</textarea>';
+    } else if (it.kind === 'case') {
+      var cs = byId('onsiteCases', it.id);
+      h += '<h2 class="prep-h">' + esc(cs.title) + '</h2><div class="situation-box"><p><b>Interviewer:</b> ' + inline(cs.opening) + '</p></div>' +
+        '<p>Work it as an interviewer-led case, narrating as you go. Come back here when you have revealed the cause.</p>' +
+        '<div class="done-btns"><button class="btn primary small" data-prep-open="case:' + esc(it.id) + '">Open the case</button></div>' +
+        '<textarea class="notes-input" rows="3" data-prep-mocknote="' + m.idx + '" aria-label="Notes for this prompt" placeholder="What you asked for, in order, and why.">' + esc(it.note) + '</textarea>';
     } else if (it.kind === 'walk') {
       var wk = byId('onsiteWalks', it.id);
       h += '<h2 class="prep-h">"' + esc(wk.prompt) + '"</h2><p class="muted">' + inline(wk.aim) + ' Suggested: ' + esc(wk.title.toLowerCase()) + '.</p>' +
@@ -813,6 +898,7 @@
       independent: modes.filter(function (m) { return m.independent; }).length,
       unaided: modes.filter(function (m) { return (m.independent && m.independent.unaided) || (m.guided && m.guided.unaided); }).length,
       realDone: realVals.length,
+      casesDone: Object.keys(s.cases).filter(function (k) { return s.cases[k].revealed; }).length,
       handsDone: Object.keys(s.hands).filter(function (k) { return s.hands[k].status; }).length,
       handsChecked: Object.keys(s.hands).filter(function (k) { return s.hands[k].status === 'checked'; }).length,
       realVerified: realVals.filter(function (v) { return v === 'verified'; }).length,
@@ -863,6 +949,7 @@
       row('Completed a guided simulation', c.guided, c.labs, 'Browser simulation, guided mode.') +
       row('Completed an independent simulation', c.independent, c.labs, 'Browser simulation, neutral ticket, hidden objectives.') +
       row('Solved a simulation without hints', c.unaided, c.labs, 'No hints and no reveals in that run. Still a simulation.') +
+      row('Worked an interviewer-led case', c.casesDone, list('onsiteCases').length, 'Evidence asked for and cause revealed in the app. Your answer is self-assessed.') +
       row('Reported a hands-on scenario', c.handsDone, list('onsiteHands').length, 'Real practice cluster (Killercoda or Docker Desktop). Self-reported.') +
       row('Reported a hands-on PASS check', c.handsChecked, list('onsiteHands').length, 'Self-reported: the app cannot observe your cluster.') +
       row('Reported completing a real local lab', c.realDone, list('onsiteReal').length || null, 'kind on your machine. Self-reported.') +
@@ -919,7 +1006,7 @@
   }
 
   var SECTION_RENDER = {
-    path: renderPath, hands: renderHands, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
+    path: renderPath, hands: renderHands, cases: renderCases, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
     scripting: renderScripting, real: renderReal, stories: renderStories, mock: renderMock, progress: renderProgress, notes: renderNotes
   };
 
@@ -932,7 +1019,7 @@
       }
       return;
     }
-    var section = { walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
+    var section = { 'case': 'cases', walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
     if (!section) return;
     if (U().track() !== 'onsite') return;
     U().go('prep');
@@ -957,6 +1044,9 @@
     } else if (kind === 'd') {
       var d = s.design[id] = s.design[id] || {};
       arr = d.ratings = d.ratings || [];
+    } else if (kind === 'c') {
+      var cr = s.cases[id] = s.cases[id] || {};
+      arr = cr.ratings = cr.ratings || [];
     } else if (kind === 'm' && ui.mock) {
       arr = ui.mock.items[Number(id)].ratings;
     }
@@ -978,6 +1068,8 @@
       var parts = t.dataset.prepStory.split(':'), sr = s.stories[parts[0]] = s.stories[parts[0]] || {};
       sr.fields = sr.fields || {}; sr.fields[parts[1]] = t.value;
     });
+    var hyp = $('[data-prep-chyp]', root());
+    if (hyp) { var hr0 = s.cases[hyp.dataset.prepChyp] = s.cases[hyp.dataset.prepChyp] || {}; hr0.hyp = hyp.value; }
     $$('[data-prep-walk]', root()).forEach(function (t) {
       var parts = t.dataset.prepWalk.split('|'), wr = s.walks[parts[0]] = s.walks[parts[0]] || {};
       wr.fields = wr.fields || {}; wr.fields[parts[1]] = t.value;
@@ -1041,6 +1133,15 @@
       else s.real[rp2[0]] = { status: rp2[1], at: Date.now() };
       save(s); render(); return;
     }
+    if ((b = t.closest('[data-prep-cctx]'))) { keepNote(s); var c0 = s.cases[b.dataset.prepCctx] = s.cases[b.dataset.prepCctx] || {}; c0.context = true; save(s); render(); return; }
+    if ((b = t.closest('[data-prep-cask]'))) {
+      keepNote(s); var cp = b.dataset.prepCask.split(':'), c1 = s.cases[cp[0]] = s.cases[cp[0]] || {};
+      c1.asked = c1.asked || []; if (c1.asked.indexOf(cp[1]) === -1) c1.asked.push(cp[1]);
+      save(s); render(); return;
+    }
+    if ((b = t.closest('[data-prep-creveal]'))) { keepNote(s); var c2 = s.cases[b.dataset.prepCreveal] = s.cases[b.dataset.prepCreveal] || {}; c2.revealed = Date.now(); c2.runs = (c2.runs || 0) + 1; save(s); render(); return; }
+    if ((b = t.closest('[data-prep-creset]'))) { var c3 = s.cases[b.dataset.prepCreset] || {}; s.cases[b.dataset.prepCreset] = { runs: c3.runs || 0, ratings: c3.ratings || [] }; save(s); render(); return; }
+    if ((b = t.closest('[data-prep-track]'))) { keepNote(s); save(s); U().setTrack(b.dataset.prepTrack); U().toast('Switched to the ' + (TRACK_NAME[b.dataset.prepTrack] || b.dataset.prepTrack) + ' track — use the pill to come back'); return; }
     if ((b = t.closest('[data-prep-pace]'))) { keepNote(s); s.designPace = b.dataset.prepPace; save(s); render(); return; }
     if ((b = t.closest('[data-prep-walksave]'))) { keepNote(s); save(s); U().toast('Saved in this browser'); return; }
     if ((b = t.closest('[data-prep-walkrev]'))) { keepNote(s); var wr2 = s.walks[b.dataset.prepWalkrev] = s.walks[b.dataset.prepWalkrev] || {}; wr2.reviewed = wr2.reviewed ? 0 : Date.now(); save(s); render(); return; }
