@@ -35,6 +35,12 @@ LX.onsiteMock = [
       { kind: 'question', pool: ['ons-q-delivery-01', 'ons-q-delivery-02', 'ons-q-delivery-05', 'ons-q-delivery-06'] },
       { kind: 'question', pool: ['ons-q-behavior-05', 'ons-q-behavior-02'] }
     ] },
+  { id: 'mock-design-60', title: 'Architecture & system design (full hour)', mins: 60,
+    blurb: 'Shaped like the architecture loop on your agenda: walk through a system you worked on, then one design problem led by the interviewer, paced for an hour.',
+    slots: [
+      { kind: 'walk', pool: ['ons-walk-bringup', 'ons-walk-transfer'] },
+      { kind: 'design', pool: ['ons-design-artifacts', 'ons-design-multicluster', 'ons-design-remediation', 'ons-design-stateful'] }
+    ] },
   { id: 'mock-60', title: 'Design and operational judgment', mins: 60,
     blurb: 'A full design conversation led by the interviewer, then judgment and experience questions.',
     slots: [

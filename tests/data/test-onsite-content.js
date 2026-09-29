@@ -171,7 +171,26 @@ hands.forEach(h => {
 });
 
 /* ── path and mock resolve ─────────────────────────────────────── */
-const RES = { lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
+/* ── architecture walkthroughs and 60-minute pacing ───────────── */
+const walks = D.onsiteWalks || [], wIds = walks.map(w => w.id);
+ok(walks.length >= 2, 'walkthroughs: at least two');
+walks.forEach(w => {
+  const x = w.id + ': ';
+  ok(str(w.prompt, 20) && str(w.aim, 20) && arr(w.sections, 4) && w.sections.every(sc => str(sc.h) && str(sc.guide, 20) && arr(sc.fields, 1)), x + 'prompt, aim and sections with blanks to fill');
+  ok(w.sections.some(sc => arr(sc.mapping, 3)), x + 'maps the experience onto Kubernetes');
+  ok(arr(w.probes, 3) && w.probes.every(p => str(p.q) && str(p.guidance, 20)) && arr(w.pitfalls, 2), x + 'probes and pitfalls');
+  w.sections.forEach(sc => (sc.stories || []).forEach(id => ok(stIds.indexOf(id) !== -1, x + 'story ' + id + ' resolves')));
+  (w.lessons || []).forEach(id => ok(lIds.indexOf(id) !== -1, x + 'lesson ' + id + ' resolves'));
+  (w.questions || []).forEach(id => ok(qIds.indexOf(id) !== -1, x + 'question ' + id + ' resolves'));
+  ok(!/\b\d+\s*(%|percent|regions|customers|engineers|clusters|hours|days|weeks)\b/i.test(JSON.stringify(w.sections)), x + 'no invented metrics');
+});
+const mins = st_ => st_.reduce((a, x) => a + Number((/\((\d+) min\)/.exec(x) || [0, 0])[1]), 0);
+design.forEach(d => {
+  ok(arr(d.stages60, 5) && mins(d.stages60) === 60, d.id + ': 60-minute pacing adds up to 60', mins(d.stages60 || []));
+  ok(/requirement/i.test(d.stages60[0]), d.id + ': the hour starts with requirements');
+});
+
+const RES = { walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
 const fun = (D.onsitePath || {}).fundamentals || [];
 ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
 ok(hands.filter(h => !h.beyond).every(h => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === h.id))), 'path fundamentals: includes every hands-on scenario within the team\'s focus');

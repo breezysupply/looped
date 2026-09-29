@@ -118,6 +118,20 @@ const { chromium } = require('playwright');
     ok(/Reported a hands-on PASS check\s*1 \/ 11/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
     ok(/Automatically verified real-lab check/.test(prog) && /Not available/.test(prog) && !/readiness score:|%/.test(prog), W + ': no machine-verified claim and no percentage score');
 
+    /* ── design: the hour-long pacing and a walkthrough of your own system ── */
+    await p.evaluate(() => LXOnsite.open('design', 'ons-design-stateful'));
+    ok(await p.$eval('[data-prep-pace="60"]', el => el.getAttribute('aria-pressed') === 'true') && await p.$eval('#prepBody', el => /Clarify \(8 min\)/.test(el.textContent)), W + ': design defaults to the 60-minute pacing');
+    await p.click('[data-prep-pace="45"]');
+    ok(await p.$eval('#prepBody', el => /Requirements \(7 min\)/.test(el.textContent)), W + ': 45-minute pacing still available');
+    await p.click('[data-prep-pace="60"]');
+    await p.evaluate(() => LXOnsite.open('walk', 'ons-walk-bringup'));
+    ok(await p.$eval('#prepBody', el => /Walk me through an infrastructure architecture/.test(el.textContent) && /stored only in this browser/.test(el.textContent)), W + ': walkthrough opens with the prompt and the local-only note');
+    await p.fill('[data-prep-walk="ons-walk-bringup|0.1"]', 'I owned the readiness validation.');
+    await p.click('[data-prep-walkrev="ons-walk-bringup"]');
+    const wk = (await ls()).walks['ons-walk-bringup'];
+    ok(wk && wk.reviewed && wk.fields['0.1'] === 'I owned the readiness validation.', W + ': walkthrough notes and rehearsal persist', JSON.stringify(wk));
+    ok(await overflow() <= 0, W + ': walkthrough has no overflow', await overflow());
+
     /* ── mock: start, move through, finish, save ── */
     await p.click('.prep-nav [data-prep-section="mock"]');
     await p.click('[data-prep-mockstart="mock-15"]');

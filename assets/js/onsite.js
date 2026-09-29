@@ -23,7 +23,7 @@
 
   function st() {
     var s = U().LS.get(KEY, {}) || {};
-    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands'].forEach(function (k) {
+    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks'].forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     });
     if (!Array.isArray(s.mocks)) s.mocks = [];
@@ -105,6 +105,7 @@
       case 'story': return !!(s.stories[id] && s.stories[id].reviewed);
       case 'mock': return s.mocks.some(function (x) { return x.preset === id; });
       case 'hands': return !!(s.hands[id] && s.hands[id].status);
+      case 'walk': return !!(s.walks[id] && s.walks[id].reviewed);
     }
     return false;
   }
@@ -120,10 +121,11 @@
       case 'story': x = byId('onsiteStories', id); return x ? x.title : id;
       case 'mock': x = byId('onsiteMock', id); return x ? x.title + ' (' + x.mins + ' min)' : id;
       case 'hands': x = byId('onsiteHands', id); return x ? x.title : id;
+      case 'walk': x = byId('onsiteWalks', id); return x ? x.title : id;
     }
     return id;
   }
-  var KIND_WORD = { hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
+  var KIND_WORD = { walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
 
   /* ── priority from notes ─────────────────────────────────────── */
   var FORMAT_TOPICS = {
@@ -468,9 +470,20 @@
 
   /* ── Design ──────────────────────────────────────────────────── */
   function renderDesigns() {
+    if (ui.detail && byId('onsiteWalks', ui.detail)) return renderWalk(byId('onsiteWalks', ui.detail));
     if (ui.detail) return renderDesign(byId('onsiteDesign', ui.detail));
     var s = st();
-    return '<p class="blurb">Interviewer-led design practice. Start with requirements and clarifying questions, then design, then handle the constraints the interviewer adds. The example is one strong answer, not the only one.</p>' +
+    return label('Your own architecture') +
+      '<p class="muted">Design interviews often start with "walk me through something you built". These use only the facts you have given; you fill in the rest.</p>' +
+      '<div class="list">' + list('onsiteWalks').map(function (w) {
+        var r = s.walks[w.id] || {};
+        return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
+          '<p class="card-title plain">' + esc(w.title) + '</p><p class="card-sum">' + esc(w.prompt) + '</p>' +
+          '<div class="card-meta">' + badge('walkthrough') + badge('~' + w.mins + ' min to tell') + (r.reviewed ? badge('✓ rehearsed', 'done') : '') + '</div></div>' +
+          '<button class="lab-go" data-prep-open="walk:' + esc(w.id) + '" aria-label="Open walkthrough">▶</button></div></article>';
+      }).join('') + '</div>' +
+      label('Design problems') +
+      '<p class="blurb">Interviewer-led design practice. Start with requirements and clarifying questions, then design, then handle the constraints the interviewer adds. The example is one strong answer, not the only one.</p>' +
       '<div class="list">' + list('onsiteDesign').map(function (d) {
         var r = s.design[d.id] || {};
         return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
@@ -486,7 +499,12 @@
     var h = back() + '<h2 class="prep-h">' + esc(d.title) + '</h2>' +
       '<div class="card-meta">' + badge(d.priority) + badge('~' + d.mins + ' min') + '</div>' +
       label('The brief') + '<div class="situation-box">' + md(d.brief) + '</div>' +
-      label('Suggested pacing') + '<ol class="steps-why">' + d.stages.map(function (x) { return '<li>' + inline(x) + '</li>'; }).join('') + '</ol>' +
+      label('Suggested pacing') +
+      '<div class="chips" role="group" aria-label="Interview length">' + [['60', '60 minutes (your agenda)'], ['45', '45 minutes']].map(function (o) {
+        var on = (s.designPace || '60') === o[0];
+        return '<button class="chip' + (on ? ' active' : '') + '" data-prep-pace="' + o[0] + '" aria-pressed="' + on + '">' + o[1] + '</button>';
+      }).join('') + '</div>' +
+      '<ol class="steps-why">' + (((s.designPace || '60') === '60' && d.stages60) ? d.stages60 : d.stages).map(function (x) { return '<li>' + inline(x) + '</li>'; }).join('') + '</ol>' +
       '<label class="prep-label" for="prepDesignNotes">Your clarifying questions and design notes</label>' +
       '<textarea id="prepDesignNotes" class="notes-input" rows="6" data-prep-dnotes="' + esc(d.id) + '" placeholder="Requirements first: who, what, how many, what must never happen, what does done look like?">' + esc(r.notes || '') + '</textarea>' +
       '<div class="done-btns">' + stepBtn(1, 'Compare my clarifying questions') + '<button class="btn ghost small" data-prep-dsave="' + esc(d.id) + '">Save notes</button></div>';
@@ -522,6 +540,36 @@
         '<div class="done-btns"><button class="btn' + (r.practiced ? '' : ' primary') + '" data-prep-dpracticed="' + esc(d.id) + '" aria-pressed="' + !!r.practiced + '">' + (r.practiced ? '✓ Practised — undo' : 'Mark practised') + '</button></div>';
     }
     return h;
+  }
+
+  function renderWalk(w) {
+    var r = st().walks[w.id] || {}, f = r.fields || {}, n = 0;
+    function fieldsOf(sec, si) {
+      return (sec.fields || []).map(function (lab, fi) {
+        var key = si + '.' + fi, idn = 'walk-' + esc(w.id) + '-' + si + '-' + fi;
+        return '<label class="prep-label" for="' + idn + '">' + inline(lab) + '</label>' +
+          '<textarea id="' + idn + '" class="notes-input" rows="2" data-prep-walk="' + esc(w.id) + '|' + key + '">' + esc(f[key] || '') + '</textarea>';
+      }).join('');
+    }
+    return back() + '<p class="muted small">Your own architecture · practise it out loud</p>' +
+      '<h2 class="prep-h">' + esc(w.title) + '</h2>' +
+      '<div class="situation-box"><p><b>The prompt:</b> "' + inline(w.prompt) + '"</p><p class="muted">' + inline(w.aim) + '</p></div>' +
+      '<p class="muted small">Your notes are stored only in this browser (and in any export you make). Leave a blank rather than guess.</p>' +
+      w.sections.map(function (sec, si) {
+        return '<h3 class="prep-h3">' + esc(sec.h) + '</h3><p>' + inline(sec.guide) + '</p>' +
+          (sec.layers ? '<ol class="steps-why">' + sec.layers.map(function (l) { return '<li><b>' + esc(l.name) + '</b> — ' + inline(l.say) + '</li>'; }).join('') + '</ol>' : '') +
+          (sec.mapping ? ul(sec.mapping) : '') +
+          (sec.stories ? '<div class="chip-links">' + sec.stories.map(function (id) { return '<button class="chip small" data-prep-open="story:' + esc(id) + '">Story: ' + esc(titleOf('story', id)) + '</button>'; }).join('') + '</div>' : '') +
+          fieldsOf(sec, si);
+      }).join('') +
+      label('Questions the interviewer is likely to ask') + w.probes.map(function (p) {
+        return '<details class="brief-wrap"><summary>' + inline(p.q) + '</summary><div class="situation">' + md(p.guidance) + '</div></details>';
+      }).join('') +
+      label('How this goes wrong') + ul(w.pitfalls) +
+      '<div class="chip-links">' + (w.lessons || []).map(function (l) { return '<button class="chip small" data-prep-open="lesson:' + esc(l) + '">' + esc(titleOf('lesson', l)) + '</button>'; }).join('') + '</div>' +
+      related(w.questions) +
+      '<div class="done-btns"><button class="btn ghost small" data-prep-walksave="' + esc(w.id) + '">Save notes</button>' +
+        '<button class="btn' + (r.reviewed ? '' : ' primary') + '" data-prep-walkrev="' + esc(w.id) + '" aria-pressed="' + !!r.reviewed + '">' + (r.reviewed ? '✓ Rehearsed — undo' : 'Mark rehearsed out loud') + '</button></div>';
   }
 
   /* ── Scripting ───────────────────────────────────────────────── */
@@ -701,6 +749,16 @@
         '<p>Work it in the simulator in <b>independent</b> mode, narrating your reasoning as you go. Come back here when done.</p>' +
         '<div class="done-btns"><button class="btn primary small" data-prep-open="lab:' + esc(it.id) + ':independent">Open the lab</button></div>' +
         '<textarea class="notes-input" rows="3" data-prep-mocknote="' + m.idx + '" aria-label="Notes for this prompt" placeholder="What you checked, in order, and why.">' + esc(it.note) + '</textarea>';
+    } else if (it.kind === 'walk') {
+      var wk = byId('onsiteWalks', it.id);
+      h += '<h2 class="prep-h">"' + esc(wk.prompt) + '"</h2><p class="muted">' + inline(wk.aim) + ' Suggested: ' + esc(wk.title.toLowerCase()) + '.</p>' +
+        '<textarea class="notes-input" rows="4" data-prep-mocknote="' + m.idx + '" aria-label="Walkthrough notes" placeholder="Frame it, requirements, the layers, decisions, where it broke, the Kubernetes mapping.">' + esc(it.note) + '</textarea>' +
+        '<div class="done-btns">' + (it.fu < wk.probes.length ? '<button class="btn small" data-prep-mockfu>Interviewer probes</button>' : '') +
+          (!it.hint ? '<button class="btn small ghost" data-prep-mockhint>Show the structure</button>' : '') +
+          (!it.shown ? '<button class="btn small" data-prep-mockshow>Show the pitfalls</button>' : '') + '</div>' +
+        (it.hint ? ul(wk.sections.map(function (x) { return x.h; })) : '') +
+        wk.probes.slice(0, it.fu).map(function (x, i) { return '<div class="followup"><p><b>Probe ' + (i + 1) + ':</b> ' + inline(x.q) + '</p>' + (it.shown ? '<p class="muted">' + inline(x.guidance) + '</p>' : '') + '</div>'; }).join('') +
+        (it.shown ? ul(wk.pitfalls) : '');
     } else if (it.kind === 'design') {
       var d = byId('onsiteDesign', it.id);
       h += '<h2 class="prep-h">' + esc(d.title) + '</h2><div class="situation-box">' + md(d.brief) + '</div>' +
@@ -874,7 +932,7 @@
       }
       return;
     }
-    var section = { hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
+    var section = { walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
     if (!section) return;
     if (U().track() !== 'onsite') return;
     U().go('prep');
@@ -919,6 +977,10 @@
     $$('[data-prep-story]', root()).forEach(function (t) {
       var parts = t.dataset.prepStory.split(':'), sr = s.stories[parts[0]] = s.stories[parts[0]] || {};
       sr.fields = sr.fields || {}; sr.fields[parts[1]] = t.value;
+    });
+    $$('[data-prep-walk]', root()).forEach(function (t) {
+      var parts = t.dataset.prepWalk.split('|'), wr = s.walks[parts[0]] = s.walks[parts[0]] || {};
+      wr.fields = wr.fields || {}; wr.fields[parts[1]] = t.value;
     });
     $$('[data-prep-mocknote]', root()).forEach(function (t) { if (ui.mock) ui.mock.items[Number(t.dataset.prepMocknote)].note = t.value; });
   }
@@ -979,6 +1041,9 @@
       else s.real[rp2[0]] = { status: rp2[1], at: Date.now() };
       save(s); render(); return;
     }
+    if ((b = t.closest('[data-prep-pace]'))) { keepNote(s); s.designPace = b.dataset.prepPace; save(s); render(); return; }
+    if ((b = t.closest('[data-prep-walksave]'))) { keepNote(s); save(s); U().toast('Saved in this browser'); return; }
+    if ((b = t.closest('[data-prep-walkrev]'))) { keepNote(s); var wr2 = s.walks[b.dataset.prepWalkrev] = s.walks[b.dataset.prepWalkrev] || {}; wr2.reviewed = wr2.reviewed ? 0 : Date.now(); save(s); render(); return; }
     if ((b = t.closest('[data-prep-henv]'))) { s.handsEnv = b.dataset.prepHenv; save(s); render(); return; }
     if ((b = t.closest('[data-prep-hhint]')) || (b = t.closest('[data-prep-hshow]')) || (b = t.closest('[data-prep-htask]'))) {
       var hk = b.dataset.prepHhint ? 'hint' : b.dataset.prepHshow ? 'open' : 'tasks';

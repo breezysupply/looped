@@ -125,7 +125,7 @@ LX.tracks = [
       'assets/js/data/onsite-quiz.js',
       'assets/js/data/onsite-labs.js', 'assets/js/data/onsite-design.js',
       'assets/js/data/onsite-scripting.js', 'assets/js/data/onsite-reallabs.js',
-      'assets/js/data/onsite-handson.js',
+      'assets/js/data/onsite-handson.js', 'assets/js/data/onsite-walkthroughs.js',
       'assets/js/data/onsite-stories.js', 'assets/js/data/onsite-path.js',
       'assets/js/data/onsite-mock.js'
     ],
