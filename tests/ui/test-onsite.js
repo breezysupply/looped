@@ -35,13 +35,34 @@ const { chromium } = require('playwright');
 
     /* ── every section renders, fits, and has something in it ── */
     const sections = await p.$$eval('[data-prep-section]', xs => xs.map(x => x.dataset.prepSection).filter((v, i, a) => a.indexOf(v) === i));
-    ok(sections.length === 11, W + ': eleven Prep sections', sections);
+    ok(sections.length === 12, W + ': twelve Prep sections', sections);
     for (const s of sections) {
       await p.click('.prep-nav [data-prep-section="' + s + '"]');
       const len = await p.$eval('#prepBody', el => el.textContent.trim().length);
       ok(len > 150, W + ': section ' + s + ' has content', len);
       ok(await overflow() <= 0, W + ': section ' + s + ' has no horizontal overflow', await overflow());
     }
+
+    /* ── the path defaults to Fundamentals, from the team's note ── */
+    await p.click('.prep-nav [data-prep-section="path"]');
+    ok(await p.$eval('[data-prep-path="fundamentals"]', el => el.getAttribute('aria-pressed') === 'true'), W + ': Fundamentals is the default path');
+    ok(await p.$$eval('.path-item[data-prep-open^="hands:"]', xs => xs.length) >= 9, W + ': Fundamentals links every hands-on scenario');
+
+    /* ── hands-on: hint, reveal, done, report, environment notes ── */
+    await p.click('.path-item[data-prep-open="hands:ons-hands-05"]');
+    ok(await p.$eval('#prepBody', el => /Expose it outside the cluster/.test(el.textContent) && /current-context/.test(el.textContent)), W + ': hands-on scenario opens with the context warning');
+    ok(await p.$$eval('.hands-task pre', xs => xs.length) === 0, W + ': commands hidden until asked');
+    await p.click('[data-prep-hhint="ons-hands-05:2"]');
+    ok(await p.$eval('.hands-task:nth-child(3)', el => /Hint:/.test(el.textContent)), W + ': hint shown on request');
+    await p.click('[data-prep-hshow="ons-hands-05:2"]');
+    ok(await p.$eval('.hands-task:nth-child(3)', el => /NODE_PORT=/.test(el.textContent) && /Killercoda:/.test(el.textContent)), W + ': command and Killercoda note revealed');
+    await p.click('[data-prep-henv="desktop"]');
+    ok(await p.$eval('.hands-task:nth-child(3)', el => /Docker Desktop:/.test(el.textContent) && /localhost/.test(el.textContent)), W + ': switching environment swaps the note');
+    await p.click('[data-prep-htask="ons-hands-05:0"]');
+    await p.click('[data-prep-hstatus="ons-hands-05:checked"]');
+    const hr = (await ls()).hands['ons-hands-05'];
+    ok(hr && hr.tasks['0'] === true && hr.open['2'] === true && hr.status === 'checked' && hr.env === 'desktop', W + ': hands-on progress persists', JSON.stringify(hr));
+    ok(await p.$('.copy-btn') !== null && await overflow() <= 0, W + ': copy buttons present and no overflow', await overflow());
 
     /* ── lessons: open from the path, mark studied, count it ── */
     await p.click('.prep-nav [data-prep-section="path"]');
@@ -78,10 +99,10 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="notes"]');
     await p.fill('#prepDate', '2026-10-08');
     await p.fill('#prepRecruiter', 'Recruiter: one design session, one troubleshooting session.');
-    await p.selectOption('#fmt-design', 'confirmed');
+    await p.selectOption('#fmt-kubernetes', 'confirmed');
     await p.click('[data-prep-notessave]');
     const n = await ls();
-    ok(n.date === '2026-10-08' && /design session/.test(n.recruiter) && n.formats.design === 'confirmed', W + ': notes persist', JSON.stringify(n));
+    ok(n.date === '2026-10-08' && /design session/.test(n.recruiter) && n.formats.kubernetes === 'confirmed', W + ': notes persist', JSON.stringify(n));
     await p.click('.prep-nav [data-prep-section="path"]');
     ok(await p.$eval('#prepBody', el => /the date you entered \(2026-10-08/.test(el.textContent) && /raised by your notes/.test(el.textContent)), W + ': path reflects the date and the confirmed format');
 
@@ -89,6 +110,7 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="progress"]');
     const prog = await p.$eval('#prepBody', el => el.textContent);
     ok(/Studied a concept\s*1 \/ 16/.test(prog) && /Answered independently\s*1 \/ 60/.test(prog), W + ': tiers count what was done', prog.slice(0, 500));
+    ok(/Reported a hands-on PASS check\s*1 \/ 9/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
     ok(/Automatically verified real-lab check/.test(prog) && /Not available/.test(prog) && !/readiness score:|%/.test(prog), W + ': no machine-verified claim and no percentage score');
 
     /* ── mock: start, move through, finish, save ── */

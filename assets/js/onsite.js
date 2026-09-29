@@ -23,7 +23,7 @@
 
   function st() {
     var s = U().LS.get(KEY, {}) || {};
-    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats'].forEach(function (k) {
+    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands'].forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     });
     if (!Array.isArray(s.mocks)) s.mocks = [];
@@ -33,7 +33,7 @@
   function sandbox() { return U().LS.get('lx.sandbox', {}) || {}; }
 
   var SECTIONS = [
-    ['path', 'Path'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
+    ['path', 'Path'], ['hands', 'Hands-on'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
     ['design', 'Design'], ['scripting', 'Scripting'], ['real', 'Real labs'], ['stories', 'Stories'],
     ['mock', 'Mock'], ['progress', 'Progress'], ['notes', 'Notes']
   ];
@@ -104,6 +104,7 @@
       case 'real': return !!s.real[id];
       case 'story': return !!(s.stories[id] && s.stories[id].reviewed);
       case 'mock': return s.mocks.some(function (x) { return x.preset === id; });
+      case 'hands': return !!(s.hands[id] && s.hands[id].status);
     }
     return false;
   }
@@ -118,10 +119,11 @@
       case 'real': x = byId('onsiteReal', id); return x ? x.title : id;
       case 'story': x = byId('onsiteStories', id); return x ? x.title : id;
       case 'mock': x = byId('onsiteMock', id); return x ? x.title + ' (' + x.mins + ' min)' : id;
+      case 'hands': x = byId('onsiteHands', id); return x ? x.title : id;
     }
     return id;
   }
-  var KIND_WORD = { lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
+  var KIND_WORD = { hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
 
   /* ── priority from notes ─────────────────────────────────────── */
   var FORMAT_TOPICS = {
@@ -201,13 +203,14 @@
   }
   function renderPath() {
     var P = LX.onsitePath || { essential: [], deep: [] };
-    var which = ui.path || st().pathChoice || 'essential';
+    var which = ui.path || st().pathChoice || 'fundamentals';
     var sessions = P[which] || [];
     var next = suggested(sessions);
     var total = sessions.reduce(function (a, x) { return a + x.mins; }, 0);
-    return '<p class="blurb">Two routes through the same material. <b>Essential</b> is the shortest path through the P0 and most likely P1 topics; <b>Deep</b> is the full preparation. The exact onsite agenda is unknown — nothing here is an actual Gallatin question.</p>' +
+    return '<p class="blurb"><b>Fundamentals</b> follows the team\'s preparation note — navigating a cluster, deploying and running an app, exposing it, updating, configuring and troubleshooting — with hands-on practice on a real cluster. <b>Essential</b> and <b>Deep</b> are the broader routes. The exact onsite agenda is unknown — nothing here is an actual Gallatin question.</p>' +
       dateLine() +
-      '<div class="seg-row" role="group" aria-label="Path length">' +
+      '<div class="seg-row" role="group" aria-label="Path">' +
+        '<button class="chip' + (which === 'fundamentals' ? ' active' : '') + '" data-prep-path="fundamentals" aria-pressed="' + (which === 'fundamentals') + '">Fundamentals · ' + (P.fundamentals || []).length + ' sessions</button>' +
         '<button class="chip' + (which === 'essential' ? ' active' : '') + '" data-prep-path="essential" aria-pressed="' + (which === 'essential') + '">Essential · ' + P.essential.length + ' sessions</button>' +
         '<button class="chip' + (which === 'deep' ? ' active' : '') + '" data-prep-path="deep" aria-pressed="' + (which === 'deep') + '">Deep · ' + P.deep.length + ' sessions</button>' +
       '</div>' +
@@ -239,6 +242,78 @@
             }).join('') + '</ul>' +
           '</div></article>';
       }).join('');
+  }
+
+  /* ── Hands-on (a real practice cluster) ──────────────────────── */
+  function lines(x) { return Array.isArray(x) ? x.join('\n') : (x || ''); }
+  function copyPre(text, labelTxt) {
+    return '<div class="cmd-block"><pre class="term term-static">' + esc(text) + '</pre>' +
+      '<button class="btn ghost small copy-btn" data-prep-copy="' + esc(text) + '" aria-label="Copy ' + esc(labelTxt || 'command') + '">Copy</button></div>';
+  }
+  function handsEnv() { return st().handsEnv || 'killercoda'; }
+  function renderHandsList() {
+    var s = st(), intro = LX.onsiteHandsIntro || {}, items = list('onsiteHands');
+    return '<p class="blurb">Original scenarios for a <b>real</b> practice cluster, covering the fundamentals the team named: finding your way around, deploying, exposing, updating, configuring and fixing an app. Type the commands yourself; each task hides one way to do it until you ask.</p>' +
+      '<p class="verify-note"><b>Safety:</b> ' + inline(intro.warning || '') + '</p>' +
+      label('Where to run them') + ul(intro.envs || [], function (e) {
+        return '<a href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(e.name) + '</a> — ' + inline(e.note); }) +
+      (intro.more ? '<p class="muted small">Extra reps: <a href="' + esc(intro.more.url) + '" target="_blank" rel="noopener">' + esc(intro.more.name) + '</a> — ' + inline(intro.more.note) + '</p>' : '') +
+      '<p class="muted small">Looped cannot see your cluster, so "done" here is your own report. Each scenario ends with a copy-paste check that prints PASS or FAIL.</p>' +
+      '<div class="list">' + items.map(function (h, i) {
+        var r = s.hands[h.id] || {}, done = Object.keys(r.tasks || {}).filter(function (k) { return r.tasks[k]; }).length;
+        return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
+          '<p class="card-title plain">' + (i + 1) + '. ' + esc(h.title) + '</p><p class="card-sum">' + inline(h.goal) + '</p>' +
+          '<div class="card-meta">' + badge('real cluster') + badge(h.priority) + badge('~' + h.mins + ' min') +
+            badge(done + ' / ' + h.tasks.length + ' tasks') +
+            (r.status === 'checked' ? badge('✓ PASS reported', 'done') : r.status === 'done' ? badge('✓ completed (reported)', 'done') : '') + '</div></div>' +
+          '<button class="lab-go" data-prep-open="hands:' + esc(h.id) + '" aria-label="Open ' + esc(h.title) + '">▶</button></div></article>';
+      }).join('') + '</div>';
+  }
+  function renderHands() {
+    if (!ui.detail) return renderHandsList();
+    var h = byId('onsiteHands', ui.detail);
+    if (!h) return back() + '<p class="empty">Scenario not found.</p>';
+    var s = st(), r = s.hands[h.id] || {}, env = handsEnv(), open_ = r.open || {}, hint = r.hint || {}, tasks = r.tasks || {};
+    var envName = { killercoda: 'Killercoda', desktop: 'Docker Desktop' };
+    return back() + '<p class="muted small">Hands-on · real cluster · practice scenario, not an actual interview task</p>' +
+      '<h2 class="prep-h">' + esc(h.title) + '</h2>' +
+      '<div class="card-meta">' + badge(h.priority) + badge('~' + h.mins + ' min') + badge(h.tasks.length + ' tasks') + '</div>' +
+      '<p class="lead">' + inline(h.goal) + '</p>' +
+      '<div class="chips" role="group" aria-label="Your environment">' + ['killercoda', 'desktop'].map(function (e) {
+        var on = env === e;
+        return '<button class="chip' + (on ? ' active' : '') + '" data-prep-henv="' + e + '" aria-pressed="' + on + '">' + envName[e] + '</button>';
+      }).join('') + '</div>' +
+      '<p class="verify-note"><b>Before you start:</b> run <code>kubectl config current-context</code> and make sure it is your practice cluster. Every command below works in the <code>practice</code> namespace.</p>' +
+      (h.setup && h.setup.length ? label('Start fresh (recreates what this scenario needs; safe to re-run)') + copyPre(h.setup.map(lines).join('\n'), 'setup commands') : '') +
+      label('Tasks') + '<ol class="hands-tasks">' + h.tasks.map(function (t, i) {
+        var shown = open_[i] || tasks[i], envNote = t.env && t.env[env];
+        return '<li class="hands-task' + (tasks[i] ? ' done' : '') + '">' +
+          '<p class="hands-do">' + inline(t.do) + '</p>' +
+          (hint[i] ? '<p class="hint-line"><b>Hint:</b> ' + inline(t.hint) + '</p>' : '') +
+          '<div class="hands-btns">' +
+            (!hint[i] && !shown ? '<button class="btn ghost small" data-prep-hhint="' + esc(h.id) + ':' + i + '">Hint</button>' : '') +
+            (!shown ? '<button class="btn ghost small" data-prep-hshow="' + esc(h.id) + ':' + i + '">Show a command</button>' : '') +
+            '<button class="btn small' + (tasks[i] ? '' : ' primary') + '" data-prep-htask="' + esc(h.id) + ':' + i + '" aria-pressed="' + !!tasks[i] + '">' + (tasks[i] ? '✓ Done' : 'Mark done') + '</button>' +
+          '</div>' +
+          (shown ? copyPre(lines(t.cmd), 'command for task ' + (i + 1)) +
+            '<p><b>You should see:</b> ' + inline(t.expect) + '</p>' +
+            (envNote ? '<p class="muted small"><b>' + envName[env] + ':</b> ' + inline(envNote) + '</p>' : '') +
+            '<p class="muted">' + inline(t.why) + '</p>' : '') +
+          '</li>';
+      }).join('') + '</ol>' +
+      label('Check it (prints PASS or FAIL)') + copyPre(lines(h.check.cmd), 'check') +
+      '<p class="muted small">Expected: <code>' + esc(h.check.expect) + '</code></p>' +
+      label('Clean up') + copyPre(lines(h.cleanup), 'cleanup') +
+      label('Say it in an interview') + '<div class="tip interview-answer">' + inline(h.talk) + '</div>' +
+      '<div class="chip-links">' + (h.lessons || []).map(function (l) { return '<button class="chip small" data-prep-open="lesson:' + esc(l) + '">' + esc(titleOf('lesson', l)) + '</button>'; }).join('') +
+        (h.sims || []).map(function (l) { return '<button class="chip small" data-prep-open="lab:' + esc(l) + '">Sim lab: ' + esc(titleOf('lab', l)) + '</button>'; }).join('') + '</div>' +
+      related(h.questions) +
+      label('Report (self-reported — Looped cannot see your cluster)') +
+      '<div class="chips" role="group" aria-label="Report">' +
+        [['done', 'I completed it'], ['checked', 'The check printed PASS']].map(function (o) {
+          var on = r.status === o[0];
+          return '<button class="chip' + (on ? ' active' : '') + '" data-prep-hstatus="' + esc(h.id) + ':' + o[0] + '" aria-pressed="' + on + '">' + esc(o[1]) + '</button>';
+        }).join('') + '</div>';
   }
 
   /* ── Lessons ─────────────────────────────────────────────────── */
@@ -671,6 +746,8 @@
       independent: modes.filter(function (m) { return m.independent; }).length,
       unaided: modes.filter(function (m) { return (m.independent && m.independent.unaided) || (m.guided && m.guided.unaided); }).length,
       realDone: realVals.length,
+      handsDone: Object.keys(s.hands).filter(function (k) { return s.hands[k].status; }).length,
+      handsChecked: Object.keys(s.hands).filter(function (k) { return s.hands[k].status === 'checked'; }).length,
       realVerified: realVals.filter(function (v) { return v === 'verified'; }).length,
       labs: labs.length
     };
@@ -719,6 +796,8 @@
       row('Completed a guided simulation', c.guided, c.labs, 'Browser simulation, guided mode.') +
       row('Completed an independent simulation', c.independent, c.labs, 'Browser simulation, neutral ticket, hidden objectives.') +
       row('Solved a simulation without hints', c.unaided, c.labs, 'No hints and no reveals in that run. Still a simulation.') +
+      row('Reported a hands-on scenario', c.handsDone, list('onsiteHands').length, 'Real practice cluster (Killercoda or Docker Desktop). Self-reported.') +
+      row('Reported a hands-on PASS check', c.handsChecked, list('onsiteHands').length, 'Self-reported: the app cannot observe your cluster.') +
       row('Reported completing a real local lab', c.realDone, list('onsiteReal').length || null, 'kind on your machine. Self-reported.') +
       row('Reported a real-lab verify script PASS', c.realVerified, list('onsiteReal').length || null, 'Self-reported: the app cannot observe your cluster.') +
       '<tr><th scope="row">Automatically verified real-lab check</th><td>—</td><td class="muted small">Not available. A static offline app cannot see a local cluster, so no real-lab result here is machine-verified.</td></tr>' +
@@ -773,7 +852,7 @@
   }
 
   var SECTION_RENDER = {
-    path: renderPath, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
+    path: renderPath, hands: renderHands, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
     scripting: renderScripting, real: renderReal, stories: renderStories, mock: renderMock, progress: renderProgress, notes: renderNotes
   };
 
@@ -786,7 +865,7 @@
       }
       return;
     }
-    var section = { lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
+    var section = { hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
     if (!section) return;
     if (U().track() !== 'onsite') return;
     U().go('prep');
@@ -890,6 +969,26 @@
       if (rp2[1] === 'clear' || (s.real[rp2[0]] && s.real[rp2[0]].status === rp2[1])) delete s.real[rp2[0]];
       else s.real[rp2[0]] = { status: rp2[1], at: Date.now() };
       save(s); render(); return;
+    }
+    if ((b = t.closest('[data-prep-henv]'))) { s.handsEnv = b.dataset.prepHenv; save(s); render(); return; }
+    if ((b = t.closest('[data-prep-hhint]')) || (b = t.closest('[data-prep-hshow]')) || (b = t.closest('[data-prep-htask]'))) {
+      var hk = b.dataset.prepHhint ? 'hint' : b.dataset.prepHshow ? 'open' : 'tasks';
+      var hp = (b.dataset.prepHhint || b.dataset.prepHshow || b.dataset.prepHtask).split(':');
+      var hr = s.hands[hp[0]] = s.hands[hp[0]] || {};
+      hr[hk] = hr[hk] || {};
+      hr[hk][hp[1]] = hk === 'tasks' ? !hr[hk][hp[1]] : true;
+      hr.at = Date.now(); save(s); render(); return;
+    }
+    if ((b = t.closest('[data-prep-hstatus]'))) {
+      var hs = b.dataset.prepHstatus.split(':'), hr2 = s.hands[hs[0]] = s.hands[hs[0]] || {};
+      hr2.status = hr2.status === hs[1] ? null : hs[1]; hr2.env = handsEnv(); hr2.at = Date.now(); save(s); render(); return;
+    }
+    if ((b = t.closest('[data-prep-copy]'))) {
+      var txt = b.dataset.prepCopy;
+      try {
+        navigator.clipboard.writeText(txt).then(function () { U().toast('Copied'); }, function () { U().toast('Copy failed — select the text instead'); });
+      } catch (err) { U().toast('Copy is not available here — select the text instead'); }
+      return;
     }
     if ((b = t.closest('[data-prep-storysave]'))) { keepNote(s); save(s); U().toast('Saved in this browser'); return; }
     if ((b = t.closest('[data-prep-storyrev]'))) { keepNote(s); var so = s.stories[b.dataset.prepStoryrev] = s.stories[b.dataset.prepStoryrev] || {}; so.reviewed = so.reviewed ? 0 : Date.now(); save(s); render(); return; }

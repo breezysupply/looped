@@ -11,6 +11,48 @@
    whatever you enter in Notes, and nothing is scheduled against it. */
 window.LX = window.LX || {};
 LX.onsitePath = {
+  /* Built from the preparation note the team sent: focus on fundamentals —
+     deploying and running an app, exposing it outside the cluster, basic
+     kubectl — rather than cluster management or etcd. Hands-on items are done
+     on a real practice cluster (Killercoda or Docker Desktop); the sim labs
+     keep troubleshooting in the mix. */
+  fundamentals: [
+    { id: 'fun-1', title: 'Find your way around a cluster', mins: 60, priority: 'P0', topics: ['arch'], prereqs: [],
+      why: 'Context, namespaces, resource kinds, explain, output formats, labels, events — the reads everything else depends on.',
+      items: [{ kind: 'lesson', id: 'les-reconcile' }, { kind: 'hands', id: 'ons-hands-01' },
+              { kind: 'question', id: 'ons-q-arch-01' }, { kind: 'question', id: 'ons-q-arch-02' }] },
+    { id: 'fun-2', title: 'Deploy and run an application', mins: 75, priority: 'P0', topics: ['arch'], prereqs: ['fun-1'],
+      why: 'Create a Deployment, follow what it creates, scale it and watch it heal — then practise the same reasoning in a simulated incident.',
+      items: [{ kind: 'lesson', id: 'les-workloads' }, { kind: 'hands', id: 'ons-hands-02' }, { kind: 'hands', id: 'ons-hands-03' },
+              { kind: 'question', id: 'ons-q-arch-03' }, { kind: 'question', id: 'ons-q-arch-07' }, { kind: 'lab', id: 'ons-lab-01', mode: 'guided' }] },
+    { id: 'fun-3', title: 'Reach it inside the cluster', mins: 75, priority: 'P0', topics: ['net'], prereqs: ['fun-2'],
+      why: 'Services, endpoints and cluster DNS — and the layered test that tells a name problem from a routing problem from an app problem.',
+      items: [{ kind: 'lesson', id: 'les-services' }, { kind: 'hands', id: 'ons-hands-04' },
+              { kind: 'question', id: 'ons-q-net-01' }, { kind: 'question', id: 'ons-q-net-02' }, { kind: 'question', id: 'ons-q-net-04' },
+              { kind: 'lab', id: 'ons-lab-03', mode: 'guided' }] },
+    { id: 'fun-4', title: 'Expose it outside the cluster', mins: 60, priority: 'P0', topics: ['net'], prereqs: ['fun-3'],
+      why: 'port-forward, NodePort, LoadBalancer and Ingress — what each does and what each needs from the environment.',
+      items: [{ kind: 'lesson', id: 'les-request-path' }, { kind: 'hands', id: 'ons-hands-05' },
+              { kind: 'question', id: 'ons-q-net-07' }, { kind: 'question', id: 'ons-q-net-08' }] },
+    { id: 'fun-5', title: 'Update it and roll it back', mins: 75, priority: 'P0', topics: ['trouble'], prereqs: ['fun-2'],
+      why: 'Rolling updates, a bad release that stalls safely, and what rollout undo does and does not restore.',
+      items: [{ kind: 'lesson', id: 'les-rollouts' }, { kind: 'hands', id: 'ons-hands-06' },
+              { kind: 'question', id: 'ons-q-trouble-04' }, { kind: 'question', id: 'ons-q-trouble-05' }, { kind: 'lab', id: 'ons-lab-02', mode: 'guided' }] },
+    { id: 'fun-6', title: 'Configure it', mins: 60, priority: 'P1', topics: ['config'], prereqs: ['fun-2'],
+      why: 'ConfigMaps and Secrets, why base64 is not protection, and when a change actually reaches the process.',
+      items: [{ kind: 'lesson', id: 'les-config' }, { kind: 'hands', id: 'ons-hands-07' },
+              { kind: 'question', id: 'ons-q-config-05' }, { kind: 'question', id: 'ons-q-config-03' }, { kind: 'lab', id: 'ons-lab-06', mode: 'guided' }] },
+    { id: 'fun-7', title: 'When it breaks', mins: 105, priority: 'P0', topics: ['trouble'], prereqs: ['fun-2', 'fun-3'],
+      why: 'Read the evidence before changing anything: logs of the previous container, exit codes, events, scheduler messages, probes.',
+      items: [{ kind: 'lesson', id: 'les-pod-lifecycle' }, { kind: 'lesson', id: 'les-probes' }, { kind: 'hands', id: 'ons-hands-08' },
+              { kind: 'question', id: 'ons-q-trouble-01' }, { kind: 'question', id: 'ons-q-trouble-03' }, { kind: 'question', id: 'ons-q-trouble-06' },
+              { kind: 'question', id: 'ons-q-trouble-09' },
+              { kind: 'lab', id: 'ons-lab-04', mode: 'independent' }, { kind: 'lab', id: 'ons-lab-05', mode: 'independent' }] },
+    { id: 'fun-8', title: 'Write it yourself, then practise under time', mins: 90, priority: 'P1', topics: ['arch', 'trouble'], prereqs: ['fun-4', 'fun-5', 'fun-7'],
+      why: 'A production-shaped manifest from scratch, a timed troubleshooting session, and how you describe your Kubernetes ramp-up honestly.',
+      items: [{ kind: 'hands', id: 'ons-hands-09' }, { kind: 'question', id: 'ons-q-arch-09' },
+              { kind: 'mock', id: 'mock-30' }, { kind: 'question', id: 'ons-q-behavior-05' }] }
+  ],
   essential: [
     { id: 'ess-1', title: 'How Kubernetes keeps state', mins: 75, priority: 'P0', topics: ['arch'], prereqs: [],
       why: 'Everything else is a consequence of desired state plus controllers. If you can explain why a deleted pod comes back, you can reason about rollouts, probes and outages.',

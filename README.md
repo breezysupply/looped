@@ -54,7 +54,8 @@ Open it from the track pill → **Gallatin Onsite**; Learn opens on **Prep**.
 
 | Prep section | What it holds |
 | --- | --- |
-| **Path** | An *Essential* route (6 sessions) and a *Deep* one (16), with prerequisites. A session is complete when every item in it has evidence. The interview date is whatever you enter in Notes — no deadline is invented |
+| **Path** | *Fundamentals* (8 sessions, the default — built from the team's preparation note: navigation, deploying, exposing, updating, configuring and troubleshooting), plus an *Essential* route (6 sessions) and a *Deep* one (16), with prerequisites. A session is complete when every item in it has evidence. The interview date is whatever you enter in Notes — no deadline is invented |
+| **Hands-on** | 9 original scenarios for a real practice cluster (the Killercoda playground or Docker Desktop's Kubernetes): per-task hints, hidden commands, environment notes, a PASS/FAIL check and cleanup. Every command runs in a `practice` namespace, and every scenario was played against a real cluster (`labs/hands-on/VALIDATION.md`) |
 | **Lessons** | 16 concept lessons, foundations first, 10 with diagrams, each ending in a self-check |
 | **Questions** | 60 questions (10 architecture, 10 networking, 10 troubleshooting, 8 identity/config/storage, 8 delivery/disconnected, 8 design/automation, 6 behavioural), each with context, what is evaluated, a spoken answer, a deeper explanation, 2–4 follow-ups, misconceptions, evidence, a rubric that accepts sound alternatives, an AWS analogy with where it breaks, and kubernetes.io references. Answers stay hidden until you ask |
 | **Sim labs** | 10 incident labs (below) |
@@ -139,6 +140,7 @@ assets/js/k8s-model.js         # deterministic Kubernetes model behind the onsit
 assets/js/k8s-kubectl.js       # bounded kubectl + the simulated lab-registry helper over it
 labs/python/                   # onsite Python exercises: starters, fixtures, tests, solutions
 labs/kind/                     # onsite real-cluster labs for kind; EXECUTION.md = what really ran
+labs/hands-on/                 # validator + record for the in-app hands-on scenarios
 tests/                         # validators (node) + Playwright suites; see CONTRIBUTING.md
 assets/js/data/
   tracks.js                    # the track registry — categories live here, not in app.js

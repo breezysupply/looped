@@ -964,3 +964,13 @@ table.tiers select { max-width: 100%; height: 36px; background: var(--bg-elev-2)
 .diagram .diagram-scroll { overflow-x: auto; }
 .diagram .diagram-scroll svg { min-width: 540px; }
 .diagram .diagram-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* hands-on scenarios */
+.hands-tasks { padding-left: 22px; margin: 6px 0; }
+.hands-task { margin: 0 0 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-elev); }
+.hands-task.done { border-color: var(--accent); }
+.hands-do { margin: 0 0 6px; font-size: 14px; }
+.hands-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.hands-btns .btn.primary { width: auto; }
+.cmd-block { position: relative; }
+.cmd-block pre.term { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 64px; font-size: 12px; }
+.copy-btn { position: absolute; top: 6px; right: 6px; }

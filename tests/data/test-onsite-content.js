@@ -135,11 +135,50 @@ if (real.length) {
   ok(false, 'real labs: index present');
 }
 
+/* ── hands-on scenarios (a real practice cluster) ─────────────── */
+const hands = D.onsiteHands || [], hIds = hands.map(h => h.id);
+const lines = x => Array.isArray(x) ? x.join('\n') : (x || '');
+ok(hands.length >= 8, 'hands-on: at least eight scenarios', hands.length);
+ok(new Set(hIds).size === hIds.length, 'hands-on: ids unique');
+const intro = D.onsiteHandsIntro || {};
+ok(str(intro.warning, 40) && /practice/.test(intro.warning) && /work cluster/.test(intro.warning), 'hands-on: the intro warns against work clusters');
+(intro.envs || []).concat(intro.more ? [intro.more] : []).forEach(e =>
+  ok(/^https:\/\/(killercoda\.com|docs\.docker\.com)\//.test(e.url), 'hands-on: environment link on its official site: ' + e.url));
+/* a mutating kubectl line must name the practice namespace (or be about the
+   namespace itself); nothing may delete another namespace or use --all */
+const MUTATE = /^\s*kubectl\s+(create|apply|delete|scale|set|expose|run|patch|label|annotate|rollout\s+(undo|restart)|edit|replace)\b/;
+hands.forEach(h => {
+  const w = h.id + ': ';
+  ok(/^ons-hands-\d\d$/.test(h.id) && str(h.title) && str(h.goal, 40) && /^P[0-3]$/.test(h.priority) && h.mins > 0, w + 'id, title, goal, priority, minutes');
+  ok(arr(h.tasks, 4) && h.tasks.every(t => str(t.do, 15) && str(t.hint, 10) && str(lines(t.cmd), 5) && str(t.expect, 10) && str(t.why, 20)), w + 'every task has do, hint, command, expectation and why');
+  ok(h.tasks.every(t => typeof t.re === 'string'), w + 'every task is covered by the validator (re)');
+  ok(h.check && /PASS/.test(lines(h.check.cmd)) && /FAIL/.test(lines(h.check.cmd)), w + 'check prints PASS or FAIL');
+  ok(str(lines(h.cleanup)) && str(h.talk, 40), w + 'cleanup and interview phrasing');
+  (h.lessons || []).forEach(p => ok(lIds.indexOf(p) !== -1, w + 'lesson ' + p + ' resolves'));
+  (h.questions || []).forEach(p => ok(qIds.indexOf(p) !== -1, w + 'question ' + p + ' resolves'));
+  (h.sims || []).forEach(p => ok(labIds.indexOf(p) !== -1, w + 'sim lab ' + p + ' resolves'));
+  const all = [].concat((h.setup || []).map(lines), h.tasks.map(t => lines(t.cmd)), h.tasks.map(t => lines(t.test || '')), [lines(h.cleanup), lines(h.check.cmd)]).join('\n').split('\n');
+  all.forEach(l => {
+    if (/--context\b/.test(l)) ok(false, w + 'commands stay environment-neutral (no --context)', l);
+    if (/--all(-namespaces)?\b|\s-A\b/.test(l) && MUTATE.test(l)) ok(false, w + 'no mutating command across all namespaces', l);
+    if (/kubectl\s+delete\s+(ns|namespaces?)\b/.test(l)) ok(/delete\s+(ns|namespaces?)\s+practice\s*$/.test(l.trim()), w + 'only the practice namespace is ever deleted', l);
+    if (MUTATE.test(l) && !/kubectl\s+(create|delete)\s+(ns|namespaces?)\s+practice\b/.test(l)) {
+      ok(/(-n|--namespace)[ =]practice\b/.test(l) || /-f\s+-\s*$/.test(l) && /kubectl\s+apply\s+-f\s+-/.test(l), w + 'mutating command names -n practice', l);
+    }
+  });
+  /* the apply -f - lines are fed by commands that set the namespace */
+  all.forEach((l, i) => { if (/\|\s*kubectl\s+apply\s+-f\s+-/.test(l)) ok(/-n practice|namespace practice/.test(l), w + 'piped apply is scoped to practice', l); });
+});
+
 /* ── path and mock resolve ─────────────────────────────────────── */
-const RES = { lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds };
-['essential', 'deep'].forEach(k => {
+const RES = { lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
+const fun = (D.onsitePath || {}).fundamentals || [];
+ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
+ok(hIds.every(id => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === id))), 'path fundamentals: includes every hands-on scenario');
+ok(fun.every(x => x.items.some(it => it.kind === 'hands' || it.kind === 'mock')), 'path fundamentals: every session has real-cluster or timed practice');
+['fundamentals', 'essential', 'deep'].forEach(k => {
   const sess = (D.onsitePath || {})[k] || [];
-  ok(sess.length >= (k === 'essential' ? 4 : 10), 'path ' + k + ': has sessions', sess.length);
+  ok(sess.length >= (k === 'deep' ? 10 : 4), 'path ' + k + ': has sessions', sess.length);
   const seen = [];
   sess.forEach(x => {
     x.prereqs.forEach(p => ok(seen.indexOf(p) !== -1, k + '/' + x.id + ': prerequisite ' + p + ' comes earlier'));

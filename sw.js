@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-59664cd4';
+var CACHE = 'looped-be101002';
 var ASSETS = [
   './',
   './index.html',
@@ -83,6 +83,7 @@ var ASSETS = [
   './assets/js/data/onsite-design.js',
   './assets/js/data/onsite-scripting.js',
   './assets/js/data/onsite-reallabs.js',
+  './assets/js/data/onsite-handson.js',
   './assets/js/data/onsite-stories.js',
   './assets/js/data/onsite-path.js',
   './assets/js/data/onsite-mock.js'
