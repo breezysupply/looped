@@ -23,7 +23,7 @@
 
   function st() {
     var s = U().LS.get(KEY, {}) || {};
-    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks', 'cases', 'talk'].forEach(function (k) {
+    ['lessons', 'questions', 'design', 'scripting', 'real', 'stories', 'summaries', 'boosts', 'formats', 'hands', 'walks', 'cases', 'talk', 'systems'].forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = {};
     });
     if (!Array.isArray(s.mocks)) s.mocks = [];
@@ -33,7 +33,7 @@
   function sandbox() { return U().LS.get('lx.sandbox', {}) || {}; }
 
   var SECTIONS = [
-    ['path', 'Path'], ['hands', 'Hands-on'], ['cases', 'Cases'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
+    ['path', 'Path'], ['system', 'System lab'], ['hands', 'Hands-on'], ['cases', 'Cases'], ['lessons', 'Lessons'], ['questions', 'Questions'], ['labs', 'Sim labs'],
     ['design', 'Design'], ['scripting', 'Scripting'], ['real', 'Real labs'], ['stories', 'Stories'], ['talk', 'Talk'],
     ['mock', 'Mock'], ['progress', 'Progress'], ['notes', 'Notes']
   ];
@@ -108,6 +108,7 @@
       case 'walk': return !!(s.walks[id] && s.walks[id].reviewed);
       case 'case': return !!(s.cases[id] && s.cases[id].revealed);
       case 'talk': return !!(s.talk[id] && s.talk[id].ready);
+      case 'system': return !!byId('onsiteSystems', id) && systemDone(byId('onsiteSystems', id));
     }
     return false;
   }
@@ -126,10 +127,11 @@
       case 'walk': x = byId('onsiteWalks', id); return x ? x.title : id;
       case 'case': x = byId('onsiteCases', id); return x ? x.title : id;
       case 'talk': x = byId('onsiteTalk', id); return x ? x.title : id;
+      case 'system': x = byId('onsiteSystems', id); return x ? x.title : id;
     }
     return id;
   }
-  var KIND_WORD = { talk: 'Talk prep', 'case': 'Case', walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
+  var KIND_WORD = { system: 'System lab', talk: 'Talk prep', 'case': 'Case', walk: 'Walkthrough', hands: 'Hands-on', lesson: 'Lesson', question: 'Question', lab: 'Sim lab', design: 'Design', script: 'Python', real: 'Real lab', story: 'Story', mock: 'Mock' };
 
   /* ── priority from notes ─────────────────────────────────────── */
   var FORMAT_TOPICS = {
@@ -164,7 +166,7 @@
     }
     if (!ui.section) ui.section = (st().ui && st().ui.section) || 'path';
     /* a section whose content has not shipped yet is not shown at all */
-    var sections = SECTIONS.filter(function (x) { return x[0] !== 'cases' || list('onsiteCases').length; });
+    var sections = SECTIONS.filter(function (x) { return (x[0] !== 'cases' || list('onsiteCases').length) && (x[0] !== 'system' || list('onsiteSystems').length); });
     if (!sections.some(function (x) { return x[0] === ui.section; })) ui.section = 'path';
     var nav = '<div class="chips prep-nav" role="group" aria-label="Prep sections">' + sections.map(function (x) {
       var on = x[0] === ui.section;
@@ -333,6 +335,63 @@
         }).join('') + '</div>';
   }
 
+  /* ── System lab: one system, design then troubleshoot ────────── */
+  function systemDone(x) {
+    var r = st().systems[x.id] || {};
+    return !!r.mapRevealed && x.cases.every(function (id) { return ev('case', id); });
+  }
+  function renderSystem() {
+    var x = (ui.detail && byId('onsiteSystems', ui.detail)) || list('onsiteSystems')[0];
+    if (!x) return '<p class="empty">No system lab yet.</p>';
+    var s = st(), r = s.systems[x.id] || {}, d = byId('onsiteDesign', x.design), comps = {};
+    x.components.forEach(function (c) { comps[c.id] = c.name; });
+    var hands = x.handsOn && byId('onsiteHands', x.handsOn);
+    var h = (ui.detail ? back() : '') +
+      '<p class="muted small">A practice system invented for this exercise — not any company\'s architecture, and not an actual interview question.</p>' +
+      '<h2 class="prep-h">' + esc(x.title) + '</h2><p>' + inline(x.intro) + '</p>' +
+      '<ol class="steps-why">' + x.rounds.map(function (rd) { return '<li><b>' + esc(rd.h) + '.</b> ' + inline(rd.what) + '</li>'; }).join('') + '</ol>' +
+      label('Part 1 · Architecture') +
+      '<p>Design it out loud with the 60-minute pacing. Write your design down before you open part 2 — the reference architecture below is one strong answer, not the only one.</p>' +
+      '<div class="done-btns"><button class="btn primary" data-prep-open="design:' + esc(x.design) + '">Open the design problem</button>' + (ev('design', x.design) ? badge('✓ practised', 'done') : '') + '</div>' +
+      label('Part 2 · The working system') +
+      '<p>This is the system the incidents run on. Treat it as the architecture an interviewer hands you.</p>' +
+      (d && d.architecture.diagram ? '<figure class="diagram">' + scrollWrap(d.architecture.diagram) + (d.architecture.caption ? '<figcaption>' + inline(d.architecture.caption) + '</figcaption>' : '') + '</figure>' : '') +
+      '<details class="brief-wrap"><summary>Components and what each depends on</summary><div class="table-wrap"><table class="tiers"><thead><tr><th scope="col">Component</th><th scope="col">Role</th><th scope="col">Depends on</th></tr></thead><tbody>' +
+        x.components.map(function (c) {
+          return '<tr><th scope="row">' + esc(c.name) + (c.critical ? ' <span class="muted small">(critical path)</span>' : '') + '</th><td>' + inline(c.role) + '</td><td>' +
+            (c.dependsOn.length ? esc(c.dependsOn.map(function (id) { return comps[id] || id; }).join(', ')) : '—') + '</td></tr>';
+        }).join('') + '</tbody></table></div></details>' +
+      '<h3 class="prep-h3">Map the failure points (about 10 min)</h3><p>' + inline(x.failureMap.prompt) + '</p>' +
+      '<label class="prep-label" for="sysMap">Your failure map</label>' +
+      '<textarea id="sysMap" class="notes-input" rows="6" data-prep-smap="' + esc(x.id) + '" placeholder="Where | how it fails | signal | blast radius | guard">' + esc(r.map || '') + '</textarea>' +
+      '<div class="done-btns"><button class="btn' + (r.mapRevealed ? ' ghost small' : ' primary') + '" data-prep-sreveal="' + esc(x.id) + '" aria-pressed="' + !!r.mapRevealed + '">' + (r.mapRevealed ? 'Hide the reference map' : 'Compare with a reference map') + '</button></div>';
+    if (r.mapRevealed) {
+      h += '<p class="muted small">One reasonable map, not a checklist to recite. Points you found that are not here can be just as good.</p>' +
+        x.failureMap.points.map(function (pt) {
+          return '<details class="brief-wrap sys-point"><summary>' + esc(pt.where) + '</summary><div class="situation">' +
+            '<p><b>How it fails.</b> ' + inline(pt.how) + '</p><p><b>Signal.</b> ' + inline(pt.signal) + '</p>' +
+            '<p><b>Blast radius.</b> ' + inline(pt.blast) + '</p><p><b>Guard.</b> ' + inline(pt.guard) + '</p></div></details>';
+        }).join('');
+    }
+    h += '<h3 class="prep-h3">The incidents</h3><p>Work each one with the interviewer holding the evidence. Say which point on your map you think it is before you ask for anything.</p>' +
+      '<div class="list">' + x.cases.map(function (id, i) {
+        var c = byId('onsiteCases', id);
+        if (!c) return '';
+        return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
+          '<p class="card-title plain">' + (i + 1) + '. ' + esc(c.title) + '</p>' +
+          '<div class="card-meta">' + badge('~' + c.mins + ' min') + (ev('case', id) ? badge('✓ worked', 'done') : '') + '</div></div>' +
+          '<button class="lab-go" data-prep-open="case:' + esc(id) + '" aria-label="Open ' + esc(c.title) + '">▶</button></div></article>';
+      }).join('') + '</div>';
+    if (hands) {
+      h += label('Part 3 · Same system, real cluster (optional)') +
+        '<p>' + inline(hands.goal) + '</p><div class="done-btns"><button class="btn" data-prep-open="hands:' + esc(hands.id) + '">Open the hands-on scenario</button>' +
+        (ev('hands', hands.id) ? badge('✓ reported', 'done') : '') + '</div>';
+    }
+    h += label('Debrief') + ul(x.debrief) +
+      '<p class="muted small">' + (systemDone(x) ? '✓ Failure map compared and all three incidents worked.' : 'Counts as worked once you have compared your failure map and worked all three incidents.') + ' Self-assessed; nothing here is graded.</p>';
+    return h;
+  }
+
   /* ── Interviewer-led troubleshooting cases ────────────────────── */
   var TRACK_NAME = { linux: 'Linux', containers: 'Containers & Networking', aws: 'AWS' };
   function renderCasesList() {
@@ -344,20 +403,22 @@
         var r = s.cases[c.id] || {};
         return '<article class="card lab-card"><div class="card-head"><div class="card-main">' +
           '<p class="card-title plain">' + (i + 1) + '. ' + esc(c.title) + '</p><p class="card-sum">' + inline(c.opening) + '</p>' +
-          '<div class="card-meta">' + badge(c.domain) + badge(['', 'foundation', 'working', 'advanced'][c.level] || '') + badge('~' + c.mins + ' min') +
+          '<div class="card-meta">' + (c.system ? badge('System lab') : '') + badge(c.domain) + badge(['', 'foundation', 'working', 'advanced'][c.level] || '') + badge('~' + c.mins + ' min') +
             (r.revealed ? badge('✓ worked · ' + (r.asked || []).length + ' asks', 'done') : (r.asked && r.asked.length ? badge('in progress') : '')) + '</div></div>' +
           '<button class="lab-go" data-prep-open="case:' + esc(c.id) + '" aria-label="Open case">▶</button></div></article>';
       }).join('') + '</div>';
   }
   function renderCase(c) {
     var s = st(), r = s.cases[c.id] || {}, asked = r.asked || [], byAsk = {};
+    var sys = c.system && byId('onsiteSystems', c.system), sysD = sys && byId('onsiteDesign', sys.design);
     c.asks.forEach(function (a) { byAsk[a.id] = a; });
     var groups = [];
     c.asks.forEach(function (a) { if (groups.indexOf(a.group) === -1) groups.push(a.group); });
     var h = back() + '<p class="muted small">Interviewer-led case · ' + esc(c.domain) + ' · practice, not an actual interview question</p>' +
       '<h2 class="prep-h">' + esc(c.title) + '</h2>' +
       '<div class="situation-box"><p><b>Interviewer:</b> ' + inline(c.opening) + '</p></div>' +
-      (r.context ? '<p><b>The setup:</b> ' + inline(c.context) + '</p>' : '<button class="btn ghost small" data-prep-cctx="' + esc(c.id) + '">Ask about the setup</button>') +
+      (sys ? '<details class="brief-wrap case-system"><summary>The system (from the System lab, part 1)</summary>' + (sysD && sysD.architecture.diagram ? '<figure class="diagram">' + scrollWrap(sysD.architecture.diagram) + '</figure>' : '') + '</details><p><b>The setup:</b> ' + inline(c.context) + '</p>' :
+        r.context ? '<p><b>The setup:</b> ' + inline(c.context) + '</p>' : '<button class="btn ghost small" data-prep-cctx="' + esc(c.id) + '">Ask about the setup</button>') +
       label('What you have asked for (' + asked.length + ')') +
       (asked.length ? asked.map(function (id, i) {
         var a = byAsk[id];
@@ -944,6 +1005,7 @@
       unaided: modes.filter(function (m) { return (m.independent && m.independent.unaided) || (m.guided && m.guided.unaided); }).length,
       realDone: realVals.length,
       casesDone: Object.keys(s.cases).filter(function (k) { return s.cases[k].revealed; }).length,
+      systemsDone: list('onsiteSystems').filter(systemDone).length,
       handsDone: Object.keys(s.hands).filter(function (k) { return s.hands[k].status; }).length,
       handsChecked: Object.keys(s.hands).filter(function (k) { return s.hands[k].status === 'checked'; }).length,
       realVerified: realVals.filter(function (v) { return v === 'verified'; }).length,
@@ -994,6 +1056,7 @@
       row('Completed a guided simulation', c.guided, c.labs, 'Browser simulation, guided mode.') +
       row('Completed an independent simulation', c.independent, c.labs, 'Browser simulation, neutral ticket, hidden objectives.') +
       row('Solved a simulation without hints', c.unaided, c.labs, 'No hints and no reveals in that run. Still a simulation.') +
+      row('Worked the System lab end to end', c.systemsDone, list('onsiteSystems').length, 'Failure map compared and every linked incident worked. Self-assessed.') +
       row('Worked an interviewer-led case', c.casesDone, list('onsiteCases').length, 'Evidence asked for and cause revealed in the app. Your answer is self-assessed.') +
       row('Reported a hands-on scenario', c.handsDone, list('onsiteHands').length, 'Real practice cluster (Killercoda or Docker Desktop). Self-reported.') +
       row('Reported a hands-on PASS check', c.handsChecked, list('onsiteHands').length, 'Self-reported: the app cannot observe your cluster.') +
@@ -1051,7 +1114,7 @@
   }
 
   var SECTION_RENDER = {
-    path: renderPath, hands: renderHands, cases: renderCases, talk: renderTalk, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
+    path: renderPath, hands: renderHands, cases: renderCases, talk: renderTalk, system: renderSystem, lessons: renderLessons, questions: renderQuestions, labs: renderLabs, design: renderDesigns,
     scripting: renderScripting, real: renderReal, stories: renderStories, mock: renderMock, progress: renderProgress, notes: renderNotes
   };
 
@@ -1064,7 +1127,7 @@
       }
       return;
     }
-    var section = { talk: 'talk', 'case': 'cases', walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
+    var section = { system: 'system', talk: 'talk', 'case': 'cases', walk: 'design', hands: 'hands', lesson: 'lessons', question: 'questions', design: 'design', script: 'scripting', real: 'real', story: 'stories', mock: 'mock' }[kind];
     if (!section) return;
     if (U().track() !== 'onsite') return;
     U().go('prep');
@@ -1113,6 +1176,8 @@
       var parts = t.dataset.prepStory.split(':'), sr = s.stories[parts[0]] = s.stories[parts[0]] || {};
       sr.fields = sr.fields || {}; sr.fields[parts[1]] = t.value;
     });
+    var smap = $('[data-prep-smap]', root());
+    if (smap) { var sr = s.systems[smap.dataset.prepSmap] = s.systems[smap.dataset.prepSmap] || {}; sr.map = smap.value; }
     $$('[data-prep-talk]', root()).forEach(function (t) {
       var parts = t.dataset.prepTalk.split('|'), tr = s.talk[parts[0]] = s.talk[parts[0]] || {};
       tr.fields = tr.fields || {}; tr.fields[parts[1]] = t.value;
@@ -1189,6 +1254,7 @@
       else s.real[rp2[0]] = { status: rp2[1], at: Date.now() };
       save(s); render(); return;
     }
+    if ((b = t.closest('[data-prep-sreveal]'))) { keepNote(s); var sr2 = s.systems[b.dataset.prepSreveal] = s.systems[b.dataset.prepSreveal] || {}; sr2.mapRevealed = sr2.mapRevealed ? 0 : Date.now(); save(s); render(); return; }
     if ((b = t.closest('[data-prep-talksave]'))) { keepNote(s); save(s); U().toast('Saved in this browser'); return; }
     if ((b = t.closest('[data-prep-talkready]'))) { keepNote(s); var tr3 = s.talk[b.dataset.prepTalkready] = s.talk[b.dataset.prepTalkready] || {}; tr3.ready = tr3.ready ? 0 : Date.now(); save(s); render(); return; }
     if (t.closest('[data-prep-tpick]')) { keepNote(s); save(s); return; }

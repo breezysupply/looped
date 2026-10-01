@@ -18,8 +18,8 @@ LX.onsitePath = {
      keep troubleshooting in the mix. */
   /* The confirmed onsite agenda, one block per loop — roles only, no names.
      Times are as the invitation gave them (EDT); confirm the local time for
-     an Austin office. Later phases add architecture walkthroughs, the
-     interviewer-led troubleshooting cases and conversation prep here. */
+     an Austin office. The architecture and troubleshooting loops both start
+     from the System lab: design one system, then troubleshoot it. */
   day: [
     { id: 'day-1', slot: '11:00–11:30 EDT', title: 'Co-founder conversation (CTO, virtual)', mins: 60, priority: 'P3', topics: ['behavior'], prereqs: [],
       why: 'Thirty minutes with a technical founder, on video. Expect motivation, judgment and how you think about the problems the company works on — prepare a short, honest story of your background and your Kubernetes ramp-up.',
@@ -27,8 +27,9 @@ LX.onsitePath = {
               { kind: 'question', id: 'ons-q-behavior-05' }, { kind: 'question', id: 'ons-q-behavior-02' },
               { kind: 'story', id: 'ons-story-transfer' }, { kind: 'story', id: 'ons-story-dns' }] },
     { id: 'day-2', slot: '11:30–12:30 EDT', title: 'Infrastructure architecture & system design (60 min)', mins: 240, priority: 'P2', topics: ['design'], prereqs: [],
-      why: 'A full hour. Establish requirements before tools, draw the design, handle the constraints the interviewer adds, and be ready to walk through infrastructure you have actually built.',
-      items: [{ kind: 'design', id: 'ons-design-artifacts' }, { kind: 'design', id: 'ons-design-multicluster' },
+      why: 'A full hour on designing infrastructure for a real-world system: Kubernetes and containers, cloud architecture, networking and service dependencies, reliability and scaling trade-offs, monitoring and observability. Establish requirements before tools, draw the request path and its dependencies, handle the constraints the interviewer adds, and explain your reasoning. Start with the System lab, part 1.',
+      items: [{ kind: 'system', id: 'ons-sys-orders' }, { kind: 'design', id: 'ons-design-webapp' }, { kind: 'lesson', id: 'les-observability' },
+              { kind: 'design', id: 'ons-design-artifacts' }, { kind: 'design', id: 'ons-design-multicluster' },
               { kind: 'design', id: 'ons-design-stateful' }, { kind: 'design', id: 'ons-design-remediation' },
               { kind: 'question', id: 'ons-q-design-01' }, { kind: 'question', id: 'ons-q-design-02' },
               { kind: 'question', id: 'ons-q-delivery-01' }, { kind: 'question', id: 'ons-q-delivery-02' },
@@ -38,8 +39,9 @@ LX.onsitePath = {
       why: 'Relaxed, but still part of the day. Have a few genuine questions about how the team works, and a short, human version of how you share operational knowledge.',
       items: [{ kind: 'talk', id: 'talk-lunch' }, { kind: 'question', id: 'ons-q-behavior-04' }, { kind: 'story', id: 'ons-story-runbook' }] },
     { id: 'day-4', slot: '1:30–2:30 EDT', title: 'Infrastructure troubleshooting (60 min, one interviewer remote)', mins: 240, priority: 'P0', topics: ['trouble', 'net'], prereqs: [],
-      why: 'A full hour, with one interviewer on video. Narrate as you go, ask for evidence explicitly, state hypotheses and what would disprove them, keep changes small, and verify from the user\'s side.',
-      items: [{ kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'question', id: 'ons-q-net-04' },
+      why: 'A full hour, with one interviewer on video, building on the architecture round: expect a working system architecture and problems within it. Map its failure points and dependencies, work through logs, metrics and traces methodically, state hypotheses and what would disprove them, keep changes small, and verify from the user\'s side. Start with the System lab, part 2.',
+      items: [{ kind: 'system', id: 'ons-sys-orders' }, { kind: 'case', id: 'ons-case-09' }, { kind: 'case', id: 'ons-case-10' }, { kind: 'case', id: 'ons-case-11' },
+              { kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'question', id: 'ons-q-net-04' },
               { kind: 'question', id: 'ons-q-trouble-06' }, { kind: 'question', id: 'ons-q-trouble-07' },
               { kind: 'lab', id: 'ons-lab-02', mode: 'independent' }, { kind: 'lab', id: 'ons-lab-03', mode: 'independent' },
               { kind: 'lab', id: 'ons-lab-07', mode: 'independent' }, { kind: 'hands', id: 'ons-hands-08' },
@@ -122,7 +124,7 @@ LX.onsitePath = {
               { kind: 'lab', id: 'ons-lab-08', mode: 'guided' }, { kind: 'lab', id: 'ons-lab-09', mode: 'guided' }, { kind: 'lab', id: 'ons-lab-10', mode: 'guided' }] },
     { id: 'ess-6', title: 'Put it together under interview conditions', mins: 90, priority: 'P2', topics: ['design', 'behavior'], prereqs: ['ess-2', 'ess-3', 'ess-4'],
       why: 'One design conversation, two of your stories, and a timed mixed session. The goal is fluency and honest framing, not new material.',
-      items: [{ kind: 'design', id: 'ons-design-remediation' }, { kind: 'question', id: 'ons-q-design-01' },
+      items: [{ kind: 'lesson', id: 'les-observability' }, { kind: 'system', id: 'ons-sys-orders' }, { kind: 'design', id: 'ons-design-remediation' }, { kind: 'question', id: 'ons-q-design-01' },
               { kind: 'story', id: 'ons-story-dns' }, { kind: 'story', id: 'ons-story-capacity' }, { kind: 'question', id: 'ons-q-behavior-05' },
               { kind: 'mock', id: 'mock-30' }] }
   ],
@@ -170,7 +172,8 @@ LX.onsitePath = {
               { kind: 'lab', id: 'ons-lab-02', mode: 'independent' }, { kind: 'real', id: 'ons-real-02' }] },
     { id: 'deep-9', title: 'Incident practice under time', mins: 60, priority: 'P0', topics: ['trouble'], prereqs: ['deep-4', 'deep-5', 'deep-7'],
       why: 'The first ten minutes of an incident, spoken out loud, and one lab with no hints.',
-      items: [{ kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'lab', id: 'ons-lab-01', mode: 'independent' }, { kind: 'mock', id: 'mock-30' }] },
+      items: [{ kind: 'lesson', id: 'les-observability' }, { kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'lab', id: 'ons-lab-01', mode: 'independent' },
+              { kind: 'system', id: 'ons-sys-orders' }, { kind: 'mock', id: 'mock-30' }] },
     { id: 'deep-10', title: 'Configuration and secrets', mins: 60, priority: 'P1', topics: ['config'], prereqs: ['deep-2'],
       why: 'How config reaches a process, and why base64 is not protection.',
       items: [{ kind: 'lesson', id: 'les-config' }, { kind: 'question', id: 'ons-q-config-03' }, { kind: 'question', id: 'ons-q-config-05' }] },

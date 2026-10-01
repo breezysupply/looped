@@ -1420,5 +1420,107 @@ LX.onsiteLessons.push(
     }
   ],
   verify: 'kubeadm default certificate lifetime (one year for component certificates) varies by version and tooling; check your distribution.'
+},
+{
+  id: 'les-observability',
+  track: 'onsite',
+  title: 'Observability and dependencies: from "it is slow" to the failing hop',
+  priority: 'P1',
+  mins: 15,
+  prereqs: ['les-request-path', 'les-failure'],
+  summary: 'What to measure in a system of services and dependencies, what should page, and how to use metrics, logs and traces together to walk a symptom back along the dependency graph to the component that is actually failing.',
+  sections: [
+    {
+      h: 'Three kinds of signal, one question each',
+      body: '**Metrics** are numbers over time: cheap to keep, good for alerting and for spotting *when* and *how much*. **Logs** are events with detail: good for *what exactly happened* in one component. **Traces** follow one request across components, with a span per hop: good for *where the time or the error is*.\n\n'
+        + 'They work best joined up: a request ID or trace ID in every log line, and labels (service, route, pod, node, zone, version) on metrics, so you can jump from a spike on a graph to the traces in that window to the log lines for one failing request. In Kubernetes, container logs go to stdout/stderr and are collected per node; metrics come from the kubelet and from the application; traces need instrumentation in the application and context propagated through every hop, including queue messages.'
+    },
+    {
+      h: 'What to measure: requests and resources',
+      body: 'For anything that serves requests — a route, a service, a dependency call — measure **rate, errors and duration** (often called RED). Use percentiles for duration (p95, p99), not averages: averages hide the slow tail that users notice.\n\n'
+        + 'For anything that is a resource — CPU, memory, disk, connection pools, queues, node capacity — measure **utilisation, saturation and errors** (USE). Saturation is the early warning: a connection pool with requests waiting, a queue whose oldest message keeps getting older, an HPA sitting at its maximum. The "four golden signals" (latency, traffic, errors, saturation) are the same idea in one list.\n\n'
+        + 'Measure each dependency **from the caller\'s side** as well: the API\'s view of the database (time to get a connection, query time, errors) often explains what the database\'s own dashboard cannot.'
+    },
+    {
+      h: 'What should page: symptoms, SLOs and burn rate',
+      body: 'Page on **symptoms users feel**, not on every cause. An SLO turns "users are happy" into a number — for example, 99.9% of order requests succeed over 30 days — and the error budget is what is left (0.1%). A **burn-rate** alert fires when the budget is being spent fast enough to matter, using a short and a long window together so it is both quick and not noisy.\n\n'
+        + 'Cause-level signals — a pod restarting, high CPU on one node, a single slow query — go to dashboards or tickets unless they threaten the SLO. Treat **missing data** as its own condition: a component that stops reporting is unknown, not healthy. And put **deploy and config-change markers** on dashboards, because "what changed?" is the first question in almost every incident.'
+    },
+    {
+      h: 'Dependencies: the critical path and how failures spread',
+      body: 'Draw the dependency graph and mark the **critical path**: the dependencies a request must succeed against before the user gets an answer. Every synchronous dependency on that path multiplies down your availability; moving work to a queue takes it off the path.\n\n'
+        + 'Failures spread in a few predictable ways:\n\n'
+        + '- **Slow is worse than down.** A slow dependency holds threads and connections while callers wait, so the caller runs out too. Timeouts shorter than the caller\'s own deadline stop this.\n'
+        + '- **Retries amplify.** Three layers each retrying three times turn one failure into 27 calls. Use a retry budget, backoff with jitter, and idempotency so retries are safe.\n'
+        + '- **Scaling moves the bottleneck.** More API pods mean more connections, more calls, more load on whatever is behind them. Check every downstream limit.\n'
+        + '- **Shared things fail together.** One database, one cache cluster, one zone or one bad message in an ordered queue can affect everything that depends on it.\n\n'
+        + 'Circuit breakers, bulkheads (separate pools per dependency) and dead-letter queues limit how far a failure can travel.'
+    },
+    {
+      h: 'Walking a symptom back to its cause',
+      body: 'A repeatable sequence that works on most systems, and that you can say out loud in an interview:\n\n'
+        + '1. **Scope it.** Which routes, which users, which zones, since when? Compare with deploys and config changes.\n'
+        + '2. **Split it.** Group errors and latency by the labels you have — route, pod, node, node group, zone, version, dependency. A failure that follows one label is half solved.\n'
+        + '3. **Follow the request.** Take one failing request\'s trace: which span holds the time or the error? That is the next hop to examine.\n'
+        + '4. **Check that hop from both sides.** The caller\'s view (timeouts, pool waits) and the callee\'s view (its own metrics and logs). A healthy callee with an unhappy caller points at the path between them: network, limits, configuration.\n'
+        + '5. **Form one hypothesis and try to disprove it** with the cheapest test — a debug pod, a query, a single canary — before changing anything.\n'
+        + '6. **Contain, then fix, then verify** against the same signal that showed the problem.'
+    }
+  ],
+  diagram: '',
+  diagramCaption: '',
+  keyPoints: [
+    'Metrics tell you when and how much, logs tell you what, traces tell you where. Join them with request IDs and labels.',
+    'Requests: rate, errors, duration (with percentiles). Resources: utilisation, saturation, errors. Saturation is the early warning.',
+    'Page on SLO burn rate and user-facing symptoms; route cause-level signals to dashboards and tickets.',
+    'Measure every dependency from the caller\'s side too; it often shows what the dependency\'s own dashboard cannot.',
+    'A slow dependency, unbounded retries and scaling into a downstream limit are the usual ways a failure spreads.',
+    'To troubleshoot: scope, split by labels, follow one request\'s trace, check the hop from both sides, then test one hypothesis.'
+  ],
+  misconceptions: [
+    'All pods are Running and Ready, so the service is healthy → readiness says a pod can accept requests; it says nothing about whether its dependencies work or whether users are succeeding.',
+    'Average latency is a good health signal → averages hide the tail; use percentiles and the SLO.',
+    'More alerts mean better coverage → alerts on every cause produce noise that hides the real page; alert on symptoms and SLO burn.',
+    'If a dependency\'s dashboard is green, it is not involved → the problem may be on the path to it or in its limits (connections, rate limits, firewall rules), which only the caller sees.'
+  ],
+  aws: {
+    analogy: 'CloudWatch metrics and alarms, CloudWatch Logs, X-Ray traces; ALB target-group metrics per target; SQS ApproximateAgeOfOldestMessage; RDS DatabaseConnections.',
+    breaks: 'In Kubernetes you usually assemble the pipeline yourself (for example Prometheus-style metrics, a log collector per node, OpenTelemetry-style tracing), and pod-level labels — pod, node, namespace — are what let you split a failure by placement. Pods are short-lived, so logs must be shipped off the node.'
+  },
+  check: [
+    {
+      q: 'The API\'s error rate is up, the database dashboard is green, and traces show requests waiting before any query runs. Where do you look next?',
+      a: 'At the hop between them from the caller\'s side: connection pool waits and failures to open connections, the database\'s connection limit, and network paths or firewall rules. A healthy callee with an unhappy caller points at the path or the limits.'
+    },
+    {
+      q: 'Why can a slow dependency cause a bigger outage than one that is down?',
+      a: 'A down dependency fails fast; a slow one holds the caller\'s threads and connections while it waits, so the caller exhausts its own resources and fails on unrelated requests too. Timeouts and circuit breakers prevent this.'
+    },
+    {
+      q: 'Workers are Running, Ready and busy, but the queue keeps growing. Which signals show the real problem?',
+      a: 'Age of the oldest message and the acknowledgement (or completion) rate compared with the publish rate. Busy workers that acknowledge nothing are stuck, often on one message that keeps failing.'
+    },
+    {
+      q: 'What should page a human for a customer-facing API?',
+      a: 'A fast SLO burn rate on user-facing success or latency, and missing telemetry for critical components. Pod restarts and high CPU are context, not pages, unless they threaten the SLO.'
+    }
+  ],
+  questions: ['ons-q-design-07', 'ons-q-net-04', 'ons-q-trouble-09'],
+  labs: [],
+  refs: [
+    {
+      t: 'Logging Architecture',
+      u: 'https://kubernetes.io/docs/concepts/cluster-administration/logging/'
+    },
+    {
+      t: 'Tools for Monitoring Resources',
+      u: 'https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-usage-monitoring/'
+    },
+    {
+      t: 'Traces for Kubernetes System Components',
+      u: 'https://kubernetes.io/docs/concepts/cluster-administration/system-traces/'
+    }
+  ],
+  verify: 'RED, USE and the four golden signals are widely used conventions rather than standards. Burn-rate window pairs and thresholds vary by team and SLO; the ones you choose should come from your own error budget.'
 }
 );

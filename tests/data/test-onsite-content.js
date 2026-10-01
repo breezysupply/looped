@@ -86,7 +86,7 @@ ok(LABS.length >= 10, 'sim labs: at least 10', LABS.length);
 LABS.forEach(m => (m.onsite.prereqs || []).forEach(p => ok(lIds.indexOf(p) !== -1, m.id + ': prerequisite ' + p + ' resolves')));
 LABS.forEach(m => (m.onsite.questions || []).forEach(p => ok(qIds.indexOf(p) !== -1, m.id + ': question ' + p + ' resolves')));
 
-ok(design.length >= 4, 'design: four scenarios');
+ok(design.length >= 5, 'design: four specialist scenarios plus the System lab system');
 design.forEach(d => {
   const w = d.id + ': ';
   ok(str(d.brief, 100) && arr(d.clarify, 5) && arr(d.assumptions, 3) && arr(d.constraints, 2), w + 'brief, clarifying questions, assumptions, constraints');
@@ -209,8 +209,33 @@ cases.forEach(c => {
   (c.refs || []).forEach(r => ok(REF.test(r.u), x + 'reference on an official domain: ' + r.u));
   (c.alsoPractise || []).forEach(a => ok(D.track.byId(a.track), x + 'track ' + a.track + ' exists'));
   const lead = (c.title + ' ' + c.opening).toLowerCase();
-  ok(!/(readiness probe|inode|intermediate|throttl|webhook|forwarder|diskpressure|disk pressure|\bca\b)/.test(lead), x + 'title and opening do not give the cause away', lead);
+  ok(!/(readiness probe|inode|intermediate|throttl|webhook|forwarder|diskpressure|disk pressure|\bca\b|connection (pool|limit|slot)|too many (clients|connections)|security group|firewall|allow.?list|subnet|dead.?letter|poison|schema)/.test(lead), x + 'title and opening do not give the cause away', lead);
 });
+
+/* ── System lab: one system, design then troubleshoot ──────────── */
+const systems = D.onsiteSystems || [], sysIds = systems.map(x => x.id);
+ok(systems.length >= 1, 'system lab: at least one system');
+systems.forEach(x => {
+  const w = x.id + ': ', compIds = x.components.map(c => c.id);
+  ok(str(x.title) && str(x.intro, 100) && arr(x.rounds, 2) && x.rounds.every(r => str(r.h) && str(r.what, 40)), w + 'title, intro and rounds');
+  const d = design.filter(y => y.id === x.design)[0];
+  ok(d && d.system === x.id && /<svg/.test(d.architecture.diagram || ''), w + 'part 1 design resolves, links back, and has the reference diagram');
+  ok(arr(x.components, 8) && new Set(compIds).size === compIds.length && x.components.every(c => str(c.name) && str(c.role, 20) && Array.isArray(c.dependsOn) && typeof c.critical === 'boolean'), w + 'components with roles and dependencies');
+  x.components.forEach(c => c.dependsOn.forEach(dep => ok(compIds.indexOf(dep) !== -1, w + c.id + ' depends on ' + dep + ', which resolves')));
+  ok(x.failureMap && str(x.failureMap.prompt, 60) && arr(x.failureMap.points, 8) && x.failureMap.points.every(pt => ['where', 'how', 'signal', 'blast', 'guard'].every(k => str(pt[k], 8))), w + 'failure map: prompt and 8+ points with how, signal, blast radius and guard');
+  ok(arr(x.cases, 3), w + 'at least three linked incidents');
+  x.cases.forEach(id => {
+    const c = cases.filter(y => y.id === id)[0];
+    ok(c && c.system === x.id, w + 'case ' + id + ' resolves and runs on this system');
+  });
+  ok(cases.filter(c => c.system === x.id).every(c => x.cases.indexOf(c.id) !== -1), w + 'every case on this system is listed');
+  if (x.handsOn) ok(hIds.indexOf(x.handsOn) !== -1, w + 'hands-on ' + x.handsOn + ' resolves');
+  ok(arr(x.debrief, 3), w + 'debrief prompts');
+  ok(!/\b(Gallatin|actual interview question is)\b/i.test(JSON.stringify(x)), w + 'does not claim to be the company\'s system or an actual interview question');
+});
+const sysCases = cases.filter(c => c.system);
+ok(sysCases.every(c => c.asks.some(a => /trace|metric|dashboard|queue|firewall/i.test(a.label))), 'system cases: evidence beyond kubectl (metrics, traces, queues, firewall rules)');
+ok(L.some(l => l.id === 'les-observability'), 'lessons: observability and dependencies lesson present');
 
 /* ── conversations around the technical loops ─────────────────── */
 const talk = D.onsiteTalk || [], tIds = talk.map(t => t.id);
@@ -230,7 +255,7 @@ talk.forEach(t => {
 ['talk-cofounder', 'talk-lunch', 'talk-hm'].forEach(id => ok(((talk.filter(t => t.id === id)[0] || {}).ask || []).length >= 4, id + ': at least four questions to choose from'));
 ok(talk.filter(t => /^talk-(arrival|cofounder|hm)$/.test(t.id)).every(t => /\((CTO|Director)[^)]*\)/.test(t.title)), 'talk: interviewers identified by role only');
 
-const RES = { talk: tIds, 'case': cIds, walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
+const RES = { system: sysIds, talk: tIds, 'case': cIds, walk: wIds, lesson: lIds, question: qIds, lab: labIds, design: dIds, script: sIds, real: rIds, story: stIds, mock: mockIds, hands: hIds };
 const fun = (D.onsitePath || {}).fundamentals || [];
 ok(fun.length >= 6, 'path fundamentals: has sessions', fun.length);
 ok(hands.filter(h => !h.beyond).every(h => fun.some(x => x.items.some(it => it.kind === 'hands' && it.id === h.id))), 'path fundamentals: includes every hands-on scenario within the team\'s focus');
@@ -244,6 +269,7 @@ ok(fun.every(x => x.items.some(it => it.kind === 'hands' || it.kind === 'mock'))
 const day = (D.onsitePath || {}).day || [];
 ok(day.length === 5 && day.every(x => /^\d{1,2}:\d{2}–\d{1,2}:\d{2} EDT$/.test(x.slot)), 'path day: five loops, each with its time slot', day.map(x => x.slot));
 ok(day.every(x => x.items.length >= 2), 'path day: every loop has practice attached');
+ok(['day-2', 'day-4'].every(k => (day.filter(x => x.id === k)[0] || { items: [] }).items[0].kind === 'system'), 'path day: both technical loops start from the System lab');
 ok(['talk-cofounder', 'talk-lunch', 'talk-hm', 'talk-close'].every(id => day.some(x => x.items.some(it => it.kind === 'talk' && it.id === id))), 'path day: conversation prep is on the day path');
 const allItems = [].concat.apply([], ['fundamentals', 'essential', 'deep', 'day'].map(k => [].concat.apply([], ((D.onsitePath || {})[k] || []).map(x => x.items))));
 ok(allItems.filter(it => it.kind === 'script').every(it => it.optional === true), 'path: Python exercises are optional (no coding loop on the agenda)');
@@ -276,7 +302,7 @@ function collect(x, where, key) {
 }
 Q.forEach(q => collect(q, q.id)); L.forEach(l => collect(l, l.id)); design.forEach(d => collect(d, d.id));
 stories.forEach(s => collect(s, s.id)); LABS.forEach(m => collect({ t: m.title, b: m.brief, o: m.onsite, obj: m.objectives.map(o => [o.text, o.hint, o.hint2]) }, m.id));
-real.forEach(r => collect(r, r.id)); talk.forEach(t => collect(t, t.id));
+real.forEach(r => collect(r, r.id)); talk.forEach(t => collect(t, t.id)); systems.forEach(x => collect(x, x.id)); cases.forEach(c => collect(c, c.id));
 const NEG = /(\b(not|n't|never|no|nor|without|isn't|doesn't|don't|won't|cannot|can't|neither|myth|misconception|wrong|false|mistake|assum\w*|believ\w*|think\w*|claim\w*|says?|saying|stat\w*|calls?)\b|["“'‘])[^.]{0,60}$/i;
 const LINT = [
   [/readiness (probe )?(failure|failing|fails)[^.]{0,20}\brestart(s|ed)? the container/i, 'readiness failure restarts the container'],

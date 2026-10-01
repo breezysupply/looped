@@ -908,3 +908,240 @@ LX.onsiteDesign.push({
   ],
   verify: ''
 });
+
+/* ------------------------------------------------------------------ */
+/* 5. A customer-facing order API in the cloud (System lab, part 1)    */
+/* ------------------------------------------------------------------ */
+/* A deliberately ordinary system: the kind of "real-world system" an
+   architecture round can start from. Its architecture is the one the
+   System lab hands you in part 2 to troubleshoot. Generic by design; it
+   says nothing about any company's actual stack. */
+LX.onsiteDesign.push({
+  id: 'ons-design-webapp', track: 'onsite', priority: 'P1', mins: 60, system: 'ons-sys-orders',
+  title: 'A customer-facing order API on Kubernetes in the cloud',
+  brief: 'We are launching a customer-facing ordering service: a public HTTPS API that web and mobile clients call to browse a catalogue, place orders and get confirmations. Payments go through an external payment provider. Traffic is steady most of the day with sharp peaks during promotions. Design the infrastructure to run it on Kubernetes in a public cloud — how requests get in, how the services depend on each other, how it scales, how it fails, and how you would know it is healthy.',
+  clarify: [
+    { q: 'Who are the users, where are they, and what does "available" mean to them — what latency and error rate are acceptable?',
+      why: 'Becomes the SLOs. Everything else — zones, replicas, alerting — is sized against them.' },
+    { q: 'What is normal and peak traffic, how sharp are the peaks, and do we know about them in advance?',
+      why: 'Decides how much headroom to keep, whether autoscaling alone can react fast enough, and whether to pre-scale before known events.' },
+    { q: 'Which operations must be synchronous, and which can complete later?',
+      why: 'Placing an order may need an immediate answer; confirmation emails and fulfilment can go through a queue. This shapes the whole dependency graph.' },
+    { q: 'What data do we keep, how consistent must it be, and how much can we lose?',
+      why: 'Orders and payments need strong consistency and a small RPO; the catalogue can be cached and slightly stale.' },
+    { q: 'How do we depend on the payment provider: their SLA, rate limits, timeouts, and what happens if they are slow?',
+      why: 'An external dependency on the critical path sets a ceiling on your own availability unless you design around it.' },
+    { q: 'Single region or several? Any data-residency or compliance requirements?',
+      why: 'Multi-region is a large step in cost and complexity; it should be driven by a requirement, not by default.' },
+    { q: 'What does the team already run and know — cloud provider, managed services, CI/CD, observability tools?',
+      why: 'Prefer what the team can operate well. A managed database the team understands beats a self-run one they do not.' },
+    { q: 'Who is on call, and what is the release cadence?',
+      why: 'Drives how much automation, how safe the rollout process must be, and how much the design should lean on managed services.' }
+  ],
+  assumptions: [
+    'One cloud region with three availability zones; a second region is a later decision, not a launch requirement.',
+    'SLO: 99.9% of order requests succeed, and 95% complete within 300 ms, measured at the load balancer over 30 days.',
+    'Peak traffic is about ten times normal, during announced promotions.',
+    'Orders and payments must not be lost; the catalogue may be up to a minute stale.',
+    'A managed relational database, a managed cache, a managed queue and object storage are available from the provider.',
+    'The payment provider offers idempotency keys and documents its rate limits.'
+  ],
+  constraints: [
+    'No single zone failure may take the service down.',
+    'No credentials baked into images or manifests; workloads get cloud access through their own identity.',
+    'Every release must be able to stop or roll back without a full outage.',
+    'The design must say what is monitored and what pages a human.'
+  ],
+  architecture: {
+    summary: 'Clients resolve the API\'s name through DNS to a cloud load balancer spread across three zones. The load balancer sends traffic to an ingress controller in the cluster, which routes to the API Deployment. API pods spread across zones, scale with a HorizontalPodAutoscaler, and are added to the Service only when their readiness probe passes. The API reads the catalogue through a cache, writes orders to a managed relational database (a primary with a standby in another zone, plus a read replica), calls the payment provider with timeouts, retries with backoff and idempotency keys, and publishes an event to a queue. A worker Deployment consumes the queue to send confirmations and write receipts to object storage, retrying with backoff and moving messages that keep failing to a dead-letter queue. Workloads use their own identities for cloud access. Metrics, logs and traces flow to one observability stack, with SLO-based alerts. Releases go through CI/CD with a progressive rollout gated on those same signals.',
+    components: [
+      { name: 'DNS and cloud load balancer', resp: 'A stable name with a sensible TTL; a load balancer across three zones that health-checks its targets and terminates or passes through TLS.' },
+      { name: 'Ingress controller', resp: 'Routes HTTP to Services, enforces timeouts and request limits, and emits per-route request metrics. Runs with several replicas across zones.' },
+      { name: 'API Deployment + HPA', resp: 'Stateless pods spread across zones (topology spread), readiness probes, PodDisruptionBudget, requests sized from measurement, autoscaled on CPU or request rate with minimum and maximum replicas.' },
+      { name: 'Cache', resp: 'Catalogue reads and session data. Losing it makes things slower, not wrong — the API must survive a cold cache without overloading the database.' },
+      { name: 'Managed relational database', resp: 'Orders and payments. Primary with a synchronous standby in another zone, a read replica for reporting, automated backups and point-in-time recovery. Has a hard connection limit.' },
+      { name: 'Queue + worker Deployment', resp: 'Decouples order placement from confirmation and fulfilment. Workers scale on backlog, retry with backoff, and send poison messages to a dead-letter queue.' },
+      { name: 'Object storage', resp: 'Receipts and exports. Accessed by workers through workload identity, not static keys.' },
+      { name: 'External payment provider', resp: 'On the critical path for placing an order. Called with a timeout, a bounded retry budget, idempotency keys and a circuit breaker.' },
+      { name: 'Observability', resp: 'Metrics (request rate, errors, latency per route and per dependency), logs with request IDs, distributed traces across API, queue and worker, and SLO burn-rate alerts.' }
+    ],
+    diagram: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400" role="img" aria-label="Order API reference architecture. Clients resolve DNS and reach a cloud load balancer spread across three zones. Inside the Kubernetes cluster, an ingress controller routes to the API Deployment, which autoscales and keeps a database connection pool in each pod. The API calls the cache, the managed database with primary, standby and read replica, the queue, and the external payment provider. A worker Deployment consumes the queue and writes to the database and to object storage. Metrics, logs and traces from every component go to the observability stack with SLO alerts." font-family="inherit" font-size="11">' +
+      '<defs><marker id="odw-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>' +
+      '<rect x="24" y="8" width="208" height="28" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="128" y="26" text-anchor="middle" style="fill:var(--text)">Web and mobile clients</text>' +
+      '<rect x="24" y="48" width="208" height="28" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="128" y="66" text-anchor="middle" style="fill:var(--text)">DNS</text>' +
+      '<rect x="24" y="88" width="208" height="30" rx="5" style="fill:var(--bg-elev);stroke:var(--accent)"/><text x="128" y="107" text-anchor="middle" style="fill:var(--text)">Cloud load balancer (3 zones)</text>' +
+      '<rect x="12" y="130" width="232" height="214" rx="8" stroke-dasharray="5 4" style="fill:none;stroke:var(--line)"/>' +
+      '<text x="20" y="144" style="fill:var(--muted)">Kubernetes cluster · zones A, B, C</text>' +
+      '<rect x="24" y="152" width="208" height="30" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="128" y="171" text-anchor="middle" style="fill:var(--text)">Ingress controller</text>' +
+      '<rect x="24" y="200" width="208" height="44" rx="5" style="fill:var(--bg-elev);stroke:var(--accent)"/><text x="128" y="218" text-anchor="middle" style="fill:var(--text)">API Deployment + HPA</text><text x="128" y="234" text-anchor="middle" style="fill:var(--muted)">readiness · PDB · DB pool per pod</text>' +
+      '<rect x="24" y="290" width="208" height="40" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="128" y="307" text-anchor="middle" style="fill:var(--text)">Worker Deployment</text><text x="128" y="322" text-anchor="middle" style="fill:var(--muted)">retries · dead-letter queue</text>' +
+      '<rect x="300" y="88" width="164" height="30" rx="5" stroke-dasharray="4 3" style="fill:var(--bg-elev);stroke:var(--amber)"/><text x="382" y="107" text-anchor="middle" style="fill:var(--text)">Payment provider (external)</text>' +
+      '<rect x="300" y="152" width="164" height="30" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="382" y="171" text-anchor="middle" style="fill:var(--text)">Cache</text>' +
+      '<rect x="300" y="196" width="164" height="44" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="382" y="214" text-anchor="middle" style="fill:var(--text)">Managed database</text><text x="382" y="230" text-anchor="middle" style="fill:var(--muted)">primary · standby · replica</text>' +
+      '<rect x="300" y="252" width="164" height="30" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="382" y="271" text-anchor="middle" style="fill:var(--text)">Queue</text>' +
+      '<rect x="300" y="300" width="164" height="30" rx="5" style="fill:var(--bg-elev);stroke:var(--line)"/><text x="382" y="319" text-anchor="middle" style="fill:var(--text)">Object storage</text>' +
+      '<line x1="128" y1="36" x2="128" y2="46" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="128" y1="76" x2="128" y2="86" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="128" y1="118" x2="128" y2="150" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="128" y1="182" x2="128" y2="198" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="204" x2="298" y2="110" stroke-width="1.5" stroke-dasharray="3 3" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="212" x2="298" y2="170" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="222" x2="298" y2="218" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="236" x2="298" y2="264" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="300" y1="276" x2="234" y2="300" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="296" x2="298" y2="232" stroke-width="1.5" stroke-dasharray="3 3" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<line x1="232" y1="318" x2="298" y2="316" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#odw-ah)"/>' +
+      '<rect x="12" y="356" width="452" height="36" rx="6" style="fill:var(--bg-elev);stroke:var(--accent)"/>' +
+      '<text x="238" y="372" text-anchor="middle" style="fill:var(--text)">Observability: metrics · logs · traces · SLO alerts</text>' +
+      '<text x="238" y="386" text-anchor="middle" style="fill:var(--muted)">from every box above, per route and per dependency</text>' +
+      '</svg>',
+    caption: 'The reference architecture for the System lab: the request path down the left, the API\'s dependencies on the right, the asynchronous path through the queue and workers, and one observability stack across all of it.'
+  },
+  approaches: [
+    { name: 'Managed data services, stateless cluster',
+      how: 'The cluster runs only stateless API and worker pods; the database, cache, queue and object storage are provider-managed.',
+      pros: ['Backups, patching and failover for state handled by the provider', 'The team operates far less', 'Cluster can be rebuilt without data migration'],
+      cons: ['Hard limits you must design around (connections, throughput)', 'Less control over versions and tuning', 'Cost, and some lock-in'],
+      when: 'The default for a team launching a customer-facing service, where managed services are available and allowed.' },
+    { name: 'Everything in the cluster',
+      how: 'Run the database, cache and queue in Kubernetes too, with operators and persistent volumes.',
+      pros: ['Portable across providers and on-premises', 'Full control of versions and configuration'],
+      cons: ['The team now owns backups, failover, upgrades and storage for state', 'Much larger blast radius for cluster mistakes'],
+      when: 'Environments without managed services (on-premises, some government or disconnected sites), or a team with deep experience running those data stores.' },
+    { name: 'Synchronous everything (no queue)',
+      how: 'The API places the order, charges the payment, sends the confirmation and writes the receipt in one request.',
+      pros: ['Simple to reason about', 'One place to look for errors'],
+      cons: ['Every dependency is on the critical path, so availability multiplies down', 'Slow downstreams hold API threads and connections', 'Peaks hit every dependency at once'],
+      when: 'Early prototypes, or when every step genuinely must finish before the user gets an answer.' }
+  ],
+  failureModes: [
+    { mode: 'A zone is lost.',
+      detect: 'Load balancer target health, node conditions, error rate split by zone.',
+      mitigate: 'Pods spread across zones with topology spread constraints, enough headroom that two zones carry peak, PDBs, and a database standby in another zone with automatic failover.' },
+    { mode: 'Traffic spikes faster than autoscaling reacts.',
+      detect: 'Latency and saturation rise before replica count does; HPA events lag the traffic graph.',
+      mitigate: 'Minimum replicas sized for known peaks, pre-scaling before announced promotions, cluster autoscaling with spare capacity, and rate limiting at the edge so overload degrades rather than collapses.' },
+    { mode: 'The database runs out of connections.',
+      detect: 'Connection count against the limit, pool wait time, timeouts acquiring a connection in API logs.',
+      mitigate: 'Size per-pod pools against the database limit times the HPA maximum, or put a connection pooler in front; cap the HPA maximum to what the database can serve.' },
+    { mode: 'The payment provider becomes slow.',
+      detect: 'Per-dependency latency and error metrics, traces showing time spent in the payment call.',
+      mitigate: 'Short timeouts, a bounded retry budget with backoff and jitter, idempotency keys, and a circuit breaker so slow calls do not consume every worker thread.' },
+    { mode: 'A message that can never be processed blocks the workers.',
+      detect: 'Queue depth and age of oldest message rising while workers are healthy; the same message ID failing in the logs.',
+      mitigate: 'Bounded retries, then a dead-letter queue with an alert; consumers that are idempotent so redelivery is safe.' },
+    { mode: 'A bad release.',
+      detect: 'Error rate and latency of the new version compared with the old, during a progressive rollout.',
+      mitigate: 'Readiness probes, a canary or small first step, automated pause on SLO regression, and a fast rollback path. Database migrations are backward compatible (expand, then contract).' },
+    { mode: 'The cache is lost or flushed.',
+      detect: 'Cache hit rate drops, database read load rises.',
+      mitigate: 'Request coalescing and rate limits on cache refill so a cold cache does not overload the database; capacity planned for some cache-miss traffic.' }
+  ],
+  identity: [
+    'API and worker pods use their own ServiceAccounts mapped to cloud identities (workload identity), each scoped to what it needs: workers can write receipts, the API cannot.',
+    'Database credentials come from a secret store or short-lived database authentication, not from manifests or images.',
+    'TLS from clients to the load balancer, and between the load balancer and the cluster where required; certificates renewed automatically with expiry alerts.',
+    'Kubernetes RBAC: CI/CD deploys to its namespaces only; humans get read access by default and break-glass for writes.',
+    'NetworkPolicy so only the API and workers reach the data services, provided the cluster\'s network plugin enforces it.'
+  ],
+  observability: [
+    'Request rate, errors and duration per route at the load balancer and ingress — these are the SLO signals and what pages.',
+    'The same three signals per dependency, from the caller\'s side: cache, database, queue publish, payment provider. This is what turns "the API is slow" into "the database call is slow".',
+    'Saturation: CPU and memory against requests and limits, database connections against the limit, queue depth and oldest-message age, HPA current versus maximum replicas.',
+    'Distributed traces with a request ID propagated through the API, the queue message and the worker, and the same ID in every log line.',
+    'SLO burn-rate alerts page; cause-level alerts (a pod restarting, high CPU) go to a ticket or a dashboard unless they threaten the SLO.',
+    'Deploy and config-change markers on every dashboard, so "what changed?" is answered at a glance.'
+  ],
+  deploy: [
+    'CI builds an image once, tags it by digest, scans it, and promotes the same digest through environments.',
+    'Progressive rollout: a small first step (canary or one replica), compare error rate and latency with the stable version, then proceed or roll back automatically.',
+    'Readiness probes that check the app can serve, plus a preStop delay so endpoints are removed before the process stops.',
+    'Database migrations run as a separate, backward-compatible step before the code that needs them (expand, then contract).',
+    'Configuration and feature flags change through the same reviewed pipeline, with the change recorded as an event.'
+  ],
+  recovery: [
+    'Zone loss: automatic — pods reschedule into the remaining zones, the database fails over to its standby. Verify with a game day, not just on paper.',
+    'Bad release: roll back the image; feature flags to switch off a feature without a deploy.',
+    'Data: automated backups and point-in-time recovery for the database, restore drills into an isolated environment, timed against the RTO.',
+    'Dead-letter queue: a runbook to inspect, fix and replay messages safely, relying on idempotent consumers.',
+    'Region loss is out of scope at launch; write down that decision and what would change it.'
+  ],
+  ownership: [
+    'The product team owns the API and worker code, their SLOs and their on-call; the platform team owns the cluster, ingress, CI/CD and the observability stack. Write the split down.',
+    'Every dependency has a named owner and a known way to reach them during an incident, including the payment provider\'s status page and support route.',
+    'Runbooks for the top failure modes: zone loss, database connections exhausted, payment provider slow, queue backlog, bad release.',
+    'SLO reviews monthly: if the error budget is spent, reliability work takes priority over features.'
+  ],
+  reveals: [
+    { after: 'after the candidate draws the request path',
+      constraint: 'A promotion next month is expected to bring ten times normal traffic within a few minutes.',
+      guidance: 'Pre-scales before the event, raises HPA minimums, checks every dependency\'s limit at ten times load (database connections, cache, queue, payment provider rate limits), adds edge rate limiting, and load-tests beforehand.' },
+    { after: 'after the scaling discussion',
+      constraint: 'The database allows a fixed maximum number of connections, and each API pod opens a pool of connections at start-up.',
+      guidance: 'Multiplies pool size by the HPA maximum (plus workers and admin) and compares with the limit; caps the HPA, shrinks pools, or adds a connection pooler. Notes that scaling the API out can make things worse once the database is the bottleneck.' },
+    { after: 'after the dependencies are on the board',
+      constraint: 'The payment provider has an incident: calls now take 20 seconds instead of 200 milliseconds, but still succeed.',
+      guidance: 'Timeouts below the API\'s own deadline, a retry budget, a circuit breaker, and a degraded mode (accept the order, charge later through the queue) if the business allows it. Explains why a slow dependency is worse than a down one: it holds threads and connections.' },
+    { after: 'after the design is broadly complete',
+      constraint: 'One availability zone is lost entirely for an hour.',
+      guidance: 'Walks through what happens to each component: load balancer stops sending to that zone, pods reschedule if there is capacity, database fails over, the cache and queue are managed and multi-zone. Checks that two zones can carry peak and that the PDBs do not block rescheduling.' }
+  ],
+  rubric: {
+    strong: [
+      'Establishes users, SLOs, traffic shape, consistency needs and the external dependency before drawing components.',
+      'Draws the request path end to end and names every dependency on it, separating the synchronous path from the asynchronous one.',
+      'Sizes scaling against dependency limits (database connections, provider rate limits), not just pod CPU.',
+      'Designs for a slow dependency with timeouts, retry budgets, idempotency and circuit breaking.',
+      'Defines observability in terms of SLO signals per route and per dependency, and says what pages and what does not.'
+    ],
+    acceptable: [
+      'Runs data services in the cluster with operators, if the reason (no managed service, portability) is stated.',
+      'A simpler synchronous design at launch, with a clear plan for when to add the queue.',
+      'Different tool choices (service mesh, specific ingress or GitOps tools) when justified by the requirements.'
+    ],
+    redFlags: [
+      'Names products and tools before clarifying requirements.',
+      'Treats autoscaling as the answer to every load question without checking downstream limits.',
+      'No timeouts or retry limits on external calls, or unbounded retries.',
+      'Monitoring described as "CPU and memory dashboards" with no user-facing signals or SLOs.',
+      'Assumes a single-zone database or a single ingress replica is acceptable for a customer-facing service.'
+    ]
+  },
+  example: 'What follows is one strong way to approach it, not the only correct design. Interviewers care far more about how you reason from requirements than about the specific boxes.\n\n' +
+    'I would start with questions. Who are the users and what does "working" mean for them — say, 99.9% of order requests succeed and most complete within 300 milliseconds? What does traffic look like normally and at peak, and are the peaks announced? Which steps must finish before we answer the user, and which can happen later? How much order data can we lose — I would expect none? How does the payment provider behave: SLA, rate limits, idempotency? One region or several? And what does the team already know how to run?\n\n' +
+    'Suppose the answers are: one region with three zones, peaks of about ten times normal during announced promotions, placing an order must be synchronous but confirmations can lag, the provider supports idempotency keys, and managed database, cache, queue and object storage are available.\n\n' +
+    'Then I would draw the request path first. A client resolves our name in DNS and connects to a cloud load balancer spread across three zones. The load balancer sends traffic to an ingress controller in the cluster, running several replicas across zones, which routes to the API Service. The API pods spread across zones with topology spread constraints, have readiness probes so they only receive traffic when they can serve, a PodDisruptionBudget, and a HorizontalPodAutoscaler with a minimum sized for normal traffic and a maximum I will come back to.\n\n' +
+    'Then the dependencies. The API reads the catalogue through a managed cache, writes orders to a managed relational database with a standby in another zone, calls the payment provider, and publishes an "order placed" event to a queue. Workers consume the queue to send confirmations and write receipts to object storage. I keep the database, cache and queue managed because the team should spend its time on the service, not on running stateful systems — unless an environment rules that out.\n\n' +
+    'Scaling is where I would slow down, because pod autoscaling is the easy part. Every API pod opens a pool of database connections, so pool size times maximum replicas, plus workers, has to fit under the database\'s connection limit. If it does not, I cap the HPA, shrink the pools or add a connection pooler — otherwise scaling out at peak exhausts the database and makes the outage worse. The same check applies to the payment provider\'s rate limit. For announced promotions I would pre-scale rather than rely on the autoscaler reacting in time, and rate-limit at the edge so overload degrades gracefully.\n\n' +
+    'For the payment provider: a timeout well below our own request deadline, a small retry budget with backoff and jitter, an idempotency key on every charge so a retry cannot double-charge, and a circuit breaker. A slow dependency is more dangerous than a down one, because it holds threads and connections while it waits.\n\n' +
+    'For the asynchronous path: workers retry with backoff, and after a bounded number of attempts a message goes to a dead-letter queue with an alert, so one bad message cannot block the rest. Consumers are idempotent because the queue may deliver a message more than once.\n\n' +
+    'Observability: request rate, errors and duration per route at the edge are the SLO signals, and burn-rate alerts on them are what page. The same three signals per dependency, measured from the caller, tell me which dependency is hurting. Saturation signals — database connections against the limit, queue depth and oldest-message age, HPA replicas against the maximum — show trouble before users do. Traces carry a request ID through the API, the queue message and the worker, and every log line includes it. Deploys and config changes appear as markers on the dashboards.\n\n' +
+    'Releases go out progressively: same image digest promoted through environments, a small first step compared against the stable version, automatic pause or rollback on SLO regression, and database migrations that are backward compatible and run before the code that needs them.\n\n' +
+    'Finally, the failure walk-through: lose a zone and the load balancer stops routing there, pods reschedule into two zones that I have sized to carry peak, and the database fails over to its standby. Lose the cache and the database takes more reads, so cache refill is rate-limited. I would close by naming what I would verify first in a real environment — the actual connection limit, the provider\'s rate limits, and a zone-failure game day.',
+  stages60: [
+    'Clarify (8 min): users and SLOs, normal and peak traffic, synchronous versus asynchronous steps, data consistency and loss, the payment provider, regions, what the team runs. Establish requirements before listing any tools or products.',
+    'Request path (10 min): DNS, load balancer, ingress, Services and pods across zones; readiness, PDBs, how traffic moves during a deploy.',
+    'Dependencies and data (10 min): cache, database, queue, workers, object storage, the payment provider — which are on the critical path, and what each one\'s limits are.',
+    'Scaling and resilience (10 min): HPA and its limits, connection pools against the database limit, timeouts, retries, circuit breaking, dead-letter queues, zone loss.',
+    'Observability and delivery (10 min): SLO signals per route and per dependency, traces and logs, what pages; progressive rollout and migrations.',
+    'Constraints the interviewer adds (7 min): a ten-times promotion, a slow payment provider, a lost zone.',
+    'Wrap-up (5 min): ownership, runbooks, what you would verify first — then your questions.'
+  ],
+  stages: [
+    'Requirements (7 min): users and SLOs, traffic and peaks, synchronous versus asynchronous, data, the payment provider, regions. Establish requirements before listing any tools or products.',
+    'Request path (8 min): DNS, load balancer, ingress, Services and pods across zones, readiness.',
+    'Dependencies (8 min): cache, database, queue, workers, object storage, payment provider and their limits.',
+    'Scaling and resilience (9 min): HPA against downstream limits, timeouts, retries, circuit breaking, dead-letter queues, zone loss.',
+    'Observability and delivery (8 min): SLO signals, per-dependency metrics, traces, what pages; progressive rollout.',
+    'Wrap-up (5 min): ownership, runbooks, what you would verify first.'
+  ],
+  questions: ['ons-q-net-08', 'ons-q-design-07', 'ons-q-net-04', 'ons-q-trouble-02', 'ons-q-delivery-07'],
+  lessons: ['les-request-path', 'les-observability', 'les-resources', 'les-rollouts', 'les-failure'],
+  refs: [
+    { t: 'Horizontal Pod Autoscaling', u: 'https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/' },
+    { t: 'Pod Topology Spread Constraints', u: 'https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/' },
+    { t: 'Ingress', u: 'https://kubernetes.io/docs/concepts/services-networking/ingress/' },
+    { t: 'Specifying a Disruption Budget for your Application', u: 'https://kubernetes.io/docs/tasks/run-application/configure-pdb/' }
+  ],
+  verify: 'The SLO numbers, traffic multiple and connection limit here are assumptions for the exercise, not measurements. Managed-service limits (database connections, queue retention, provider rate limits) differ by product and size; check the real values before designing against them.'
+});

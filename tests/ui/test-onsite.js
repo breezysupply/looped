@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
 
     /* ── every section renders, fits, and has something in it ── */
     const sections = await p.$$eval('[data-prep-section]', xs => xs.map(x => x.dataset.prepSection).filter((v, i, a) => a.indexOf(v) === i));
-    ok(sections.length === 14, W + ': fourteen Prep sections', sections);
+    ok(sections.length === 15, W + ': fifteen Prep sections', sections);
     for (const s of sections) {
       await p.click('.prep-nav [data-prep-section="' + s + '"]');
       const len = await p.$eval('#prepBody', el => el.textContent.trim().length);
@@ -114,7 +114,7 @@ const { chromium } = require('playwright');
     /* ── progress: tiers are labelled, nothing is a score ── */
     await p.click('.prep-nav [data-prep-section="progress"]');
     const prog = await p.$eval('#prepBody', el => el.textContent);
-    ok(/Studied a concept\s*1 \/ 16/.test(prog) && /Answered independently\s*1 \/ 60/.test(prog), W + ': tiers count what was done', prog.slice(0, 500));
+    ok(/Studied a concept\s*1 \/ 17/.test(prog) && /Answered independently\s*1 \/ 60/.test(prog), W + ': tiers count what was done', prog.slice(0, 500));
     ok(/Reported a hands-on PASS check\s*1 \/ 11/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
     ok(/Automatically verified real-lab check/.test(prog) && /Not available/.test(prog) && !/readiness score:|%/.test(prog), W + ': no machine-verified claim and no percentage score');
 
@@ -147,6 +147,23 @@ const { chromium } = require('playwright');
     ok(await overflow() <= 0, W + ': case has no overflow', await overflow());
     await p.click('[data-prep-creset="ons-case-01"]');
     ok(!((await ls()).cases['ons-case-01'].revealed), W + ': a case can be worked again');
+
+    /* ── System lab: design, map the failure points, linked incidents ── */
+    await p.click('.prep-nav [data-prep-section="system"]');
+    ok(await p.$eval('#prepBody', el => /not any company/.test(el.textContent) && /Part 1 · Architecture/i.test(el.textContent) && el.querySelector('figure.diagram svg') !== null), W + ': System lab shows both parts, the caveat and the reference architecture');
+    ok(await p.$$eval('.sys-point', xs => xs.length) === 0, W + ': reference failure map hidden until asked');
+    await p.fill('#sysMap', 'Database connections vs HPA max; payment provider slow; queue poison message.');
+    await p.click('[data-prep-sreveal="ons-sys-orders"]');
+    ok(await p.$$eval('.sys-point', xs => xs.length) >= 8, W + ': reference failure map revealed');
+    const sy = (await ls()).systems['ons-sys-orders'];
+    ok(sy && sy.mapRevealed && /HPA max/.test(sy.map), W + ': failure map and reveal persist', JSON.stringify(sy));
+    ok(await overflow() <= 0, W + ': System lab has no overflow', await overflow());
+    await p.click('[data-prep-open="design:ons-design-webapp"]');
+    ok(await p.$eval('#prepBody', el => /order API/.test(el.textContent) && /Clarify \(8 min\)/.test(el.textContent)), W + ': part 1 opens the design with 60-minute pacing');
+    await p.click('.prep-nav [data-prep-section="system"]');
+    await p.click('[data-prep-open="case:ons-case-10"]');
+    ok(await p.$('.case-system figure.diagram svg') !== null && await p.$eval('#prepBody', el => /The setup:/.test(el.textContent) && !/The cause/.test(el.textContent)), W + ': linked case shows the system and hides the cause');
+    ok(await overflow() <= 0, W + ': linked case has no overflow', await overflow());
 
     /* ── conversation prep: fill, pick questions, mark ready ── */
     await p.click('.prep-nav [data-prep-section="path"]');

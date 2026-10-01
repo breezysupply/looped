@@ -771,3 +771,291 @@ LX.onsiteCases.push({
   ],
   verify_note: 'The exact FailedCreate and API server log wording for webhook failures varies by Kubernetes version. Admission webhook metric names (for example apiserver_admission_webhook_rejection_count) depend on version. Server-side dry run calls webhooks only if they declare sideEffects None or NoneOnDryRun.'
 });
+
+/* ---------------------------------------------------------------------
+   System lab cases. These three run on the order API from the System
+   lab's part 1 design (ons-design-webapp), so the interviewer's "given a
+   working system architecture" is the one you just designed. Times,
+   counts and limits in the evidence are invented for the exercise.
+   --------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------- case 09 */
+LX.onsiteCases.push({
+  id: 'ons-case-09', track: 'onsite', system: 'ons-sys-orders', title: 'Orders slow and failing on promotion night', domain: 'cloud',
+  level: 2, mins: 15,
+  opening: 'It is 19:20 on the first evening of a big promotion. Placing an order is slow and often fails — customers wait several seconds and then get an error. Browsing the catalogue seems fine. The on-call engineer has checked that the pods are up and says "the cluster has already scaled, so it is not capacity". Here is the architecture. Where do you start?',
+  context: 'This is the order API from part 1: DNS and a cloud load balancer across three zones, an ingress controller, the API Deployment with a HorizontalPodAutoscaler (minimum 6, maximum 30 replicas, target 60% CPU), a managed relational database, a managed cache in front of the catalogue, a queue and worker Deployment, and the external payment provider. Each API pod keeps its own pool of database connections. Metrics, logs and traces are available for every component.',
+  asks: [
+    { id: 'a1', label: 'What changed recently?', group: 'Scope & changes',
+      shows: 'No deploys since 10:00 this morning. The promotion went live at 19:00. Between 19:02 and 19:09 the HPA scaled the API from 6 to 24 replicas, and the cluster autoscaler added three nodes. Errors started at about 19:05.',
+      reads: 'The only changes are traffic and the number of API pods. The errors began while the API was scaling out, not when traffic first rose — worth holding on to: what does each new pod bring with it?',
+      key: true, herring: false },
+    { id: 'a2', label: 'Who / what is affected (scope)?', group: 'Scope & changes',
+      shows: 'POST /orders and GET /orders/{id}: p95 4.8 s, about 9% returning 503. GET /catalogue: p95 60 ms, no errors. All three zones look the same. Mobile and web clients equally affected.',
+      reads: 'Only the routes that touch the database are failing; the cached route is fine. That points away from the edge, the ingress and the pods in general, and towards the API\'s path to the database.',
+      key: true, herring: false },
+    { id: 'a3', label: 'API pod CPU and memory', group: 'Workload',
+      shows: '$ kubectl top pods -n orders -l app=orders-api   (excerpt)\nNAME                          CPU(cores)   MEMORY(bytes)\norders-api-6f8d7c9b5-2kq8x    310m         640Mi\norders-api-6f8d7c9b5-7tz4m    295m         655Mi\norders-api-6f8d7c9b5-xp9wd    120m         610Mi\n(requests: cpu 500m, memory 1Gi; average about 55% of the CPU request)',
+      reads: 'The pods are not short of CPU or memory, and some are nearly idle. Pods that are waiting on something do not burn CPU. Not the cause.',
+      key: false, herring: true },
+    { id: 'a4', label: 'HPA status and events', group: 'Workload',
+      shows: '$ kubectl get hpa orders-api -n orders\nNAME         REFERENCE               TARGETS        MINPODS   MAXPODS   REPLICAS\norders-api   Deployment/orders-api   cpu: 54%/60%   6         30        24\n\n$ kubectl describe hpa orders-api -n orders   (events)\nNormal  SuccessfulRescale  19:02  New size: 12; reason: cpu resource utilization (percentage of request) above target\nNormal  SuccessfulRescale  19:06  New size: 18; reason: cpu resource utilization (percentage of request) above target\nNormal  SuccessfulRescale  19:09  New size: 24; reason: cpu resource utilization (percentage of request) above target',
+      reads: 'The autoscaler did exactly what it was told: CPU went up, so it added pods. Nothing in its configuration knows about the database. It confirms the scale-out; it does not explain the errors on its own.',
+      key: false, herring: false },
+    { id: 'a5', label: 'A trace of a slow POST /orders', group: 'Application',
+      shows: 'trace 4b1e…  POST /orders   total 4.91 s   status 503\n├─ cache.get catalogue:item        2 ms\n├─ db.acquire_connection        4,870 ms   error: pool timeout\n└─ (no db.query span; no payment.charge span; no queue.publish span)\n\nA successful trace from another pod: db.acquire_connection 1 ms, db.query 6 ms, payment.charge 190 ms, queue.publish 4 ms.',
+      reads: 'Almost all the time is spent waiting to get a database connection, not running a query. The request never reaches the payment provider. This moves the question from "is the database slow?" to "why can this pod not get a connection?".',
+      key: true, herring: false },
+    { id: 'a6', label: 'API logs from a failing pod', group: 'Application',
+      shows: '$ kubectl logs orders-api-6f8d7c9b5-xp9wd -n orders --since=5m | grep -i -m4 -E "pool|connect"\n19:14:02 ERROR pool: timed out after 5000ms waiting for a connection (size=20, active=6, idle=0, pending=31)\n19:14:02 WARN  pool: failed to open connection: FATAL: sorry, too many clients already\n19:14:03 WARN  pool: failed to open connection: FATAL: remaining connection slots are reserved\n19:14:07 ERROR pool: timed out after 5000ms waiting for a connection (size=20, active=6, idle=0, pending=29)',
+      reads: 'The pod wants 20 connections but has only 6, and the database is refusing new ones because it is out of connection slots. Requests queue behind the pool and time out after 5 seconds, which is the 503 users see. (The exact wording depends on the database engine.)',
+      key: true, herring: false },
+    { id: 'a7', label: 'Database metrics', group: 'Data stores',
+      shows: 'Connections: 497 of a 500 maximum (a few reserved for administrators), flat at the ceiling since 19:05.\nRejected connection attempts: 0 before 19:05, now about 40 per second.\nCPU 38%, memory 52%, p99 query time 7 ms, replication lag under 1 s.',
+      reads: 'The database is healthy as a database — queries are fast and it is not busy — but it is full. Every connection slot is taken, so pods that started later cannot get their share.',
+      key: true, herring: false },
+    { id: 'a8', label: 'Connection pool settings and who connects to the database', group: 'Data stores',
+      shows: 'API pods: pool minimum 20, maximum 20 (opened at start-up).\nWorker pods: 4 × pool of 10.\nReporting job and admin tools: up to 15.\nAt 24 API pods: 24 × 20 + 40 + 15 = 535 connections wanted, against a limit of 500.\nAt the HPA maximum of 30: 30 × 20 + 40 + 15 = 655.',
+      reads: 'This is the arithmetic: the connection budget was exceeded the moment the API passed about 22 replicas. Scaling further would make it worse, not better — more pods asking for connections that do not exist.',
+      key: true, herring: false },
+    { id: 'a9', label: 'Cache hit rate', group: 'Data stores',
+      shows: 'Catalogue cache hit rate 97%, the same as last week. Evictions normal. Cache latency p99 under 2 ms.',
+      reads: 'The cache is doing its job, which is why browsing is fine. A cold cache would push load onto the database, but that is not happening. Not the cause.',
+      key: false, herring: true },
+    { id: 'a10', label: 'Payment provider latency and status', group: 'Dependencies',
+      shows: 'Payment calls that are made: p95 190 ms, error rate 0.1%. The provider\'s status page shows all systems operational.',
+      reads: 'The payment provider is healthy, and the failing requests never reach it anyway (see the trace). A reasonable thing to rule out on an order path, but not the cause.',
+      key: false, herring: true },
+    { id: 'a11', label: 'Nodes and cluster autoscaler', group: 'Node & host',
+      shows: '3 nodes added at 19:04–19:07, all Ready. No pods Pending. Node CPU 40–55%.',
+      reads: 'Cluster capacity is fine; the new pods were scheduled and started. It rules out a scheduling problem.',
+      key: false, herring: false },
+    { id: 'a12', label: 'API readiness probe', group: 'Workload',
+      shows: 'readinessProbe: httpGet /healthz every 5 s. /healthz returns 200 if the HTTP server is up; it does not check the database.',
+      reads: 'New pods became Ready and took traffic even when they could not get database connections. That is a deliberate and usually sensible choice — see the follow-ups — but it explains why the failing pods still receive requests.',
+      key: false, herring: false }
+  ],
+  efficient: ['a2', 'a5', 'a6', 'a7', 'a8'],
+  cause: 'Autoscaling multiplied the per-pod connection pools past the database\'s connection limit. At 24 API pods with 20 connections each, plus workers and admin tools, the services wanted about 535 connections against a limit of 500. The database refused new connections, so later pods ran with only part of their pool, and requests on those pods queued for a connection and timed out.',
+  mechanism: 'Each API pod opens a fixed-size pool of connections to the database. The HorizontalPodAutoscaler scales on CPU and knows nothing about the database, so the total number of connections grows linearly with replicas. A relational database has a hard maximum number of connections (each one costs memory and a process or thread on the server), and it rejects new connections once the limit is reached.\n\nThe pods that started first hold their full pools and work normally; later pods get few or none. Requests on those pods wait for a free connection until the pool timeout, then fail. The database itself looks healthy — fast queries, moderate CPU — because the problem is admission, not load. And because the readiness probe does not check the database, the starved pods stay in the Service and keep receiving traffic. Scaling out further adds more pods competing for the same slots, so the usual reflex makes it worse.',
+  fix: 'First, stop making it worse: pin the HPA maximum at or slightly below the current replica count (or set it to what the connection budget allows) so the autoscaler cannot add more pods. Then reduce what each pod asks for: lower the pool maximum (most pods were using only a few connections at a time) through a normal, canaried config change — a rolling restart briefly opens new connections, so do it gradually. If the database has headroom in memory, a modest increase in its connection limit can be a stopgap, but check the cost first and treat it as temporary.\n\nAfterwards, fix the design: put a connection pooler between the API and the database, or budget connections explicitly (pool size × HPA maximum + workers + admin < limit, with margin), alert on connections as a fraction of the limit, and load-test at the expected peak with the real limits before the next promotion.',
+  verify: 'Database connections settle below about 80% of the limit at peak, rejected connection attempts drop to zero, pool wait time in traces returns to about a millisecond, and the error rate and p95 for POST /orders return within the SLO. Repeat the load test at ten times normal traffic and confirm the connection count stays within budget.',
+  followups: [
+    { q: 'Why not just raise the database\'s connection limit?', guidance: 'Connections are not free: each one costs memory and server resources, and very high counts can hurt performance. Raising the limit may need a larger instance or a restart. It also moves the ceiling without removing the multiplication — the next scale-out hits it again. A pooler or a connection budget fixes the shape of the problem.' },
+    { q: 'Should the readiness probe check the database?', guidance: 'Usually not for a shared dependency. If every pod\'s readiness depends on the database, a brief database blip removes every pod from the Service and turns a partial problem into a total outage. Readiness should say whether this pod can serve; dependency health belongs in metrics, alerts, timeouts and circuit breakers. Some teams use a start-up check instead.' },
+    { q: 'How would you have caught this before the promotion?', guidance: 'Connection budget arithmetic in design review, a load test at the expected peak with production-like limits, and an alert on connections as a percentage of the limit with time to act before the ceiling.' }
+  ],
+  rubric: {
+    strong: [
+      'Notices that only database-backed routes fail and follows the request path to the database',
+      'Uses the trace to separate waiting for a connection from slow queries',
+      'Does the pool × replicas arithmetic against the connection limit',
+      'Stops the autoscaler adding pods before changing anything else',
+      'Proposes a pooler or explicit connection budget, plus an alert, as the lasting fix'
+    ],
+    acceptable: [
+      'Raises the database connection limit as a short-term stopgap after checking the cost',
+      'Reaches the cause from the database\'s rejected-connection metric first, then confirms in the pod logs'
+    ],
+    redFlags: [
+      'Adds more replicas or raises the HPA maximum to fix it',
+      'Concludes the database is fine because CPU and query time are normal, and stops there',
+      'Restarts all API pods at once during peak',
+      'Adds a database check to every pod\'s readiness probe without considering the blast radius'
+    ]
+  },
+  lessons: ['les-observability', 'les-resources', 'les-probes'],
+  questions: ['ons-q-design-07', 'ons-q-trouble-09'],
+  alsoPractise: [],
+  refs: [
+    { t: 'Horizontal Pod Autoscaling', u: 'https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/' },
+    { t: 'Configure Liveness, Readiness and Startup Probes', u: 'https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/' }
+  ],
+  verify_note: 'Error messages for exhausted connection slots vary by database engine (the ones shown are PostgreSQL-style). Managed databases often derive the connection limit from instance size and reserve some slots for administrators; check your provider\'s documentation. Pool settings and their names vary by language and library.'
+});
+
+/* ---------------------------------------------------------------- case 10 */
+LX.onsiteCases.push({
+  id: 'ons-case-10', track: 'onsite', system: 'ons-sys-orders', title: 'Orders go through, confirmations never arrive', domain: 'cloud',
+  level: 2, mins: 15,
+  opening: 'Since some time overnight, customers have been placing orders successfully, but nobody has received a confirmation email, and receipts are missing from their order history. The order API\'s dashboards are green. Support has a pile of tickets. Here is the architecture. Talk me through it.',
+  context: 'This is the order API from part 1. When an order is placed, the API writes it to the database and publishes an "order placed" event to a managed queue. A worker Deployment (scaled on queue backlog, maximum 4 replicas) consumes the events, sends the confirmation through an email provider and writes a receipt to object storage. Metrics, logs and traces are available, and trace IDs travel in the message headers.',
+  asks: [
+    { id: 'a1', label: 'What changed recently?', group: 'Scope & changes',
+      shows: 'Yesterday at 18:00 an API release added an optional "giftNote" field to orders and to the order-placed event. The workers were last deployed two weeks ago. A new version of the mobile app started rolling out to customers yesterday evening. No infrastructure changes.',
+      reads: 'Two changes touch the event: a new field from the API, and a new client that may fill it differently. The consumer did not change. A producer/consumer mismatch is now a candidate.',
+      key: true, herring: false },
+    { id: 'a2', label: 'Who / what is affected (scope)?', group: 'Scope & changes',
+      shows: 'Every order placed since 02:13 has no confirmation and no receipt — web and mobile alike, gift note or not. Orders before 02:13 are fine. The orders themselves are complete in the database and payments succeeded.',
+      reads: 'It is all-or-nothing from a precise moment, and it covers orders with no gift note. So it is not "some messages are bad"; something stopped the whole asynchronous path at 02:13.',
+      key: true, herring: false },
+    { id: 'a3', label: 'Queue metrics', group: 'Dependencies',
+      shows: 'Messages published per minute: normal.\nQueue depth: rising steadily since 02:13, now about 48,000.\nAge of oldest message: 7 h 05 min.\nMessages received by consumers: about 600 per minute. Messages acknowledged (deleted): 0 since 02:13.',
+      reads: 'The workers are receiving messages hundreds of times a minute but acknowledging none. Busy, but making no progress. The age of the oldest message tells you exactly when it stuck.',
+      key: true, herring: false },
+    { id: 'a4', label: 'Worker pod status', group: 'Workload',
+      shows: '$ kubectl get pods -n orders -l app=order-worker\nNAME                            READY   STATUS    RESTARTS   AGE\norder-worker-5c7d9f8b6-4hx2k    1/1     Running   0          14d\norder-worker-5c7d9f8b6-8qp7v    1/1     Running   0          7h\norder-worker-5c7d9f8b6-c2m9t    1/1     Running   0          7h\norder-worker-5c7d9f8b6-w6r4n    1/1     Running   0          7h\n(CPU about 70% of request on each)',
+      reads: 'Running, Ready, no restarts, and busy — and the autoscaler has scaled to the maximum because the backlog keeps growing. Healthy-looking workers that make no progress is itself a clue: the liveness and readiness checks do not measure progress.',
+      key: false, herring: false },
+    { id: 'a5', label: 'Worker logs', group: 'Application',
+      shows: '$ kubectl logs -n orders -l app=order-worker --since=2m --prefix | head -6\n[pod/order-worker-…-4hx2k] 09:18:41 ERROR msg=7f3c91 order=A-88412 attempt=1843 cannot decode event: field "giftNote": expected string, got array; returning message to queue\n[pod/order-worker-…-8qp7v] 09:18:41 ERROR msg=7f3c91 order=A-88412 attempt=1844 cannot decode event: field "giftNote": expected string, got array; returning message to queue\n[pod/order-worker-…-c2m9t] 09:18:42 ERROR msg=7f3c91 order=A-88412 attempt=1845 cannot decode event: field "giftNote": expected string, got array; returning message to queue\n(no other message id has appeared in the worker logs since 02:13)',
+      reads: 'One message, for one order, has been attempted more than 1,800 times by every worker in turn. Nothing else is being processed. The question is why one bad message stops every other message.',
+      key: true, herring: false },
+    { id: 'a6', label: 'Queue configuration (ordering, retries, dead-letter)', group: 'Dependencies',
+      shows: 'Delivery: ordered (first-in, first-out) within a single message group for all orders.\nMaximum receive count: not set (unlimited redelivery).\nDead-letter queue: none configured.\nVisibility timeout: 30 s; the worker returns failed messages immediately.',
+      reads: 'With ordered delivery, a message that is never acknowledged stays at the head of its group, and later messages in the group wait behind it. With unlimited redelivery and no dead-letter queue, nothing ever moves it out of the way. That is head-of-line blocking.',
+      key: true, herring: false },
+    { id: 'a7', label: 'The message itself', group: 'Application',
+      shows: 'Order A-88412, placed 02:13:07 from the new mobile app. Event body (excerpt): {"orderId": "A-88412", "giftNote": ["Happy birthday!", "See you soon"], …}. The API accepted the array without complaint; the API\'s request validation does not check that field\'s type.',
+      reads: 'The new mobile app sends the gift note as a list of lines; the API passes it through; the old worker expects a string. A contract mismatch between producer and consumer — the trigger, not the reason the whole pipeline stopped.',
+      key: false, herring: false },
+    { id: 'a8', label: 'Database metrics', group: 'Data stores',
+      shows: 'Connections, CPU, query latency and replication lag all normal. Orders are being written at the expected rate.',
+      reads: 'The synchronous path is fine, which matches the green API dashboards. Not the cause.',
+      key: false, herring: true },
+    { id: 'a9', label: 'Email provider status and send volume', group: 'Dependencies',
+      shows: 'The provider\'s status page shows no incidents. Our account has sent 0 emails since 02:13; API calls to the provider: 0. No authentication or rate-limit errors.',
+      reads: 'A natural suspect when emails stop, but the provider is not being asked to send anything. The problem is upstream of it.',
+      key: false, herring: true },
+    { id: 'a10', label: 'Object storage errors and permissions', group: 'Dependencies',
+      shows: 'No access-denied or throttling errors. Receipt writes: 0 since 02:13. The workers\' cloud identity and its permissions are unchanged.',
+      reads: 'Same pattern as email: nothing is failing because nothing is being attempted. Not the cause.',
+      key: false, herring: true },
+    { id: 'a11', label: 'Trace for a recent order', group: 'Application',
+      shows: 'trace 9a2c…  POST /orders  210 ms  status 201\n├─ db.insert order          8 ms\n├─ payment.charge         180 ms\n└─ queue.publish            5 ms   ok\n(no worker spans for this trace ID; the only worker spans since 02:13 belong to order A-88412)',
+      reads: 'The order path ends cleanly at the queue publish. The asynchronous half of the trace never starts — consistent with the event waiting in the queue behind the stuck one.',
+      key: false, herring: false }
+  ],
+  efficient: ['a2', 'a3', 'a5', 'a6'],
+  cause: 'One malformed event — a gift note sent as a list by the new mobile app, which the old worker cannot decode — is retried forever. Because the queue delivers in order within a single message group, has no maximum receive count and no dead-letter queue, that one message stays at the head and blocks every message behind it. The workers look healthy because they are busy retrying it.',
+  mechanism: 'A producer (the API, passing through what the new mobile app sent) changed the shape of an event without the consumer being able to read it, and the API\'s validation did not catch the type. On its own, that would fail one order\'s confirmation.\n\nThe outage comes from the queue configuration. Ordered delivery means a message that is not acknowledged is redelivered before later messages in the same group. Unlimited redelivery and no dead-letter queue mean a message that can never succeed is never moved aside — a "poison" message. Every worker picks it up, fails, and returns it, so the whole pipeline is stuck behind one order. Health checks that only test whether the process responds cannot see this; the signals that do are the age of the oldest message and the acknowledgement rate.',
+  fix: 'First, unblock safely: copy the stuck message (body and headers) somewhere durable, then move it out of the main queue — to a holding queue, or by acknowledging it after recording it — so the backlog can drain. Before it drains, check the downstream limits: about 48,000 confirmations at once may exceed the email provider\'s rate limit, so cap worker concurrency or rate and let the backlog drain over a controlled period. Handle order A-88412\'s confirmation by hand or replay it after the fix.\n\nThen fix the causes: configure a maximum receive count and a dead-letter queue with an alert on it; make the worker accept both shapes (or reject the bad one cleanly to the dead-letter queue); validate the event schema at the API and version events so producers and consumers can change independently; and keep consumers idempotent, since redelivery is normal. Reconsider whether all orders need to share one ordered group — per-order groups would limit the blocking to one order. Do not purge the queue: that would lose every confirmation since 02:13.',
+  verify: 'Age of oldest message falls steadily and depth trends to zero at a controlled rate; acknowledged messages per minute match published plus backlog drain; email sends and receipt writes resume without provider rate-limit errors; order A-88412 is handled. In staging, publish a deliberately malformed event and confirm it lands in the dead-letter queue and alerts while other messages keep flowing.',
+  followups: [
+    { q: 'How would you alert on this so it pages before customers notice?', guidance: 'Alert on the age of the oldest message and on consumer progress (acknowledgements per minute against publishes), not on worker CPU or pod health. Alert on any message arriving in the dead-letter queue. Tie the threshold to how late a confirmation may be.' },
+    { q: 'The backlog is about to drain. What could go wrong now?', guidance: 'A thundering herd on downstream services: the email provider\'s rate limits, object storage request rates, and the database if workers read from it. Drain at a controlled rate, watch those dependencies, and make sure duplicate sends cannot happen if some messages are redelivered (idempotency).' },
+    { q: 'Would a standard (unordered) queue have avoided this?', guidance: 'It would have stopped one bad message blocking the rest, because others are delivered around it, but without a retry limit the bad message still loops forever and costs capacity. Ordering is a real requirement only where the order of events changes the outcome; when it is needed, scope the ordering group narrowly (for example per order).' }
+  ],
+  rubric: {
+    strong: [
+      'Notices the precise start time and that every order is affected, not just some',
+      'Uses queue depth, oldest-message age and acknowledgement rate rather than worker health',
+      'Finds the single repeated message in the logs and explains why it blocks the rest',
+      'Unblocks without losing messages and plans a controlled drain against downstream limits',
+      'Fixes retries, dead-lettering, schema validation and alerting, not just the one message'
+    ],
+    acceptable: [
+      'Fixes the worker to accept the new field shape first, if it can ship quickly and safely, then adds the dead-letter queue',
+      'Starts from the email provider and rules it out quickly with send-volume evidence'
+    ],
+    redFlags: [
+      'Purges the queue to get things moving',
+      'Restarts or scales the workers without finding out why nothing is acknowledged',
+      'Blames the email provider without checking whether sends are being attempted',
+      'Lets 48,000 messages drain at full speed into rate-limited dependencies'
+    ]
+  },
+  lessons: ['les-observability'],
+  questions: ['ons-q-design-07', 'ons-q-design-01'],
+  alsoPractise: [],
+  refs: [
+    { t: 'Horizontal Pod Autoscaling (scaling on external metrics)', u: 'https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/' },
+    { t: 'Logging Architecture', u: 'https://kubernetes.io/docs/concepts/cluster-administration/logging/' }
+  ],
+  verify_note: 'Queue terms differ by product: maximum receive count, redrive policy, dead-letter topic, message group, visibility timeout. Whether ordered delivery blocks later messages, and for how long, depends on the queue\'s ordering model; check the documentation of the queue you use.'
+});
+
+/* ---------------------------------------------------------------- case 11 */
+LX.onsiteCases.push({
+  id: 'ons-case-11', track: 'onsite', system: 'ons-sys-orders', title: 'Steady 500s that a rollback did not fix', domain: 'network',
+  level: 2, mins: 15,
+  opening: 'Since early this morning about 6% of requests to the order API fail with 500 errors. It is steady, not bursty. At 09:30 the team rolled back yesterday\'s API release and nothing changed. The platform team mentions they did "routine node maintenance" overnight. Here is the architecture. How do you narrow it down?',
+  context: 'This is the order API from part 1, in a cloud network with private subnets in each zone. Pods get IP addresses from their node\'s subnet. The managed database accepts connections only from sources allowed by its cloud firewall rules. Nodes belong to node groups that the platform team manages with infrastructure-as-code. Metrics, logs and traces are available, and logs and metrics carry pod and node labels.',
+  asks: [
+    { id: 'a1', label: 'What changed recently?', group: 'Scope & changes',
+      shows: 'Yesterday 17:00: API release 4.22 (rolled back at 09:30 today).\nOvernight: the platform team created a new node group, "general-v2", with a new node image and a new subnet range (the old subnets were running short of IP addresses), and began draining the old group gradually. About a quarter of nodes are now in the new group.',
+      reads: 'Two changes. The rollback ruled out the first one. The second changes where pods run and which addresses they come from — and it is still in progress.',
+      key: true, herring: false },
+    { id: 'a2', label: 'Who / what is affected (scope)?', group: 'Scope & changes',
+      shows: 'About 20% of POST /orders and GET /orders/{id} fail; GET /catalogue (served from the cache) is fine. Errors are spread across all three zones. Grouped by pod, 5 of the 24 API pods produce every one of the errors; the other 19 have none.',
+      reads: 'Not random: specific pods fail, and only on routes that use the database. Find out what those five pods have in common.',
+      key: true, herring: false },
+    { id: 'a3', label: 'Where the failing pods run', group: 'Workload',
+      shows: '$ kubectl get pods -n orders -l app=orders-api -o wide   (excerpt)\nNAME                          READY   STATUS    IP            NODE\norders-api-58c9d7f6b-2xk7q    1/1     Running   10.0.49.17    general-v2-a-7f2k\norders-api-58c9d7f6b-9wl4n    1/1     Running   10.0.53.88    general-v2-b-q8m1\norders-api-58c9d7f6b-h6t2c    1/1     Running   10.0.12.40    general-a-x9p3\norders-api-58c9d7f6b-r4m8d    1/1     Running   10.0.21.65    general-b-k2v7\n(all 5 failing pods are on general-v2 nodes, with IPs in 10.0.48.0/20; all 19 healthy pods are on the old nodes)',
+      reads: 'The failing pods are exactly the ones on the new node group, with addresses from the new subnet. The version does not matter; the placement does.',
+      key: true, herring: false },
+    { id: 'a4', label: 'API logs from a failing pod', group: 'Application',
+      shows: '$ kubectl logs orders-api-58c9d7f6b-2xk7q -n orders --since=5m | grep -m3 -i error\n08:52:10 ERROR db: dial tcp 10.0.200.15:5432: i/o timeout (after 5s)\n08:52:16 ERROR db: dial tcp 10.0.200.15:5432: i/o timeout (after 5s)\n08:52:21 ERROR db: dial tcp 10.0.200.15:5432: i/o timeout (after 5s)',
+      reads: 'A timeout while connecting — not "connection refused", not an authentication error. The packets are going nowhere: something on the path is dropping them silently, which is typical of a firewall rule rather than a database problem.',
+      key: true, herring: false },
+    { id: 'a5', label: 'Did the rollback finish? Release diff', group: 'Workload',
+      shows: 'Rollback completed at 09:31; all 24 pods run 4.21. The 4.22 diff changed a discount calculation and a log message. Error rate before and after the rollback: unchanged.',
+      reads: 'The release was a reasonable first suspect, and rolling back was a fair, low-risk test. It is now ruled out.',
+      key: false, herring: true },
+    { id: 'a6', label: 'Database metrics', group: 'Data stores',
+      shows: 'Connections 240 of 500. CPU 30%. No authentication failures and no rejected connections. Query latency normal.',
+      reads: 'The database is not seeing the failed attempts at all — no rejections, no auth errors. The connections from the failing pods never arrive.',
+      key: false, herring: false },
+    { id: 'a7', label: 'Connectivity test from a debug pod on each node group', group: 'Network & DNS',
+      shows: '$ kubectl run nettest -n orders --rm -it --image=busybox:1.37 --restart=Never --overrides=\'{"spec":{"nodeName":"general-v2-a-7f2k"}}\' -- nc -vz -w 3 orders-db.internal 5432\nnc: orders-db.internal (10.0.200.15:5432): Connection timed out\n\n(same command pinned to general-a-x9p3)\norders-db.internal (10.0.200.15:5432) open\n\nFrom general-v2-a-7f2k: payment provider on 443 — open; cache on its port — open.',
+      reads: 'Reproduced in isolation: from a new node the database port times out; from an old node it is open; other dependencies are reachable from both. The block is specific to the path from the new subnet to the database.',
+      key: true, herring: false },
+    { id: 'a8', label: 'Database firewall rules (allowed sources)', group: 'Network & DNS',
+      shows: 'Inbound on 5432 allowed from: 10.0.0.0/20, 10.0.16.0/20, 10.0.32.0/20 (the original node subnets). Last modified: four months ago. 10.0.48.0/20 is not in the list.',
+      reads: 'The new subnet was never added to the database\'s allowed sources. Traffic from pods on the new nodes is dropped, which produces exactly the timeouts in the logs.',
+      key: true, herring: false },
+    { id: 'a9', label: 'DNS resolution from a failing pod', group: 'Network & DNS',
+      shows: '$ kubectl exec -n orders orders-api-58c9d7f6b-2xk7q -- nslookup orders-db.internal\nName:    orders-db.internal\nAddress: 10.0.200.15',
+      reads: 'The name resolves to the right address. DNS is not the problem; the error happens after resolution, while connecting.',
+      key: false, herring: true },
+    { id: 'a10', label: 'NetworkPolicy in the namespace', group: 'Network & DNS',
+      shows: '$ kubectl get networkpolicy -n orders\nNAME              POD-SELECTOR      AGE\napi-egress        app=orders-api    94d\n(allows egress from the API pods to 10.0.200.0/24 on 5432, to the cache, to DNS and to 443; unchanged for three months, and it selects pods by label, not by node)',
+      reads: 'A sensible place to look for "some pods cannot connect", but the policy is unchanged, applies to every API pod equally, and 19 of them connect fine. Not the cause.',
+      key: false, herring: true },
+    { id: 'a11', label: 'Node conditions on the new node group', group: 'Node & host',
+      shows: 'All general-v2 nodes Ready; no memory, disk or PID pressure; kubelet and network plugin healthy.',
+      reads: 'The new nodes are healthy as nodes. The problem is what their network is allowed to reach, not the nodes themselves.',
+      key: false, herring: false },
+    { id: 'a12', label: 'Why are the failing pods still receiving traffic?', group: 'Workload',
+      shows: 'readinessProbe: httpGet /healthz, which reports whether the HTTP server is up. It does not check the database. All 24 pods are Ready and in the Service.',
+      reads: 'The broken pods stay in rotation, so a fixed share of requests keeps landing on them. As the old node group drains, more API pods will move to the new nodes and the error rate will climb — this is urgent.',
+      key: false, herring: false }
+  ],
+  efficient: ['a2', 'a3', 'a1', 'a7', 'a8'],
+  cause: 'The new node group uses a new subnet that was never added to the managed database\'s firewall allow-list. API pods scheduled onto the new nodes get addresses in that subnet, their connections to the database are silently dropped, and the requests they serve fail with timeouts. Pods on the old nodes are unaffected.',
+  mechanism: 'With VPC-native networking, a pod\'s IP address comes from its node\'s subnet, so a pod\'s network identity depends on where it is scheduled. The database\'s cloud firewall allows specific source ranges; anything else is dropped without a reply, which the client sees as a connection timeout rather than a refusal.\n\nThe node-group change moved some API pods into a new range that the rule does not cover. Readiness probes do not check the database, so those pods stay Ready and keep receiving their share of traffic. A rollback cannot help because the code is not the problem, and the error rate grows as the drain moves more pods onto the new nodes.',
+  fix: 'Stop it spreading first: pause the drain of the old node group and cordon the new nodes so no more API pods land there. Then move the five failing pods back onto old nodes by deleting them one at a time (within the PodDisruptionBudget), and watch the error rate fall. Next, add the new subnet (or the new node group\'s security identity) to the database\'s allowed sources through the infrastructure-as-code repository with review, not by hand in the console. Test from a debug pod on a new node, then uncordon and resume the drain while watching errors grouped by node group.\n\nTo prevent a repeat: derive the database allow-list from the node-group definitions in code (or allow by security identity rather than by address range), and add a preflight to node-group changes that checks connectivity from a new node to every critical dependency before any workload is moved.',
+  verify: 'From a debug pod on a general-v2 node, the database port is open. After resuming, API pods on new nodes show zero database errors, the overall error rate returns to baseline, and errors grouped by node group stay flat as the drain completes. The next node-group change runs the connectivity preflight.',
+  followups: [
+    { q: 'Why did the logs say "timeout" rather than "connection refused"?', guidance: 'A refusal comes from a host that receives the connection and has nothing listening (it replies with a reset). A firewall that drops packets sends nothing back, so the client waits until its own timeout. Timeouts point towards something on the path discarding traffic; refusals point towards the destination host or port.' },
+    { q: 'Should readiness have caught this?', guidance: 'A database check in readiness would have taken these five pods out of rotation — but it would also take every pod out during a brief database incident. A better catch is earlier: a connectivity preflight for new node groups, and alerting on errors grouped by node or node group so a placement-dependent failure stands out.' },
+    { q: 'How would you make this class of change safe in future?', guidance: 'Treat a node-group change as a change to network identity: generate allow-lists from the same code, canary the new group with one replica of each critical service, check dependency reachability before draining, and keep the old group until the new one is proven.' }
+  ],
+  rubric: {
+    strong: [
+      'Groups errors by pod and finds the common factor: node group and subnet',
+      'Reads a connect timeout as packets dropped on the path, not as a database problem',
+      'Reproduces with a pinned debug pod on each node group',
+      'Stops the drain and contains the impact before changing firewall rules',
+      'Fixes the allow-list through reviewed infrastructure-as-code and adds a preflight'
+    ],
+    acceptable: [
+      'Cordons the new nodes and reschedules the API there later, before finding the exact rule',
+      'Reaches the firewall rule from the database side first, then confirms with a debug pod'
+    ],
+    redFlags: [
+      'Keeps rolling back releases after the first rollback changed nothing',
+      'Edits the database firewall by hand in the console during the incident without review or record',
+      'Opens the database to a much wider range (or to everything) to make the errors stop',
+      'Lets the drain continue while investigating'
+    ]
+  },
+  lessons: ['les-observability', 'les-request-path', 'les-netpol'],
+  questions: ['ons-q-net-04', 'ons-q-net-10'],
+  alsoPractise: [{ track: 'linux', what: 'Network troubleshooting from a host: nc, curl -v, and telling a refusal from a timeout' }],
+  refs: [
+    { t: 'Debug Services', u: 'https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/' },
+    { t: 'Safely Drain a Node', u: 'https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/' }
+  ],
+  verify_note: 'Whether pods take their IP addresses from the node\'s subnet depends on the cluster\'s network plugin (VPC-native in many managed clusters, an overlay in others — with an overlay, traffic leaving the cluster is usually translated to the node\'s address, which leads to the same kind of failure). Firewall terms differ by provider: security groups, firewall rules, authorized networks.'
+});
