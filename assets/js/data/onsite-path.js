@@ -40,7 +40,7 @@ LX.onsitePath = {
       items: [{ kind: 'talk', id: 'talk-lunch' }, { kind: 'question', id: 'ons-q-behavior-04' }, { kind: 'story', id: 'ons-story-runbook' }] },
     { id: 'day-4', slot: '1:30–2:30 EDT', title: 'Infrastructure troubleshooting (60 min, one interviewer remote)', mins: 240, priority: 'P0', topics: ['trouble', 'net'], prereqs: [],
       why: 'A full hour, with one interviewer on video, building on the architecture round: expect a working system architecture and problems within it. Map its failure points and dependencies, work through logs, metrics and traces methodically, state hypotheses and what would disprove them, keep changes small, and verify from the user\'s side. Start with the System lab, part 2.',
-      items: [{ kind: 'system', id: 'ons-sys-orders' }, { kind: 'case', id: 'ons-case-09' }, { kind: 'case', id: 'ons-case-10' }, { kind: 'case', id: 'ons-case-11' },
+      items: [{ kind: 'system', id: 'ons-sys-orders' }, { kind: 'case', id: 'ons-case-09' }, { kind: 'case', id: 'ons-case-10' }, { kind: 'case', id: 'ons-case-11' }, { kind: 'hands', id: 'ons-hands-12' },
               { kind: 'question', id: 'ons-q-trouble-09' }, { kind: 'question', id: 'ons-q-net-04' },
               { kind: 'question', id: 'ons-q-trouble-06' }, { kind: 'question', id: 'ons-q-trouble-07' },
               { kind: 'lab', id: 'ons-lab-02', mode: 'independent' }, { kind: 'lab', id: 'ons-lab-03', mode: 'independent' },
@@ -89,9 +89,9 @@ LX.onsitePath = {
               { kind: 'question', id: 'ons-q-trouble-01' }, { kind: 'question', id: 'ons-q-trouble-03' }, { kind: 'question', id: 'ons-q-trouble-06' },
               { kind: 'question', id: 'ons-q-trouble-09' },
               { kind: 'lab', id: 'ons-lab-04', mode: 'independent' }, { kind: 'lab', id: 'ons-lab-05', mode: 'independent' }] },
-    { id: 'fun-8', title: 'Write it yourself, then practise under time', mins: 90, priority: 'P1', topics: ['arch', 'trouble'], prereqs: ['fun-4', 'fun-5', 'fun-7'],
-      why: 'A production-shaped manifest from scratch, a timed troubleshooting session, and how you describe your Kubernetes ramp-up honestly.',
-      items: [{ kind: 'hands', id: 'ons-hands-09' }, { kind: 'question', id: 'ons-q-arch-09' },
+    { id: 'fun-8', title: 'Write it yourself, then practise under time', mins: 130, priority: 'P1', topics: ['arch', 'trouble'], prereqs: ['fun-4', 'fun-5', 'fun-7'],
+      why: 'A production-shaped manifest from scratch, a three-tier system to debug hop by hop, a timed troubleshooting session, and how you describe your Kubernetes ramp-up honestly.',
+      items: [{ kind: 'hands', id: 'ons-hands-09' }, { kind: 'hands', id: 'ons-hands-12' }, { kind: 'question', id: 'ons-q-arch-09' },
               { kind: 'mock', id: 'mock-30' }, { kind: 'question', id: 'ons-q-behavior-05' }] }
   ],
   essential: [

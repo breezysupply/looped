@@ -21,6 +21,7 @@ LX.onsiteSystems = [
       { h: 'Part 3 · Same system, real cluster (optional, ~40 min)', what: 'Deploy a three-tier version on a practice cluster, map its dependencies with kubectl, then find and fix the faults injected into it.' }
     ],
     design: 'ons-design-webapp',
+    handsOn: 'ons-hands-12',
     components: [
       { id: 'dns', name: 'DNS', role: 'Resolves the API\'s public name to the load balancer.', dependsOn: [], critical: true },
       { id: 'lb', name: 'Cloud load balancer', role: 'Spreads client connections across zones, health-checks its targets, terminates TLS.', dependsOn: ['dns'], critical: true },
