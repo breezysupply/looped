@@ -8,7 +8,7 @@ validated against a real kind cluster instead, which runs the same Kubernetes AP
 
 | | |
 |---|---|
-| Date | 2026-09-29, final full run 13:37:38Z – 13:39:45Z (UTC) |
+| Date | 2026-10-01, final full run 13:11:02Z – 13:13:40Z (UTC). Scenarios 01–11 were first validated on 2026-09-29; scenario 12 was added and the whole set re-run on a freshly created cluster. |
 | Cluster | kind v0.33.0, `looped-onsite` (1 control-plane + 1 worker), Kubernetes v1.37.0, on a Linux amd64 sandbox |
 | kubectl | v1.37.1 |
 | Shell | bash (the validator runs each command with `bash -c`) |
@@ -20,7 +20,7 @@ Sandbox-only differences, none of which are in the scenarios:
 - The cluster was created by `labs/kind/harness/run-lab.sh` in harness mode (cgroup v1 host and
   an oom-score workaround; see `labs/kind/EXECUTION.md`).
 - Docker Hub rate-limited this sandbox (`429 Too Many Requests`), and the kind nodes cannot reach
-  any registry. `nginx:1.27`, `nginx:1.28` and `busybox:1.37` were pulled on the host from
+  any registry. `nginx:1.27`, `nginx:1.28` and `busybox:1.37` (the only images any scenario uses, including scenario 12) were pulled on the host from
   Google's Docker Hub mirror (`mirror.gcr.io/library/...`), re-tagged with their Docker Hub names,
   and loaded into the nodes with `kind load image-archive`. On Killercoda and Docker Desktop the
   cluster pulls them from Docker Hub itself.
@@ -47,7 +47,7 @@ cleanup runs.
 
 ## Final run
 
-**11 of 11 scenarios passed; every task matched and every check printed PASS.**
+**12 of 12 scenarios passed; every task matched and every check printed PASS.**
 
 ```
 === ons-hands-01 — Find your way around a cluster
@@ -71,24 +71,24 @@ cleanup runs.
   ok   7. Read the logs of the web application and run a command inside one of i  (0s, 1 run)
 === ons-hands-03 — Scale it and watch it heal
   ok   1. Scale web to four replicas and confirm all four are Ready.  (3s, 2 runs)
-  ok   2. Delete one web pod, then list the pods again.  (4s, 2 runs)
+  ok   2. Delete one web pod, then list the pods again.  (1s, 1 run)
   ok   3. Find the evidence that a controller created the replacement.  (0s, 1 run)
   ok   4. Scale back down to two and see which pods are removed.  (0s, 1 run)
-  ok   5. Create a bare pod (no Deployment), delete it, and check whether it com  (1s, 1 run)
+  ok   5. Create a bare pod (no Deployment), delete it, and check whether it com  (2s, 1 run)
 === ons-hands-10 — Run one pod per node with a DaemonSet
   ok   1. List every DaemonSet in the cluster.  (0s, 1 run)
   ok   2. Describe kube-proxy's DaemonSet and read how many nodes it is meant to  (0s, 1 run)
   ok   3. Create your own DaemonSet, `node-agent`, that logs which node it runs   (3s, 2 runs)
   ok   4. Read the agent's logs from every pod at once.  (0s, 1 run)
   ok   5. Find out why no agent runs on the control-plane node.  (0s, 1 run)
-  ok   6. Let the agent run on the control-plane node too, and watch the rollout  (6s, 1 run)
-  ok   7. Delete one agent pod and see where its replacement lands.  (6s, 1 run)
+  ok   6. Let the agent run on the control-plane node too, and watch the rollout  (7s, 1 run)
+  ok   7. Delete one agent pod and see where its replacement lands.  (0s, 1 run)
   ok   8. Look at the DaemonSet's rollout history.  (0s, 1 run)
   ok   9. Delete the DaemonSet and confirm its pods go with it.  (0s, 1 run)
 === ons-hands-04 — Reach it inside the cluster
   ok   1. Create a ClusterIP Service for web on port 80.  [test variant]  (0s, 1 run)
   ok   2. See which pod IPs the Service is sending traffic to.  (0s, 1 run)
-  ok   3. From a temporary client pod, fetch the page using the Service name.  (4s, 1 run)
+  ok   3. From a temporary client pod, fetch the page using the Service name.  (3s, 1 run)
   ok   4. Resolve the Service's full DNS name from a pod.  (2s, 1 run)
   ok   5. Scale web to zero, try the request again, then scale back to two.  [test variant]  (5s, 1 run)
   ok   6. Look at the Service's port and targetPort.  (0s, 1 run)
@@ -99,7 +99,7 @@ cleanup runs.
   ok   4. Ask for a LoadBalancer Service and see what the environment gives you.  [test variant]  (0s, 1 run)
   ok   5. Check whether the cluster has an Ingress controller, then create an In  (0s, 1 run)
 === ons-hands-06 — Update it, break it, roll it back
-  ok   1. Update web to nginx 1.28 and wait for the rollout to finish.  (1s, 1 run)
+  ok   1. Update web to nginx 1.28 and wait for the rollout to finish.  (2s, 1 run)
   ok   2. Record why, then look at the rollout history and the ReplicaSets.  (0s, 1 run)
   ok   3. Release a broken image tag and check the rollout with a short timeout.  [test variant]  (20s, 1 run)
   ok   4. Show that users are still being served, and find the exact error on th  [test variant]  (0s, 1 run)
@@ -109,7 +109,7 @@ cleanup runs.
   ok   2. Create a Secret `web-secret` with API_TOKEN=not-a-real-token, then rea  [test variant]  (0s, 1 run)
   ok   3. Inject both into web as environment variables and check them inside a   (2s, 1 run)
   ok   4. Change GREETING to `hi` in the ConfigMap, then check the running conta  (0s, 1 run)
-  ok   5. Make the running pods pick up the change.  (1s, 1 run)
+  ok   5. Make the running pods pick up the change.  (2s, 1 run)
 === ons-hands-08 — When it breaks: CrashLoopBackOff and Pending
   ok   1. Deploy the `broken` app from the manifest below.  (0s, 1 run)
   ok   2. Look at its pods and describe what you see.  (3s, 2 runs)
@@ -121,9 +121,9 @@ cleanup runs.
 === ons-hands-09 — Write it yourself: Deployment + Service from scratch
   ok   1. Write `shop.yaml`: a Deployment `shop` (2 replicas, nginx 1.28, label   (0s, 1 run)
   ok   2. Validate it against the API server without creating anything.  (0s, 1 run)
-  ok   3. Apply it and wait until it is ready.  (2s, 1 run)
-  ok   4. Change replicas to 3 in the file, preview the change, then apply it.  [test variant]  (0s, 1 run)
-  ok   5. Prove the Service answers by name.  (4s, 1 run)
+  ok   3. Apply it and wait until it is ready.  (11s, 1 run)
+  ok   4. Change replicas to 3 in the file, preview the change, then apply it.  [test variant]  (1s, 1 run)
+  ok   5. Prove the Service answers by name.  (3s, 1 run)
 === ons-hands-11 — Look inside etcd with etcdctl
   ok   1. Find the etcd pod.  (0s, 1 run)
   ok   2. See how the API server is configured to reach etcd.  (0s, 1 run)
@@ -133,8 +133,20 @@ cleanup runs.
   ok   6. Check etcd's health and status.  (0s, 1 run)
   ok   7. See how Kubernetes lays out its objects as keys.  (0s, 1 run)
   ok   8. Create a Secret, then read its raw value straight out of etcd.  [test variant]  (0s, 1 run)
-  ok   9. Take a snapshot and inspect it.  (0s, 1 run)
+  ok   9. Take a snapshot and inspect it.  (1s, 1 run)
   ok   10. Read how a restore works — but do not run one.  (0s, 1 run)
+=== ons-hands-12 — Same system, real cluster: web → api → cache, three faults
+  ok   1. Make sure you are on your practice cluster.  (0s, 1 run)
+  ok   2. Deploy the system: three Deployments, three Services and two ConfigMap  (0s, 1 run)
+  ok   3. Wait until every Deployment is available.  (2s, 1 run)
+  ok   4. Map the dependencies before you test anything: which Service sends tra  (0s, 1 run)
+  ok   5. Test the system from the outside in: call the order API the way a clie  (3s, 1 run)
+  ok   6. Fault 1: find out why the web Service refuses connections.  (0s, 1 run)
+  ok   7. Fix the targetPort and test again from the client.  [test variant]  (6s, 1 run)
+  ok   8. Fault 2: find out why web cannot reach the api.  (0s, 1 run)
+  ok   9. Fix the selector and test again from the client.  [test variant]  (6s, 1 run)
+  ok   10. Fault 3: find out which dependency the api cannot reach, and why.  (0s, 1 run)
+  ok   11. Fix the configuration, roll the api so it picks it up, and verify end   [test variant]  (9s, 1 run)
 ```
 
 ## What the runs caught (fixed before the final run)
@@ -148,9 +160,24 @@ cleanup runs.
   showed the failure. It is not clear whether that happens on Killercoda or Docker Desktop, so
   the task now uses both commands and explains what each shows.
 
+- **12 task 8:** the proxy's error log was read with `kubectl logs deployment/web`, which picks
+  one of the two web pods — and the failed request had gone to the other one. The task now reads
+  every web pod's log (`-l app=web`).
+- **12 check:** the PASS check piped into `grep -q`. With `pipefail` set (as in a step-by-step
+  replay of the scenario), `grep -q` exiting early made the pipeline fail and the check print FAIL
+  although the system worked. The check now uses `grep PONG >/dev/null`, which reads all input.
+
 ## Not validated here
 
 - Typing the `k` alias and its Tab completion in an interactive shell (see Method).
+- Scenario 12's fix-and-retest tasks (7, 9 and 11) ran through `test` variants that wait a few
+  seconds before the client request so endpoints and proxies have updated; the step-by-step
+  commands shown to you were replayed once in bash and produced the outputs described
+  (`Connection refused`, `502 Bad Gateway`, `503 Service Unavailable`, then
+  `{"orders":"ok","cache":"PONG"}`), but the replay also used those variants.
+- Scenario 12's api and cache are BusyBox stand-ins (`httpd` with a small CGI script, and a static
+  `PONG`), not a real API or cache. The faults and the kubectl evidence are real; the services are
+  deliberately minimal.
 - The etcd scenario on Killercoda or Docker Desktop. It relies on etcd running as a kubeadm-style
   static pod labelled `component=etcd` with certificates under `/etc/kubernetes/pki/etcd/`, which
   is how kind runs it too; the scenario tells Docker Desktop users to switch to Killercoda if no

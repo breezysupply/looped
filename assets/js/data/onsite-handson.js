@@ -1645,9 +1645,9 @@ LX.onsiteHands = [
       },
       {
         "do": "Fault 2: find out why web cannot reach the api.",
-        "hint": "Read the proxy's error log, then check whether the api Service has any endpoints — and why not.",
+        "hint": "Read the proxy's error log from every web pod (`-l app=web`: the failed request went to one of two), then check whether the api Service has any endpoints — and why not.",
         "cmd": [
-          "kubectl logs -n practice deployment/web --tail=3",
+          "kubectl logs -n practice -l app=web --tail=20 | grep upstream",
           "kubectl get endpointslices -n practice -l kubernetes.io/service-name=api",
           "kubectl get service api -n practice -o wide",
           "kubectl get pods -n practice -l app=api --show-labels"
@@ -1678,7 +1678,7 @@ LX.onsiteHands = [
           "kubectl get services -n practice",
           "kubectl exec -n practice deployment/api -- nslookup redis"
         ],
-        "expect": "`CACHE_HOST=redis`, but the Services are `api`, `cache` and `web` — and the lookup for `redis` fails (for example `can't find redis` / `NXDOMAIN`).",
+        "expect": "`CACHE_HOST=redis` — next to `CACHE_SERVICE_HOST` and other variables Kubernetes injects for the Service that does exist, `cache`. The Services are `api`, `cache` and `web`, and the lookup fails: `server can't find redis.practice.svc.cluster.local: NXDOMAIN`.",
         "why": "The api is configured to call a cache by a name that does not exist in the namespace. A configuration fault, not a network or code fault.",
         "re": "CACHE_HOST=redis",
         "env": null
@@ -1701,7 +1701,7 @@ LX.onsiteHands = [
       }
     ],
     "check": {
-      "cmd": "kubectl run check -n practice --rm -i --restart=Never --image=busybox:1.37 -- wget -qO- -T 5 http://web/api/orders 2>/dev/null | grep -q PONG && echo PASS || echo 'FAIL: expected http://web/api/orders to return the cache PONG'",
+      "cmd": "kubectl run check -n practice --rm -i --restart=Never --image=busybox:1.37 -- wget -qO- -T 5 http://web/api/orders 2>/dev/null | grep PONG >/dev/null && echo PASS || echo 'FAIL: expected http://web/api/orders to return the cache PONG'",
       "expect": "PASS"
     },
     "cleanup": "kubectl delete deployment,service,configmap -n practice -l lab=system",

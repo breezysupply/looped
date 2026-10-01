@@ -115,7 +115,7 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="progress"]');
     const prog = await p.$eval('#prepBody', el => el.textContent);
     ok(/Studied a concept\s*1 \/ 17/.test(prog) && /Answered independently\s*1 \/ 60/.test(prog), W + ': tiers count what was done', prog.slice(0, 500));
-    ok(/Reported a hands-on PASS check\s*1 \/ 11/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
+    ok(/Reported a hands-on PASS check\s*1 \/ 12/.test(prog), W + ': hands-on PASS counted as self-reported', prog.slice(0, 900));
     ok(/Automatically verified real-lab check/.test(prog) && /Not available/.test(prog) && !/readiness score:|%/.test(prog), W + ': no machine-verified claim and no percentage score');
 
     /* ── design: the hour-long pacing and a walkthrough of your own system ── */
@@ -152,6 +152,7 @@ const { chromium } = require('playwright');
     await p.click('.prep-nav [data-prep-section="system"]');
     ok(await p.$eval('#prepBody', el => /not any company/.test(el.textContent) && /Part 1 · Architecture/i.test(el.textContent) && el.querySelector('figure.diagram svg') !== null), W + ': System lab shows both parts, the caveat and the reference architecture');
     ok(await p.$$eval('.sys-point', xs => xs.length) === 0, W + ': reference failure map hidden until asked');
+    ok(await p.$('[data-prep-open="hands:ons-hands-12"]') !== null, W + ': System lab links the real-cluster part 3');
     await p.fill('#sysMap', 'Database connections vs HPA max; payment provider slow; queue poison message.');
     await p.click('[data-prep-sreveal="ons-sys-orders"]');
     ok(await p.$$eval('.sys-point', xs => xs.length) >= 8, W + ': reference failure map revealed');
