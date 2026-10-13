@@ -182,7 +182,7 @@ def main():
 
     notes = L.read_text(NOTES) or ""
     secs = {s: bool(re.search(r"^#+\s*%s\b" % s, notes, re.M | re.I)) for s in ("Render", "Change", "Rollback")}
-    body = re.sub(r"<!--.*?-->|^#.*$", "", notes, flags=re.S | re.M)
+    body = re.sub(r"<!--.*?-->|^#[^\n]*$", "", notes, flags=re.S | re.M)
     words = len(re.findall(r"[A-Za-z]{3,}", body))
     r.check("notes", all(secs.values()) and words >= 120, "sections=%s words=%d" % (secs, words))
 

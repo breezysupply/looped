@@ -1,0 +1,19 @@
+{
+  "note": "Required rows, matrix concerns and the few unambiguous scope facts xlate.py checks. Scope values: global | regional | zonal | tenant | subscription | project | account | resource.",
+  "concepts": ["network", "subnet", "egress", "load-balancer", "container-platform", "database", "object-storage", "private-service-access", "workload-identity", "resource-scope", "secrets-and-keys"],
+  "scopes": {
+    "azure.network": ["regional"],
+    "gcp.network": ["global"],
+    "azure.subnet": ["regional"],
+    "gcp.subnet": ["regional"],
+    "gcp.egress": ["regional"],
+    "azure.resource-scope": ["subscription"],
+    "gcp.resource-scope": ["project"]
+  },
+  "concerns": ["control-plane", "node-os-patching", "kubernetes-upgrades", "workload-identity", "network-policy", "api-endpoint-access", "zone-spread", "secrets-encryption"],
+  "diagram_terms": {
+    "all": ["api", "worker", "postgres|database", "zone", "private", "identity|service account", "load balancer|application gateway|front door|alb"],
+    "azure": ["vnet"],
+    "gcp": ["vpc"]
+  }
+}

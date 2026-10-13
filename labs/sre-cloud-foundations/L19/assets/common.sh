@@ -6,7 +6,10 @@ L19_IMAGE="looped-l19-beacon"
 L19_VERSIONS="1.4.0 1.5.0"
 WORK="$HERE/work"
 
-h_basic() { helm --kube-context "$SRE_CTX_BASIC" -n "$SRE_NS" "$@"; }
+h_basic() {  # helm, always with the lab context and namespace, after the scope guard
+  if [ -z "${L19_GUARDED:-}" ]; then require_kind_context "$SRE_CTX_BASIC" "$SRE_KIND_BASIC"; L19_GUARDED=1; fi
+  helm --kube-context "$SRE_CTX_BASIC" -n "$SRE_NS" "$@"
+}
 
 # Is the release "beacon" in namespace beacon this lab's? (its values carry commonLabels looped.lab/id=L19)
 l19_release_state() {  # prints: absent | ours | foreign

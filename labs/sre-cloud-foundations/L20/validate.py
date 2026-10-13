@@ -244,7 +244,7 @@ def main():
 
     notes = L.read_text(os.path.join(HERE, "evidence", "L20-notes.md")) or ""
     secs = {s: bool(re.search(r"^#+\s*%s\b" % s, notes, re.M | re.I)) for s in ("Gate", "Promotion", "Reconciler", "Schema")}
-    body = re.sub(r"<!--.*?-->|^#.*$", "", notes, flags=re.S | re.M)
+    body = re.sub(r"<!--.*?-->|^#[^\n]*$", "", notes, flags=re.S | re.M)
     words = len(re.findall(r"[A-Za-z]{3,}", body))
     r.check("notes", all(secs.values()) and words >= 160, "sections=%s words=%d" % (secs, words))
 

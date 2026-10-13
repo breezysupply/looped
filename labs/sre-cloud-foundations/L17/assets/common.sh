@@ -5,8 +5,13 @@ L17_IMAGE="looped-l17-beacon:1.4.0"
 WORK="$HERE/work"
 WM="$WORK/manifests"
 
+l17_guard() {  # scope guard, once per script run
+  if [ -z "${L17_GUARDED:-}" ]; then require_kind_context "$SRE_CTX_BASIC" "$SRE_KIND_BASIC"; L17_GUARDED=1; fi
+}
+
 l17_apply() {  # apply one or more files from work/manifests
   local f
+  l17_guard
   for f in "$@"; do k_basic apply -f "$WM/$f" >/dev/null; done
 }
 
@@ -23,6 +28,7 @@ PY
 }
 
 l17_db_exec() {  # psql inside beacon-db-0 (stdin passes through)
+  l17_guard
   k_basic exec -i beacon-db-0 -c postgres -- psql -U postgres -d beacon -v ON_ERROR_STOP=1 "$@"
 }
 

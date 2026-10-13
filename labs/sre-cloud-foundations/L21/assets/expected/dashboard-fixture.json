@@ -1,0 +1,105 @@
+{
+ "note": "Supplied data for checking dashboard queries with promtool: 40 minutes of series scraped every 15 s, evaluated at 38m. Each required panel's expression is wrapped as round(sum(EXPR) * 1000) and must equal 'expect'. The latency histogram changes shape after 30 minutes, so a quantile computed without rate() gives a different answer. Use range windows of at least 1m.",
+ "eval_time": "38m",
+ "input_series": [
+  {
+   "series": "beacon_l21_requests_total{job=\"beacon-l21-api\",route=\"/sensors/{id}\",method=\"GET\",status_class=\"2xx\"}",
+   "values": "0+30x160"
+  },
+  {
+   "series": "beacon_l21_requests_total{job=\"beacon-l21-api\",route=\"/sensors/{id}\",method=\"GET\",status_class=\"5xx\"}",
+   "values": "0+1.5x160"
+  },
+  {
+   "series": "beacon_l21_requests_total{job=\"beacon-l21-api\",route=\"/jobs\",method=\"POST\",status_class=\"2xx\"}",
+   "values": "0+15x160"
+  },
+  {
+   "series": "beacon_l21_requests_total{job=\"beacon-l21-api\",route=\"/healthz\",method=\"GET\",status_class=\"2xx\"}",
+   "values": "0+0x160"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"0.05\"}",
+   "values": "0+25x120 3012.5+12.5x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"0.1\"}",
+   "values": "0+25x120 3015+15x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"0.25\"}",
+   "values": "0+25x120 3017.5+17.5x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"0.5\"}",
+   "values": "0+25x120 3020+20x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"1.0\"}",
+   "values": "0+25x120 3025+25x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/sensors/{id}\",le=\"+Inf\"}",
+   "values": "0+25x120 3025+25x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_count{job=\"beacon-l21-api\",route=\"/sensors/{id}\"}",
+   "values": "0+25x120 3025+25x39"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/jobs\",le=\"0.05\"}",
+   "values": "0+15x160"
+  },
+  {
+   "series": "beacon_l21_request_duration_seconds_bucket{job=\"beacon-l21-api\",route=\"/jobs\",le=\"+Inf\"}",
+   "values": "0+15x160"
+  },
+  {
+   "series": "beacon_l21_dependency_duration_seconds_bucket{job=\"beacon-l21-api\",dependency=\"registry\",outcome=\"ok\",le=\"0.025\"}",
+   "values": "0+22.5x160"
+  },
+  {
+   "series": "beacon_l21_dependency_duration_seconds_bucket{job=\"beacon-l21-api\",dependency=\"registry\",outcome=\"ok\",le=\"0.05\"}",
+   "values": "0+25x160"
+  },
+  {
+   "series": "beacon_l21_dependency_duration_seconds_bucket{job=\"beacon-l21-api\",dependency=\"registry\",outcome=\"ok\",le=\"0.1\"}",
+   "values": "0+30x160"
+  },
+  {
+   "series": "beacon_l21_dependency_duration_seconds_bucket{job=\"beacon-l21-api\",dependency=\"registry\",outcome=\"ok\",le=\"+Inf\"}",
+   "values": "0+30x160"
+  },
+  {
+   "series": "process_cpu_seconds_total{job=\"beacon-l21-api\"}",
+   "values": "0+7.5x160"
+  },
+  {
+   "series": "process_cpu_seconds_total{job=\"beacon-l21-worker\"}",
+   "values": "0+0.75x160"
+  }
+ ],
+ "panels": [
+  {
+   "title": "Request rate",
+   "expect": 3100
+  },
+  {
+   "title": "Error ratio",
+   "expect": 32
+  },
+  {
+   "title": "p95 latency /sensors",
+   "expect": 875
+  },
+  {
+   "title": "Dependency p95",
+   "expect": 85
+  },
+  {
+   "title": "API CPU",
+   "expect": 500
+  }
+ ],
+ "interval": "15s"
+}

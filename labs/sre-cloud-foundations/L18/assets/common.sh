@@ -19,6 +19,7 @@ PY
 
 # run a probe from inside a pod of <app>: l18_probe <app> <mode tcp|pg> <host> <port>
 l18_probe() {
+  if [ -z "${L18_GUARDED:-}" ]; then require_kind_context "$SRE_CTX_POLICY" "$SRE_KIND_POLICY"; L18_GUARDED=1; fi
   k_policy exec "deploy/$1" -- python3 -c "$(cat "$HERE/assets/probe.py")" "$2" "$3" "$4" 2>/dev/null \
     || printf '{"target":"%s:%s","error":"exec failed"}\n' "$3" "$4"
 }

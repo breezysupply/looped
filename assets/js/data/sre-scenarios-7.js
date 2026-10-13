@@ -555,4 +555,403 @@ LX.missions = LX.missions || [];
       prereqs: ['les-m15-01', 'les-m15-02'], refs: ['T19', 'T20', 'T18']
     }
   });
+  /* ═══ S30 · Customer reports random API failures ═════════════════════ */
+  var CUST_KEY = 'lab-kestrel-7c1e9b44-not-a-real-secret';
+  var TEST_KEY = 'lab-support-sandbox-51d0-not-a-real-secret';
+  var S30_CLASSES = { a: ['429', 'timeout'], b: ['401', 'stream'], c: ['403', 'timeout'] };
+  var S30_LABEL = { '429': 'rate limiting (429)', 'timeout': 'client timeouts', '401': 'authentication failures (401)', '403': 'permission failures (403)', 'stream': 'interrupted streams' };
+  var WINDOW_SEC = { '1d': 8, '7d': 22, '30d': 75 };
+  var TPM = 40000;
+  /* the review rubric for a customer reply: one row per failure class */
+  var S30_RUBRIC = {
+    '429': { cat: /\b429\b|rate[ -]?limit/i, cause: /tokens? per minute|\bTPM\b|token quota|quota of|40,?000|reserv|burst|concurren|parallel/i, next: /retry-after|back-?off|honou?r/i },
+    'timeout': { cat: /time[ -]?outs?|timed out/i, cause: /30 ?s(ec(ond)?s?)?\b|read timeout|longer than|takes? (about |around |up to )?\d+ ?s|75 ?s|30-day|30d/i, next: /increase|raise|longer timeout|timeout (to|of|above)|stream/i },
+    '401': { cat: /\b401\b|authenticat|invalid (api )?key|unauthori/i, cause: /rotat|revoked|old key|previous key|key_k3f9/i, next: /update|replace|new key|key_k7a2|redeploy/i },
+    '403': { cat: /\b403\b|permission|entitle|not enabled|forbidden/i, cause: /entitle|plan|enterprise|add-?on|not enabled/i, next: /request access|enable|account (team|manager)|upgrade|contact|add-?on|remove|disable/i },
+    'stream': { cat: /stream|SSE|server-sent/i, cause: /proxy|60 ?s|intermediar|max(imum)? (connection )?duration|cut|closed/i, next: /terminal|done event|event: done|\[DONE\]|treat|check|proxy|resume|retry the/i }
+  };
+  var UNBOUNDED = /retr(y|ies|ying)[^.;!?\n]{0,30}(indefinitely|forever|until (it|they|the request|the call) (works?|succeeds?|goes through)|without (a )?limit|no limit|unlimited|endlessly|immediately and (again|forever))|keep retrying|infinite retr|unlimited retr|retry (on )?every (error|failure) immediately/i;
+  function s30Review(s, text) {
+    var t = String(text || ''), out = { classes: {}, secret: false, unbounded: false, ok: true };
+    (S30_CLASSES[s.variant] || []).forEach(function (k) {
+      var R = S30_RUBRIC[k], ids = s.samples[k] || [];
+      var row = { rid: ids.some(function (id) { return t.indexOf(id) !== -1; }), cat: R.cat.test(t), cause: R.cause.test(t), next: R.next.test(t) };
+      row.ok = row.rid && row.cat && row.cause && row.next;
+      if (!row.ok) out.ok = false;
+      out.classes[k] = row;
+    });
+    out.secret = t.indexOf(CUST_KEY) !== -1 || t.indexOf(TEST_KEY) !== -1 || /lab-kestrel-[0-9a-f]+/.test(t) || /Bearer\s+\S{12,}/.test(t);
+    var re = new RegExp(UNBOUNDED.source, 'ig'), m;
+    while ((m = re.exec(t))) { if (!negatedBefore(t, m.index)) { out.unbounded = true; break; } }
+    if (out.secret || out.unbounded) out.ok = false;
+    return out;
+  }
+  function s30ReproDone(s) {
+    return (S30_CLASSES[s.variant] || []).every(function (k) { var r = s.repro[k]; return r && r.fail && r.ok; });
+  }
+  function ridOf(seed, n) { return 'req_' + hex(seed + ':' + n, 14); }
+  function s30Stamp(base, sec) {
+    var t = base + sec, h = Math.floor(t / 3600), mi = Math.floor(t % 3600 / 60), se = (t % 60).toFixed(3);
+    return '2026-10-12T' + (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi + ':' + (se.length < 6 ? '0' : '') + se + 'Z';
+  }
+  function s30Logs(v, seed) {
+    var base = 14 * 3600, n = 0, gw = [], cl = [], samples = { '429': [], 'timeout': [], '401': [], '403': [], 'stream': [] };
+    function g(sec, o) { o.ts = s30Stamp(base, sec); o.request_id = ridOf(seed, n++); o.org = 'org_kestrel'; gw.push(o); return o; }
+    function c(sec, line) { cl.push(s30Stamp(base, sec) + ' ' + line); }
+    var ok = function (sec, host, path, win, key) {
+      var lat = WINDOW_SEC[win] + (n % 3) * 0.4, o = g(sec, { key_id: key || 'key_k7a2', method: 'POST', path: path || '/v1/summaries', window: win, max_tokens: 6000, stream: false, status: 200, latency_ms: Math.round(lat * 1000), client: host });
+      c(sec + lat, 'INFO  POST ' + o.path + ' window=' + win + ' status=200 request_id=' + o.request_id + ' elapsed=' + lat.toFixed(1) + 's host=' + host);
+    };
+    c(0, 'DEBUG client kestrel-batch 2.4 starting 8 workers; read_timeout=30s; retry=on-any-error, immediate');
+    c(0.05, 'DEBUG request headers={\'Authorization\': \'Bearer ' + CUST_KEY + '\', \'Content-Type\': \'application/json\'}');
+    if (v === 'a') {
+      for (var mnt = 0; mnt < 2; mnt++) {
+        var t0 = mnt * 60 + 0.1;
+        for (var k = 0; k < 8; k++) {
+          var host = 'kestrel-batch-' + (1 + k % 3), tk = t0 + k * 0.02;
+          if (k < 6) {
+            if (k === 1 || k === 4) {
+              var o1 = g(tk, { key_id: 'key_k7a2', method: 'POST', path: '/v1/summaries', window: '30d', max_tokens: 6000, stream: false, status: 499, error_type: 'client_closed_request', latency_ms: 30004 + k, upstream_estimate_ms: 75000, client: host });
+              samples.timeout.push(o1.request_id);
+              c(tk + 30.004, 'ERROR POST /v1/summaries window=30d ReadTimeout: HTTPSConnectionPool(host=\'api.beacon.lab\', port=443): Read timed out. (read timeout=30) host=' + host);
+            } else ok(tk, host, '/v1/summaries', '1d');
+          } else {
+            for (var att = 1; att <= 3; att++) {
+              var ta = tk + (att - 1) * 0.15, ra = Math.max(1, Math.round(60 - (ta % 60)));
+              var o2 = g(ta, { key_id: 'key_k7a2', method: 'POST', path: '/v1/summaries', window: '1d', max_tokens: 6000, stream: false, status: 429, error_type: 'rate_limit_error', retry_after: ra, ratelimit_limit_tokens: TPM, ratelimit_remaining_tokens: TPM - 36000, latency_ms: 3, client: host });
+              samples['429'].push(o2.request_id);
+              c(ta + 0.003, 'ERROR POST /v1/summaries status=429 request_id=' + o2.request_id + ' error=rate_limit_error "tokens per minute limit exceeded" retry_after=' + ra + ' -> retrying now (attempt ' + (att + 1) + ')');
+            }
+          }
+        }
+      }
+    } else if (v === 'b') {
+      for (var i = 0; i < 9; i++) {
+        var tb = i * 20 + 0.2, hb = 'kestrel-batch-' + (1 + i % 3);
+        if (hb === 'kestrel-batch-3') {
+          var o3 = g(tb, { key_id: 'key_k3f9', method: 'POST', path: '/v1/summaries', window: '1d', max_tokens: 6000, stream: false, status: 401, error_type: 'authentication_error', error: 'invalid api key (revoked)', latency_ms: 2, client: hb });
+          samples['401'].push(o3.request_id);
+          c(tb + 0.002, 'ERROR POST /v1/summaries status=401 request_id=' + o3.request_id + ' error=authentication_error "invalid api key" host=' + hb);
+        } else if (i % 2 === 0) {
+          var o4 = g(tb, { key_id: 'key_k7a2', method: 'POST', path: '/v1/summaries', window: '30d', max_tokens: 6000, stream: true, status: 200, latency_ms: 60002, events_sent: 41, terminal_event_sent: false, close_reason: 'client_closed', client: hb, via: 'egress-proxy.kestrel.example' });
+          samples.stream.push(o4.request_id);
+          c(tb + 60.002, 'INFO  POST /v1/summaries window=30d stream=true status=200 request_id=' + o4.request_id + ' chunks=41 elapsed=60.0s -> summary saved host=' + hb);
+        } else {
+          var o5 = g(tb, { key_id: 'key_k7a2', method: 'POST', path: '/v1/summaries', window: '1d', max_tokens: 6000, stream: true, status: 200, latency_ms: 8100, events_sent: 12, terminal_event_sent: true, close_reason: 'complete', client: hb, via: 'egress-proxy.kestrel.example' });
+          c(tb + 8.1, 'INFO  POST /v1/summaries window=1d stream=true status=200 request_id=' + o5.request_id + ' chunks=12 elapsed=8.1s -> summary saved host=' + hb);
+        }
+      }
+    } else {
+      for (var j = 0; j < 9; j++) {
+        var tc = j * 20 + 0.2, hc = 'kestrel-batch-' + (1 + j % 3);
+        if (j % 3 === 1) {
+          var o6 = g(tc, { key_id: 'key_k7a2', method: 'POST', path: '/v1/forecast', window: '7d', max_tokens: 6000, stream: false, status: 403, error_type: 'permission_error', error: 'organization org_kestrel is not entitled to /v1/forecast', latency_ms: 2, client: hc });
+          samples['403'].push(o6.request_id);
+          c(tc + 0.002, 'ERROR POST /v1/forecast status=403 request_id=' + o6.request_id + ' error=permission_error host=' + hc);
+        } else if (j % 3 === 2) {
+          var o7 = g(tc, { key_id: 'key_k7a2', method: 'POST', path: '/v1/summaries', window: '30d', max_tokens: 6000, stream: false, status: 499, error_type: 'client_closed_request', latency_ms: 30003, upstream_estimate_ms: 75000, client: hc });
+          samples.timeout.push(o7.request_id);
+          c(tc + 30.003, 'ERROR POST /v1/summaries window=30d ReadTimeout: HTTPSConnectionPool(host=\'api.beacon.lab\', port=443): Read timed out. (read timeout=30) host=' + hc);
+        } else ok(tc, hc, '/v1/summaries', '1d');
+      }
+    }
+    cl.sort();
+    gw.sort(function (x, y) { return x.ts < y.ts ? -1 : x.ts > y.ts ? 1 : 0; });
+    return { customer: cl.join('\n') + '\n', gateway: gw.map(function (o) { return JSON.stringify(o); }).join('\n') + '\n', samples: samples };
+  }
+
+  /* jq, bounded: . | .a.b | select(EXPR) | {a, b} | [.a, .b] | @tsv | @csv ; EXPR = comparisons joined by and/or, or (.f | test("re")) */
+  function splitTop(str, sep) {
+    var out = [], cur = '', depth = 0, q = null;
+    for (var i = 0; i < str.length; i++) {
+      var ch = str.charAt(i);
+      if (q) { cur += ch; if (ch === '\\') { cur += str.charAt(++i); } else if (ch === q) q = null; continue; }
+      if (ch === '"') { q = ch; cur += ch; continue; }
+      if (ch === '(' || ch === '[' || ch === '{') depth++;
+      if (ch === ')' || ch === ']' || ch === '}') depth--;
+      if (depth === 0 && str.substr(i, sep.length) === sep) { out.push(cur); cur = ''; i += sep.length - 1; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out.map(function (x) { return x.trim(); });
+  }
+  function jqPath(obj, p) {
+    if (p === '.') return obj;
+    var parts = p.replace(/^\./, '').split('.'), cur = obj;
+    for (var i = 0; i < parts.length; i++) { if (cur == null || typeof cur !== 'object') return null; cur = cur[parts[i]]; if (cur === undefined) cur = null; }
+    return cur;
+  }
+  function jqLit(s) { s = s.trim(); if (/^".*"$/.test(s)) return JSON.parse(s); if (s === 'true') return true; if (s === 'false') return false; if (s === 'null') return null; if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s); throw new Error('unsupported literal ' + s); }
+  function jqCond(expr) {
+    expr = expr.trim();
+    while (expr.charAt(0) === '(' && expr.charAt(expr.length - 1) === ')' && (function () { var d = 0; for (var i = 0; i < expr.length - 1; i++) { if (expr.charAt(i) === '(') d++; if (expr.charAt(i) === ')') d--; if (d === 0) return false; } return true; })()) expr = expr.slice(1, -1).trim();
+    var ors = splitTop(expr, ' or ');
+    if (ors.length > 1) { var fo = ors.map(jqCond); return function (o) { return fo.some(function (f) { return f(o); }); }; }
+    var ands = splitTop(expr, ' and ');
+    if (ands.length > 1) { var fa = ands.map(jqCond); return function (o) { return fa.every(function (f) { return f(o); }); }; }
+    var t = /^(\.[\w.]*)\s*\|\s*(test|startswith|endswith|contains)\(\s*("(?:[^"\\]|\\.)*")\s*\)$/.exec(expr);
+    if (t) { var arg = JSON.parse(t[3]), path = t[1], fn = t[2]; return function (o) { var v = jqPath(o, path); if (typeof v !== 'string') return false; return fn === 'test' ? new RegExp(arg).test(v) : fn === 'startswith' ? v.indexOf(arg) === 0 : fn === 'endswith' ? v.slice(-arg.length) === arg : v.indexOf(arg) !== -1; }; }
+    var cmp = /^(\.[\w.]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$/.exec(expr);
+    if (cmp) {
+      var lit = jqLit(cmp[3]), pth = cmp[1], op = cmp[2];
+      return function (o) { var v = jqPath(o, pth); switch (op) { case '==': return v === lit; case '!=': return v !== lit; case '>=': return v != null && v >= lit; case '<=': return v != null && v <= lit; case '>': return v != null && v > lit; default: return v != null && v < lit; } };
+    }
+    if (/^\.[\w.]*$/.test(expr)) return function (o) { var v = jqPath(o, expr); return v !== null && v !== false; };
+    throw new Error('unsupported condition "' + expr + '"');
+  }
+  function jqStage(stage) {
+    var s = stage.trim(), m;
+    if (s === '.' ) return function (x) { return [x]; };
+    if (/^\.[\w.]+$/.test(s)) return function (x) { return [jqPath(x, s)]; };
+    if ((m = /^select\((.*)\)$/.exec(s))) { var c = jqCond(m[1]); return function (x) { return c(x) ? [x] : []; }; }
+    if ((m = /^\{(.*)\}$/.exec(s))) {
+      var keys = splitTop(m[1], ',').map(function (k) { return k.replace(/^\./, '').trim(); });
+      if (!keys.every(function (k) { return /^[\w]+$/.test(k); })) throw new Error('only {a, b, c} shorthand objects are supported');
+      return function (x) { var o = {}; keys.forEach(function (k) { o[k] = x && x[k] !== undefined ? x[k] : null; }); return [o]; };
+    }
+    if ((m = /^\[(.*)\]$/.exec(s))) { var ps = splitTop(m[1], ','); if (!ps.every(function (p) { return /^\.[\w.]+$/.test(p); })) throw new Error('only [.a, .b] arrays are supported'); return function (x) { return [ps.map(function (p) { return jqPath(x, p); })]; }; }
+    if (s === '@tsv' || s === '@csv') return function (x) { if (!Array.isArray(x)) throw new Error(s + ' needs an array input'); return [{ __raw: x.map(function (v) { return s === '@csv' && typeof v === 'string' ? '"' + v + '"' : v == null ? '' : String(v); }).join(s === '@tsv' ? '\t' : ',') }]; };
+    if (s === 'keys') return function (x) { return [Object.keys(x || {}).sort()]; };
+    throw new Error('unsupported filter "' + s + '"');
+  }
+  function jqVerb() {
+    return function (w, a, stdin) {
+      var compact = false, raw = false, slurp = false, rest = [];
+      a.forEach(function (x) { if (/^-[a-z]+$/.test(x)) { if (x.indexOf('c') !== -1) compact = true; if (x.indexOf('r') !== -1) raw = true; if (x.indexOf('s') !== -1) slurp = true; } else rest.push(x); });
+      var filter = rest[0], file = rest[1];
+      var SUP = 'jq (simulation) supports: . , .field.path , select(.f == "x" and .n >= 400 or (.f | test("re"))) , {a, b} , [.a, .b] , @tsv , @csv , keys , chained with | ; flags -c -r -s (slurp then: length)';
+      if (!filter) return res('', 2, SUP);
+      var text = file ? SIM().readFile(w, file) : stdin;
+      if (text == null) return res('', 2, 'jq: error: Could not open ' + file + ': No such file or directory');
+      var docs = [];
+      try { String(text).split('\n').forEach(function (l) { if (l.trim()) docs.push(JSON.parse(l)); }); }
+      catch (e) { return res('', 2, 'jq: error (at <stdin>): input is not JSON lines (' + e.message + ')'); }
+      if (slurp) { if (filter.trim() === 'length') return res(String(docs.length)); return res('', 3, 'jq: with -s this simulation supports only `length`.\n' + SUP); }
+      var stages;
+      try { stages = splitTop(filter, '|').map(jqStage); }
+      catch (e) { return res('', 3, 'jq: error: ' + e.message + '\n' + SUP); }
+      var outs = [];
+      try {
+        docs.forEach(function (d) {
+          var cur = [d];
+          stages.forEach(function (fn) { var nx = []; cur.forEach(function (x) { nx = nx.concat(fn(x)); }); cur = nx; });
+          cur.forEach(function (x) { outs.push(x && x.__raw !== undefined ? x.__raw : raw && typeof x === 'string' ? x : JSON.stringify(x, null, compact ? 0 : 2)); });
+        });
+      } catch (e2) { return res('', 5, 'jq: error: ' + e2.message); }
+      return res(outs.join('\n'));
+    };
+  }
+
+  function s30World(seed) {
+    var S = SIM(), v = S.variantOf(seed, ['a', 'b', 'c']);
+    var L = s30Logs(v, 'S30-' + v);
+    var state = { clock: 0, risky: [], seed: seed, variant: v, hooks: [], samples: L.samples, repro: {}, replies: [], leaked: false, reproSeq: 0 };
+    S30_CLASSES[v].forEach(function (k) { state.repro[k] = { fail: false, ok: false, at: null }; });
+    function mark(k, which) { if (!state.repro[k]) return; state.repro[k][which] = true; if (state.repro[k].fail && state.repro[k].ok && state.repro[k].at == null) state.repro[k].at = state.clock; }
+    var ticket = '# TICKET-4821 — "Random API failures since yesterday"\nFrom: Dana Okafor, platform engineer, Kestrel Analytics (org_kestrel, plan: standard)\nOpened: 2026-10-12T15:02Z · Priority: high\n\n' +
+      'Since yesterday afternoon our integration with the Beacon Insights API fails at random. Some requests work, some fail, and we cannot see a pattern. Excerpt of our client log attached (customer-client.log). Please advise ASAP, our nightly reports are incomplete.\n\n' +
+      'Our setup: kestrel-batch 2.4 (Python requests 2.32), 8 workers across 3 hosts, read timeout 30 s, max_tokens 6000, we retry any failed request immediately.' +
+      (v === 'b' ? ' We rotated our API key yesterday after your security advisory and updated all hosts. Long summaries are streamed (SSE) through our egress proxy.' : '') +
+      (v === 'c' ? ' Release 2.4 also turned on the new forecast feature.' : '') + '\n';
+    var playbook = '# Support playbook: API failure tickets\n1. Separate the failures into classes from the customer\'s own log; "random" usually means several distinct causes.\n2. Correlate each class with the gateway log by request id (or by time when the client never received one).\n3. Check the account: plan, limits, entitlements, keys.\n4. Reproduce each class minimally against the mock endpoint with `repro` (support sandbox org; never a customer\'s key), and show the corrected request working.\n5. Reply with: the request ids, what each class is, why it happens, and the exact next step. No credentials in replies; never advise unbounded retries.\n';
+    var verbs = {
+      jq: jqVerb(),
+      account: function (w, a) {
+        var sub = a[0] || 'show', org = a[1] || 'org_kestrel';
+        if (org !== 'org_kestrel') return res('', 1, 'account: no organization "' + org + '" visible to support (try org_kestrel)');
+        var rot = v === 'b';
+        var lim = 'limits (plan standard):\n  requests per minute: 60\n  tokens per minute:   40000  (each accepted request reserves its max_tokens until the minute rolls over)\n  429 responses carry Retry-After and x-ratelimit-remaining-tokens';
+        var ent = 'entitlements:\n  /v1/summaries   enabled (all plans)\n  /v1/forecast    NOT ENABLED (enterprise plan or forecast add-on)';
+        var keys = 'keys:\n  key_k7a2  active    created 2026-10-12T13:57:02Z by dana@kestrel.example' + (rot ? '\n  key_k3f9  REVOKED   2026-10-12T13:58:40Z by dana@kestrel.example (reason: rotation); requests still arriving with it from kestrel-batch-3' : '\n  key_k3f9  REVOKED   2026-08-01T09:12:00Z by dana@kestrel.example (reason: rotation); no use since');
+        var head = 'account is a SIMULATION stand-in for the support console (read-only).\norg_kestrel  Kestrel Analytics  plan: standard';
+        if (sub === 'show') return res(head + '\n' + lim + '\n' + ent + '\n' + keys);
+        if (sub === 'limits') return res(head + '\n' + lim);
+        if (sub === 'entitlements') return res(head + '\n' + ent);
+        if (sub === 'keys') return res(head + '\n' + keys);
+        return res('', 2, 'account (simulation): account show|limits|entitlements|keys [org_kestrel]');
+      },
+      ticket: function (w, a) {
+        var sub = a[0];
+        if (sub === 'show' || !sub) return res(ticket);
+        if (sub === 'reply') {
+          var text = null;
+          if (a[1] === '-f' || a[1] === '--file') { text = S.readFile(w, a[2] || ''); if (text == null) return res('', 1, 'ticket reply: cannot read ' + (a[2] || '')); }
+          else text = a.slice(1).join(' ');
+          if (!String(text).trim()) return res('', 2, 'ticket reply: empty reply. Usage: ticket reply "TEXT" | ticket reply -f FILE');
+          var rv = s30Review(state, text);
+          state.replies.push({ at: state.clock, text: text, review: rv });
+          if (rv.secret) state.leaked = true;
+          var L2 = ['Reply #' + state.replies.length + ' sent to Dana Okafor on TICKET-4821.', '', 'Support-lead review of this reply:'];
+          Object.keys(rv.classes).forEach(function (k) { var r = rv.classes[k]; L2.push('  ' + S30_LABEL[k] + ': request id ' + (r.rid ? 'yes' : 'NO') + ' · category ' + (r.cat ? 'yes' : 'NO') + ' · cause ' + (r.cause ? 'yes' : 'NO') + ' · next step ' + (r.next ? 'yes' : 'NO')); });
+          L2.push('  no credentials in the text: ' + (rv.secret ? 'NO — a credential was sent to the customer' : 'yes'));
+          L2.push('  retry advice bounded: ' + (rv.unbounded ? 'NO — advises retrying without a bound' : 'yes'));
+          L2.push('  reproduced before replying: ' + (s30ReproDone(state) ? 'yes' : 'not yet for every class'));
+          return res(L2.join('\n'));
+        }
+        return res('', 2, 'ticket (simulation): ticket show | ticket reply "TEXT" | ticket reply -f FILE');
+      },
+      repro: function (w, a) {
+        var p = SIM().flags(a, ['endpoint', 'plan', 'key', 'timeout', 'max-tokens', 'window', 'burst', 'via-proxy', 'header', 'H']), f = p.f;
+        if (f.help || p.pos.length) return res('repro is a SIMULATION stand-in: a minimal client that sends one request (or a burst) to the MOCK Beacon Insights endpoint as the support sandbox org.\nUsage: repro [--endpoint /v1/summaries|/v1/forecast] [--plan standard|enterprise] [--key current|rotated] [--window 1d|7d|30d] [--max-tokens N] [--timeout SECONDS] [--stream] [--burst N] [--honor-retry-after] [--via-proxy SECONDS]', p.pos.length ? 2 : 0);
+        var ep = f.endpoint || '/v1/summaries', plan = f.plan || 'standard', key = f.key || 'current', win = f.window || '1d';
+        var maxT = parseInt(f['max-tokens'] || '2000', 10), to = Number(f.timeout || 60), burst = Math.max(1, Math.min(20, parseInt(f.burst || '1', 10))), proxy = f['via-proxy'] ? Number(f['via-proxy']) : null;
+        var hdr = String(f.header || f.H || '');
+        if (['/v1/summaries', '/v1/forecast'].indexOf(ep) === -1) return res('', 2, 'repro: the mock serves /v1/summaries and /v1/forecast only');
+        if (!WINDOW_SEC[win]) return res('', 2, 'repro: --window must be 1d, 7d or 30d');
+        var custKey = key.indexOf('lab-kestrel') !== -1 || hdr.indexOf('lab-kestrel') !== -1;
+        var L3 = ['repro (SIMULATION — mock endpoint https://mock.api.beacon.lab, support sandbox org; never production)'];
+        if (custKey) {
+          state.leaked = true;
+          L3.push('> POST ' + ep + ' with a customer credential');
+          L3.push('< 401 the mock rejects production keys. That value is a customer\'s secret: it is now in your shell history and this transcript and must be reported for rotation.');
+          return res(L3.join('\n'), 1);
+        }
+        if (['current', 'rotated'].indexOf(key) === -1) return res('', 2, 'repro: --key must be current (the sandbox org\'s active key) or rotated (a key revoked by rotation)');
+        var srv = WINDOW_SEC[win] + (ep === '/v1/forecast' ? 4 : 0);
+        var reserved = 0, results = [];
+        L3.push('> ' + burst + ' x POST ' + ep + ' window=' + win + ' max_tokens=' + maxT + ' stream=' + !!f.stream + ' timeout=' + to + 's plan=' + plan + (proxy ? ' via proxy closing connections after ' + proxy + 's' : '') + '  (Authorization: Bearer [redacted sandbox ' + key + ' key])');
+        for (var i = 0; i < burst; i++) {
+          state.reproSeq++;
+          var rid = 'req_mock_' + hex('mock' + state.reproSeq + state.seed, 10), r = null;
+          if (key === 'rotated') r = { code: 401, line: '< 401 authentication_error "invalid api key (revoked)" x-request-id: ' + rid };
+          else if (ep === '/v1/forecast' && plan !== 'enterprise') r = { code: 403, line: '< 403 permission_error "organization is not entitled to /v1/forecast (plan: standard)" x-request-id: ' + rid };
+          else if (reserved + maxT > TPM) {
+            var ra = 38;
+            r = { code: 429, line: '< 429 rate_limit_error "tokens per minute limit exceeded" retry-after: ' + ra + ' x-ratelimit-limit-tokens: ' + TPM + ' x-ratelimit-remaining-tokens: ' + (TPM - reserved) + ' x-request-id: ' + rid };
+            if (f['honor-retry-after']) { r.line += '\n  client waits ' + ra + ' s (Retry-After), attempt 2 of max 4 -> '; r.retried = true; }
+          }
+          if (r && r.code === 429 && r.retried) { results.push(429); r.code = 0; L3.push(r.line.replace(/ -> $/, '')); rid = 'req_mock_' + hex('mock-r' + state.reproSeq + state.seed, 10); }
+          else if (r) { L3.push(r.line); results.push(r.code); continue; }
+          reserved += maxT;
+          var cut = proxy && proxy < srv;
+          if (f.stream) {
+            if (cut) { L3.push('< 200 text/event-stream x-request-id: ' + rid + ' · ' + Math.floor(proxy * 0.68) + ' data events, then the connection closed at ' + proxy.toFixed(1) + ' s · terminal event: NOT received (stream incomplete)'); results.push('cut'); }
+            else { L3.push('< 200 text/event-stream x-request-id: ' + rid + ' · ' + Math.round(srv * 0.68) + ' data events over ' + srv.toFixed(1) + ' s · terminal event: received (event: done)'); results.push('stream-ok'); }
+          } else if (cut) { L3.push('< (connection closed by the proxy at ' + proxy.toFixed(1) + ' s, before response headers; no x-request-id received)'); results.push('cut'); }
+          else if (to < srv) { L3.push('< ReadTimeout after ' + to.toFixed(1) + ' s: no response headers yet, so no x-request-id (the server needed ~' + srv + ' s for a ' + win + ' window; the gateway would log this as 499 client_closed_request)'); results.push('timeout'); }
+          else { L3.push('< 200 application/json x-request-id: ' + rid + ' · ' + srv.toFixed(1) + ' s · x-ratelimit-remaining-tokens: ' + Math.max(0, TPM - reserved)); results.push(200); }
+        }
+        var okAll = results.every(function (x) { return x === 200 || x === 'stream-ok'; });
+        /* what this run demonstrated, per failure class */
+        if (results.indexOf(429) !== -1 && !f['honor-retry-after']) mark('429', 'fail');
+        if (burst > 1 && okAll && (f['honor-retry-after'] ? results.indexOf(429) !== -1 || reserved > 0 : true) && maxT * burst > 6000) mark('429', 'ok');
+        if (results.indexOf(429) !== -1 && f['honor-retry-after'] && okAll) { mark('429', 'fail'); mark('429', 'ok'); }
+        if (results.indexOf('timeout') !== -1 && win === '30d') mark('timeout', 'fail');
+        if (win === '30d' && srv > 30 && okAll && ep === '/v1/summaries') mark('timeout', 'ok');
+        if (results.indexOf(401) !== -1) mark('401', 'fail');
+        if (key === 'current' && okAll && state.repro['401'] && state.repro['401'].fail) mark('401', 'ok');
+        if (results.indexOf(403) !== -1) mark('403', 'fail');
+        if (ep === '/v1/forecast' && plan === 'enterprise' && okAll) mark('403', 'ok');
+        if (f.stream && results.indexOf('cut') !== -1 && win === '30d') mark('stream', 'fail');
+        if (f.stream && okAll && srv > 60) mark('stream', 'ok');
+        var fails = results.filter(function (x) { return x !== 200 && x !== 'stream-ok'; }).length;
+        L3.push('summary: ' + (results.length - fails) + ' ok, ' + fails + ' failed');
+        return res(L3.join('\n'), results.indexOf('timeout') !== -1 ? 28 : 0);
+      }
+    };
+    return { user: 'lab', host: 'support-desk', cwd: '/home/lab/TICKET-4821',
+      dirs: [{ path: '/var/log/beacon-gw' }],
+      files: [{ path: '/home/lab/TICKET-4821/TICKET.md', content: ticket }, { path: '/home/lab/TICKET-4821/customer-client.log', content: L.customer },
+        { path: '/var/log/beacon-gw/requests.jsonl', content: L.gateway }, { path: '/home/lab/TICKET-4821/PLAYBOOK.md', content: playbook }],
+      sre: state, extra: SIM().bind(state, verbs) };
+  }
+  var S30_MARK = { '429': /status=429/, 'timeout': /ReadTimeout|timed out/, '401': /status=401/, '403': /status=403/, 'stream': /stream=true[^\n]*window=30d|window=30d[^\n]*stream=true/ };
+  var S30_GW = { '429': /"status":\s?429/, 'timeout': /"status":\s?499/, '401': /"status":\s?401/, '403': /"status":\s?403/, 'stream': /"terminal_event_sent":\s?false/ };
+  var CUSTLOG = /^(grep|egrep|cat|awk|cut|sort|uniq|tail|head|sed|wc)\b.*customer-client\.log/;
+  var GWLOG = /^(grep|egrep|cat|awk|tail|head|sed|jq)\b.*requests\.jsonl/;
+  function s30Repro(v) {
+    if (v === 'a') return 'repro --burst 8 --max-tokens 6000; repro --burst 8 --max-tokens 6000 --honor-retry-after; repro --window 30d --timeout 30; repro --window 30d --timeout 120';
+    if (v === 'b') return 'repro --key rotated; repro --key current; repro --stream --window 30d --via-proxy 60; repro --stream --window 30d';
+    return 'repro --endpoint /v1/forecast --plan standard; repro --endpoint /v1/forecast --plan enterprise; repro --window 30d --timeout 30; repro --window 30d --timeout 120';
+  }
+  function s30Reply(c) {
+    var s = st(c), sm = s.samples;
+    if (s.variant === 'a') return 'ticket reply "Hi Dana, thanks for the logs. These are two separate, predictable issues rather than random ones. 1) Rate limiting (HTTP 429), for example request ' + sm['429'][0] + ': your 8 workers start together and each reserves max_tokens 6000, which exceeds the standard plan quota of 40000 tokens per minute; the 429 carries a Retry-After header. Next step: honour Retry-After with capped exponential backoff and jitter (at most 4 attempts) and lower concurrency or max_tokens. 2) Client timeouts, for example request ' + sm.timeout[0] + ' (our gateway logged it as client closed): 30-day summaries take about 75 s on our side but your read timeout is 30 s, so your client gives up first. Next step: raise the read timeout to about 120 s for those requests, or stream them. We reproduced both against our sandbox."';
+    if (s.variant === 'b') return 'ticket reply "Hi Dana, thanks for the logs. Two separate issues. 1) Authentication failures (HTTP 401), for example request ' + sm['401'][0] + ': host kestrel-batch-3 still sends key key_k3f9, which was revoked in yesterday\'s rotation at 13:58 UTC. Next step: update that host to the new key key_k7a2 and redeploy. 2) Interrupted streams, for example request ' + sm.stream[0] + ': every 30-day stream that passes your egress proxy is closed at exactly 60 s, before our terminal event (event: done) is sent; your client treats the closed connection as a finished summary. Next step: raise the proxy maximum connection duration above 90 s for api.beacon.lab, and treat a stream without the terminal event as failed and retry it a bounded number of times. We reproduced both against our sandbox."';
+    return 'ticket reply "Hi Dana, thanks for the logs. Two separate issues. 1) Permission failures (HTTP 403) on /v1/forecast, for example request ' + sm['403'][0] + ': your organization is on the standard plan, and forecast is not enabled for it (enterprise plan or the forecast add-on). Next step: contact your account team to enable the add-on, or disable forecast in 2.4 until then. 2) Client timeouts, for example request ' + sm.timeout[0] + ' (our gateway logged it as client closed): 30-day summaries take about 75 s but your read timeout is 30 s. Next step: raise the read timeout to about 120 s for those requests, or stream them. We reproduced both against our sandbox."';
+  }
+
+  LX.missions.push({
+    id: 'sre-s30', track: 'sre', cat: 'scenario', level: 'intermediate', mins: 30, kind: 'incident',
+    title: 'A customer reports random failures from the API',
+    brief: function () { return 'TICKET-4821: Kestrel Analytics says their integration with the Beacon Insights API "fails at random" since yesterday and attached a client log. You have the gateway\'s request log, the support console (`account`), a minimal client against the mock endpoint (`repro`) and the playbook. Work out what is actually happening, reproduce it safely, and send a precise reply the customer can act on.'; },
+    keys: ['cat TICKET.md', 'cat PLAYBOOK.md', 'grep -c ERROR customer-client.log', 'grep -o "status=[0-9]*" customer-client.log | sort | uniq -c', 'grep -E "ERROR|stream=true" customer-client.log', 'jq -c \'select(.status >= 400)\' /var/log/beacon-gw/requests.jsonl', 'jq -c \'select(.org == "org_kestrel") | {ts, request_id, path, status, latency_ms}\' /var/log/beacon-gw/requests.jsonl', 'account show', 'repro --help', 'ticket reply "…"'],
+    world: s30World,
+    objectives: [
+      { id: 'classify', stage: 'evidence', text: 'Sort the customer\'s failures into distinct kinds using their own log',
+        hint: '"Random" failures are usually several different failures mixed together. Group by what the client saw.',
+        hint2: 'Count by status and error type: `grep -o "status=[0-9]*" customer-client.log | sort | uniq -c`, then look at lines with no status at all, and at the long requests.',
+        reveal: 'grep -E "ERROR|window=30d" customer-client.log',
+        done: function (c) { return S30_CLASSES[st(c).variant].every(function (k) { return saw(c, CUSTLOG, S30_MARK[k]); }); } },
+      { id: 'correlate', stage: 'evidence', text: 'Find each kind of failure in the gateway log by request id (or by time where the client never got one)',
+        hint: 'Our side records every request, including the ones whose response the client never saw.',
+        hint2: '`jq -c \'select(.status >= 400 or .terminal_event_sent == false)\' /var/log/beacon-gw/requests.jsonl` and compare ids and timestamps with the customer log.',
+        reveal: 'jq -c \'select(.status >= 400 or .terminal_event_sent == false)\' /var/log/beacon-gw/requests.jsonl',
+        done: function (c) { var s = st(c); return S30_CLASSES[s.variant].every(function (k) { return c.ran.some(function (x, i) { return SIM().cmdIs(x, GWLOG) && S30_GW[k].test(c.out[i] || '') && s.samples[k].some(function (id) { return (c.out[i] || '').indexOf(id) !== -1; }); }); }); } },
+      { id: 'account', stage: 'evidence', text: 'Check the customer\'s account settings that bear on these failures',
+        hint: 'Plans, quotas, entitlements and keys explain a lot of 4xx responses.',
+        hint2: '`account show` (or `account limits`, `account entitlements`, `account keys`).',
+        reveal: 'account show',
+        done: function (c) { var v = st(c).variant; var re = v === 'a' ? /tokens per minute/ : v === 'b' ? /REVOKED\s+2026-10-12/ : /forecast\s+NOT ENABLED/; return saw(c, /account\b/, re); } },
+      { id: 'repro', stage: 'fix', text: 'Reproduce each kind minimally against the mock endpoint, and show the corrected request succeeding',
+        hint: 'One variable at a time: the smallest request that fails the same way, then the same request with the one change your reply will recommend.',
+        hint2: '`repro --help`. For example: a burst that exceeds the token quota, then with --honor-retry-after; a long window with the customer\'s timeout, then a longer one; a rotated key, then the current one; a stream through a 60 s proxy, then direct; forecast on standard, then enterprise.',
+        reveal: function (c) { return s30Repro(st(c).variant); },
+        done: function (c) { var s = st(c); return s30ReproDone(s) && !s.leaked; } },
+      { id: 'reply', stage: 'verify', text: 'Send the customer one precise reply: request ids, what each failure is, why it happens, and the next step — with no secrets',
+        hint: 'Each kind of failure needs its own id, category, cause and action. Keep their key and ours out of it.',
+        hint2: '`ticket reply "…"` (or write it to a file and `ticket reply -f reply.txt`); the reply is reviewed when sent.',
+        reveal: function (c) { return s30Reply(c); },
+        done: function (c) {
+          var s = st(c), last = s.replies[s.replies.length - 1];
+          if (!last || !last.review.ok || !s30ReproDone(s)) return false;
+          return S30_CLASSES[s.variant].every(function (k) { return s.repro[k].at != null && s.repro[k].at <= last.at; });
+        } }
+    ],
+    sre: {
+      scenarioId: 'S30', moduleId: 'M15', lab: 'L30', variants: ['a', 'b', 'c'],
+      symptom: 'A customer sees intermittent failures from the API and cannot see a pattern.',
+      neutralTitle: 'Customer reports random API failures',
+      neutralBrief: 'A customer integration with the Beacon Insights API "fails at random" since yesterday. You have their client log, the gateway request log, a read-only support console and a minimal client against a mock endpoint. Work out what is happening, reproduce it safely, and send a precise reply.',
+      impact: 'The customer\'s nightly reports are incomplete; they are considering escalating.',
+      changes: 'Customer-side: a new client release and configuration changes they describe in the ticket. Our side: no deploys in the window.',
+      spoilers: ['rate limit', '429', 'timeout', '401', '403', 'revoked', 'rotation', 'entitle', 'proxy', 'terminal event', 'quota'],
+      tools: ['grep / sort / uniq / cut over the customer log', 'jq (bounded subset) over the gateway JSON-lines log', 'account (support console stand-in)', 'repro (minimal client against the mock endpoint)', 'ticket show | reply'],
+      grammar: ['`grep`, `cut`, `sort`, `uniq -c`, `wc`, `cat`, `tail` on customer-client.log', '`jq [-c] [-r] FILTER FILE` where FILTER is `.`, `.a.b`, `select(.f == "x" and .n >= 400 or (.f | test("re")))`, `{a, b}`, `[.a, .b]`, `@tsv`, chained with `|`; `jq -s length`', '`account show|limits|entitlements|keys`', '`repro [--endpoint P] [--plan standard|enterprise] [--key current|rotated] [--window 1d|7d|30d] [--max-tokens N] [--timeout S] [--stream] [--burst N] [--honor-retry-after] [--via-proxy S]`', '`ticket show`, `ticket reply "TEXT"`, `ticket reply -f FILE`'],
+      palette: ['cat TICKET.md', 'cat PLAYBOOK.md', 'grep -o "status=[0-9]*" customer-client.log | sort | uniq -c', 'grep -E "ERROR|window=30d" customer-client.log', 'jq -c \'select(.status >= 400 or .terminal_event_sent == false)\' /var/log/beacon-gw/requests.jsonl', 'jq -c \'select(.request_id == "REQ_ID")\' /var/log/beacon-gw/requests.jsonl', 'account show', 'repro --help', 'ticket reply -f reply.txt'],
+      assumptions: ['The gateway log is complete for org_kestrel in the window.', 'The mock endpoint behaves like production for status codes, headers, quotas, entitlements and durations; it never accepts production keys.', 'Replies go to the customer; anything you put in one has left the building.'],
+      simplified: ['The API, its quota (tokens reserved from max_tokens per minute), its entitlements and its stream behaviour are a small deterministic model; durations depend only on the requested window.', 'jq is a bounded subset (see grammar); the review of a reply is a rubric that checks for request ids, category, cause, next step, credentials and unbounded-retry advice — a support lead would read for tone and accuracy too.', 'repro is a stand-in for the small Python reproduction the local lab L30 has you write; the mock never calls production.', 'Each command advances the clock 10 seconds.'],
+      unsafe: [
+        { label: 'exposed the customer\'s API key', why: 'The customer pasted a live credential into their log. Copying it into a reproduction (shell history, transcripts) or a reply spreads a secret that must instead be reported for rotation; reproductions use the sandbox org.',
+          test: function (c) { return !!st(c).leaked; },
+          demo: 'repro --key ' + CUST_KEY },
+        { label: 'advised unbounded retries', why: 'Retrying "until it works" turns a quota or an outage into a retry storm and keeps the customer rate-limited; advice must be bounded, honour Retry-After, and back off.',
+          test: function (c) { return st(c).replies.some(function (r) { return r.review.unbounded; }); },
+          demo: 'ticket reply "Hi Dana, these are transient. Please just retry failed requests until they succeed."' }
+      ],
+      alt: function (v) {
+        if (v === 'a') return ['cat TICKET.md', 'grep -o "status=[0-9]*" customer-client.log | sort | uniq -c', 'grep ReadTimeout customer-client.log',
+          'jq -c \'select(.status == 429) | {ts, request_id, retry_after, ratelimit_remaining_tokens}\' /var/log/beacon-gw/requests.jsonl',
+          'jq -c \'select(.status == 499) | [.ts, .request_id, .window, .latency_ms]\' /var/log/beacon-gw/requests.jsonl', 'account limits',
+          'repro --burst 8 --max-tokens 6000', 'repro --burst 4 --max-tokens 6000', 'repro --window 30d --timeout 30', 'repro --window 30d --stream',
+          function (c) { return s30Reply(c).replace('honour Retry-After with capped exponential backoff and jitter (at most 4 attempts) and lower concurrency or max_tokens', 'cap concurrency at 4 workers or lower max_tokens so a minute stays under quota, and back off for Retry-After seconds (at most 3 retries)'); }];
+        if (v === 'b') return ['cat TICKET.md', 'grep status=401 customer-client.log', 'grep stream=true customer-client.log',
+          'jq -c \'select(.status == 401) | {ts, request_id, key_id, client}\' /var/log/beacon-gw/requests.jsonl',
+          'jq -c \'select(.stream == true) | [.request_id, .window, .latency_ms, .terminal_event_sent, .close_reason]\' /var/log/beacon-gw/requests.jsonl', 'account keys',
+          'repro --stream --window 30d --via-proxy 60', 'repro --stream --window 30d --via-proxy 120', 'repro --key rotated', 'repro', function (c) { return s30Reply(c); }];
+        return ['cat TICKET.md', 'grep -E "status=403|ReadTimeout" customer-client.log', 'jq -c \'select(.path == "/v1/forecast")\' /var/log/beacon-gw/requests.jsonl',
+          'jq -c \'select(.status == 499)\' /var/log/beacon-gw/requests.jsonl', 'account entitlements',
+          'repro --endpoint /v1/forecast --plan standard', 'repro --endpoint /v1/forecast --plan enterprise', 'repro --window 30d --timeout 30', 'repro --window 30d --stream --timeout 30', function (c) { return s30Reply(c); }];
+      },
+      mechanism: 'Nothing was random: two independent conditions were interleaved in one log. (a) **429**: eight workers start at the top of each minute and each reserves max_tokens 6000 against a 40000 tokens-per-minute quota, so the 7th and 8th are rejected with Retry-After; the client then retries immediately, which can only fail again. **Timeouts**: 30-day summaries take ~75 s server-side, the client\'s read timeout is 30 s, so the client gives up before headers arrive — it has no request id, and our gateway logs a 499 at 30 s. (b) **401**: one of three hosts still sends key_k3f9, revoked in yesterday\'s rotation, so a third of requests fail. **Stream interruption**: long streams through the customer\'s egress proxy are closed at exactly 60 s, before the terminal `event: done`; the client treats a closed connection as a complete summary. (c) **403**: the new forecast feature calls an endpoint the standard plan is not entitled to, plus the same timeout pattern. A good support response correlates each class by request id (or time), proves it with a minimal reproduction that changes one variable, and tells the customer the cause and the exact next step — without echoing their credential or advising unbounded retries.',
+      alternatives: [
+        { h: 'Our API is degraded', out: 'Ruled out: the gateway shows fast, well-formed 4xx responses with specific error types, and the mock reproduces each one deterministically.' },
+        { h: 'A network problem between us', out: 'Ruled out for most classes: the requests arrive and are answered. The interrupted streams are a network element on their side, shown by the exact 60 s cut and a direct stream completing.' },
+        { h: 'Tell them to retry more', out: 'Rejected: retries cannot fix a revoked key, a missing entitlement or a too-short timeout, and unbounded retries make 429s worse.' }
+      ],
+      clues: ['Timeouts have no request id on the client side; correlate them by timestamp and the 499s in the gateway log.', 'A failure confined to one host or one endpoint is a strong hint that it is not random.'],
+      passRubric: ['Separates the failures into distinct classes with counts', 'Correlates each class to gateway evidence by request id (or time)', 'Reproduces each class minimally and shows the one-variable fix', 'Reply gives request ids, category, cause and next step per class, bounded retry advice, and no secrets'],
+      prereqs: ['les-m15-04', 'les-m04-05'], refs: ['T11', 'J10']
+    }
+  });
 })();

@@ -58,6 +58,9 @@ else:
     src = src[:start] + block + src[end:]
 open(path, "w", encoding="utf-8").write(src)
 PY
+# run the consumers as you, so they can read your 0600 secret files; written
+# as numbers so a plain `docker compose up` needs no extra environment
+sed -i.tmp "s/\${LOOPED_UID:-65534}:\${LOOPED_GID:-65534}/$LOOPED_UID:$LOOPED_GID/" "$WORK/compose.yaml" && rm -f "$WORK/compose.yaml.tmp"
 rm -f "$WORK/.env" "$WORK/secrets/exporter-db.txt"
 if [ "$V" = variant-a ]; then
   cp "$WORK/secrets/db.txt" "$WORK/secrets/exporter-db.txt"

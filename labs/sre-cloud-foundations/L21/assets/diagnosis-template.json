@@ -1,0 +1,6 @@
+{
+  "latency_source": "WRITE: dependency or local-cpu",
+  "trace_id": "WRITE: the 32-hex trace id of one slow /sensors request you inspected in Jaeger",
+  "promql": ["WRITE: the PromQL queries that separated the two hypotheses"],
+  "evidence": "WRITE: what the trace, the metrics and the logs showed, in two or three sentences"
+}

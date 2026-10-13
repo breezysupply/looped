@@ -1,0 +1,62 @@
+# L21 — Beacon (lab copy in work/app) instrumented for metrics, logs and traces.
+# Compose project: looped-l21 (scripts pass -p looped-l21). Needs the
+# observability profile (network looped-obs-net, collector looped-obs-otelcol).
+# Ports bind to 127.0.0.1 only.
+name: looped-l21
+
+x-py: &py
+  image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+  user: "${LOOPED_UID:-65534}:${LOOPED_GID:-65534}"
+  read_only: true
+  working_dir: /lab
+  networks: [obs]
+  labels:
+    looped.lab/id: L21
+
+networks:
+  obs:
+    name: looped-obs-net
+    external: true
+
+services:
+  api:
+    <<: *py
+    container_name: looped-l21-api
+    command: ["python3", "-u", "-m", "app.api"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      OTEL_SERVICE_NAME: beacon-l21-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://looped-obs-otelcol:4318
+    volumes:
+      - ../work/app:/lab/app:ro
+      - ../work/config:/lab/config:ro
+      - ../work/queue:/queue
+    ports:
+      - "127.0.0.1:18521:8080"
+
+  worker:
+    <<: *py
+    container_name: looped-l21-worker
+    command: ["python3", "-u", "-m", "app.worker"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      OTEL_SERVICE_NAME: beacon-l21-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://looped-obs-otelcol:4318
+    volumes:
+      - ../work/app:/lab/app:ro
+      - ../work/queue:/queue
+    ports:
+      - "127.0.0.1:18523:9101"
+
+  registry:
+    <<: *py
+    container_name: looped-l21-registry
+    command: ["python3", "-u", "/lab/fixtures/registry.py"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://looped-obs-otelcol:4318
+    volumes:
+      - ./fixtures:/lab/fixtures:ro
+      - ../work/fixture:/lab/fixture:ro
+    ports:
+      - "127.0.0.1:18522:8081"

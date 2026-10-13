@@ -12,6 +12,7 @@ L20_LOCAL="looped-l20-beacon"
 WORK="$HERE/work"
 
 l20_registry_up() {
+  require_compose_project "$L20_PROJECT"
   if [ "$(docker inspect -f '{{.State.Running}}' "$L20_REGISTRY_NAME" 2>/dev/null)" = true ]; then return 0; fi
   if docker inspect "$L20_REGISTRY_NAME" >/dev/null 2>&1; then
     docker start "$L20_REGISTRY_NAME" >/dev/null
