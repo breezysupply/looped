@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L17 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L17",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-01-25T17:00:00Z",
+  "completedAt": "2027-02-03T19:12:40Z",
+  "environment": { "profile": "kind-basic", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "kubectl": "v1.33.1", "kind": "kind v0.29.0", "injected": ["variant-a", "variant-b", "variant-c"] },
+  "checks": [
+    { "id": "cluster", "passed": true, "observed": "https://127.0.0.1:50211" },
+    { "id": "faults-exercised", "passed": true, "observed": "injected=['variant-a', 'variant-b', 'variant-c'] required=['variant-a', 'variant-b', 'variant-c']" },
+    { "id": "workloads-ready", "passed": true, "observed": "beacon-api 3/3 ready (3 updated); beacon-report 1/1; beacon-db 1/1" },
+    { "id": "no-pending", "passed": true, "observed": "5 L17 pods, 0 Pending" },
+    { "id": "requests-bounded", "passed": true, "observed": "3 containers: requests and memory limits set and bounded" },
+    { "id": "report-memory", "passed": true, "observed": "pod beacon-report-5c9d7b8f4-q8w2n restarts 0→0 lastState OOMKilled=False working set 110Mi; limit 160Mi request 128Mi; REPORT_WORKING_SET_MB=96" },
+    { "id": "storage", "passed": true, "observed": "data-beacon-db-0 phase=Bound class=standard volume=pvc-3f1c…; not bound: none" },
+    { "id": "dataset", "passed": true, "observed": "checksum 480:2ef6f6aa0300b7c08c7026ffb8ace7e8 (expected 480:2ef6f6aa0300b7c08c7026ffb8ace7e8)" },
+    { "id": "pdb", "passed": true, "observed": "spec={'minAvailable': 2} status desiredHealthy=2 currentHealthy=3 disruptionsAllowed=1 expectedPods=3" },
+    { "id": "drain-drill", "passed": true, "observed": "2 attempt(s); blocked by budget first=True; completed afterwards=['looped-foundations-worker2']; cordoned now=none" },
+    { "id": "notes", "passed": false, "observed": "sections={'Pending': True, 'OOM': True, 'Storage': True, 'Drain': False} words=212" }
+  ],
+  "explanation": "Pending: a 64-CPU request fit no node. OOM: 64Mi limit under a ~110 MiB working set. Storage: missing class; rebuilt the StatefulSet on standard and restored the dataset (checksum matches). Drain: scaled the API to 3 so the budget allows one eviction.",
+  "cleanupStatus": "pending"
+}

@@ -1,0 +1,47 @@
+# `helm test beacon -n beacon --logs`: GET /ready and /version through the Service and check
+# that the serving build matches what this release declares.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "beacon.fullname" . }}-smoke
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "beacon.labels" . | nindent 4 }}
+    looped.lab/role: helm-test
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: smoke
+      image: {{ include "beacon.image" . | quote }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command:
+        - python3
+        - -c
+        - |
+          import json, sys, urllib.request
+          base = "http://{{ include "beacon.fullname" . }}:{{ .Values.service.port }}"
+          ready = urllib.request.urlopen(base + "/ready", timeout=5).status
+          ver = json.loads(urllib.request.urlopen(base + "/version", timeout=5).read())
+          print("ready", ready, "version", ver)
+          ok = ready == 200 and ver.get("environment") == "{{ .Values.config.environment }}"
+          {{- if not .Values.image.digest }}
+          ok = ok and ver.get("version") == "{{ .Values.image.tag }}"
+          {{- end }}
+          sys.exit(0 if ok else 1)
+      resources:
+        requests: {cpu: 10m, memory: 32Mi}
+        limits: {memory: 64Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]

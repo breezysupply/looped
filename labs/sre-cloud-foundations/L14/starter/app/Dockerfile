@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Beacon image for L14 (the L13 image, solved). Build context: work/app/,
 # which holds beacon/ (the package), conf/, wheels/, requirements.lock and this file.
 #

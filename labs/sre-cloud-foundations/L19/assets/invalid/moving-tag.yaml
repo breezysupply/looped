@@ -1,0 +1,5 @@
+# must be refused: "1.5" is a moving minor-version tag, not a pinned release
+image:
+  repository: looped-l19-beacon
+  tag: "1.5"
+  pullPolicy: IfNotPresent

@@ -1,0 +1,4 @@
+# must be refused: admin endpoints are never enabled in prod
+config:
+  environment: prod
+  adminEnabled: true

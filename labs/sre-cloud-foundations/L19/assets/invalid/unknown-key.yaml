@@ -1,0 +1,2 @@
+# must be refused: a typo ("replicas" instead of "replicaCount") would otherwise be ignored silently
+replicas: 3

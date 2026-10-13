@@ -1,0 +1,66 @@
+# L24 — Beacon's PostgreSQL (source), a disposable restore target, and the
+# queue worker. Compose project: looped-l24 (scripts always pass -p looped-l24).
+# Ports bind to 127.0.0.1 only. Passwords are lab placeholders, not secrets.
+name: looped-l24
+
+x-pg: &pg
+  image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+  environment:
+    POSTGRES_USER: beacon
+    POSTGRES_PASSWORD: lab-l24-db-not-a-real-secret
+    POSTGRES_DB: beacon
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U beacon -d beacon -h 127.0.0.1"]
+    interval: 2s
+    timeout: 3s
+    retries: 30
+  labels:
+    looped.lab/id: L24
+
+services:
+  db:
+    <<: *pg
+    container_name: looped-l24-db
+    ports:
+      - "127.0.0.1:15424:5432"
+    volumes:
+      - looped-l24-data:/var/lib/postgresql/data
+
+  # A FRESH, disposable restore target: its data directory is a tmpfs, so
+  # `rm -sf restore` + `up -d restore` always gives you an empty server.
+  restore:
+    <<: *pg
+    container_name: looped-l24-restore
+    profiles: ["restore"]
+    ports:
+      - "127.0.0.1:15425:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  # The queue worker: work/worker.py (your copy) on a pinned Python image.
+  # It exits on a fixture-controlled crash; Docker restarts it.
+  worker:
+    image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+    container_name: looped-l24-worker
+    user: "${LOOPED_UID:-65534}:${LOOPED_GID:-65534}"
+    read_only: true
+    restart: on-failure
+    command: ["python3", "-u", "/work/worker.py"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONPATH: /lab/assets
+      L24_DSN: postgresql://beacon:lab-l24-db-not-a-real-secret@db:5432/beacon?sslmode=disable
+    volumes:
+      - .:/lab/assets:ro
+      - ../work/worker.py:/work/worker.py:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      looped.lab/id: L24
+
+volumes:
+  looped-l24-data:
+    name: looped-l24-data
+    labels:
+      looped.lab/id: L24

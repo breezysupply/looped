@@ -1,0 +1,19 @@
+# kind cluster for the NetworkPolicy lab (L18): profile kind-policy.
+# kind v0.29.0; node image pinned by tag AND digest (multi-arch index: linux/arm64 + linux/amd64).
+#
+# disableDefaultCNI: kind's own CNI (kindnet) is NOT installed. Recent kindnet releases have some
+# NetworkPolicy support, but the course does not rely on it: this profile installs Calico from a
+# pinned, checksum-verified manifest (see README.md) and L18 proves enforcement with negative
+# connectivity tests. podSubnet matches Calico's default IPv4 pool (192.168.0.0/16).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: looped-policy
+networking:
+  disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16
+  serviceSubnet: 10.96.0.0/16
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+  - role: worker
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f

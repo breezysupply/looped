@@ -1,0 +1,30 @@
+{
+  "note": "EXAMPLE of the evidence schema for L14 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L14",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-11-09T19:12:03Z",
+  "completedAt": "2026-11-09T19:13:01Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.9.6", "docker": "Docker version 27.3.1", "project": "looped-l14", "compose": "2.29.7", "variant_file": "variant-b", "db_image": "postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412" },
+  "checks": [
+    { "id": "compose-config", "passed": true, "observed": "services: api, db, worker" },
+    { "id": "images-pinned", "passed": true, "observed": "db=postgres:16.4@sha256:e62fbf9d…" },
+    { "id": "readiness-gated", "passed": true, "observed": "db healthcheck=yes: pg_isready -h 127.0.0.1 -U beacon -d beacon; api depends_on db condition=service_healthy" },
+    { "id": "services-running", "passed": true, "observed": "api=running; worker=running; db=running" },
+    { "id": "db-healthy", "passed": true, "observed": "db health=healthy" },
+    { "id": "store-host-resolves", "passed": true, "observed": "db -> 172.19.0.2" },
+    { "id": "api-ready", "passed": true, "observed": "GET /ready -> 200 {\"ready\": true, \"store\": \"postgres\", \"queue\": \"dir\"}" },
+    { "id": "worker-consumes", "passed": true, "observed": "POST /jobs -> 202; worker recorded the effect" },
+    { "id": "data-on-named-volume", "passed": true, "observed": "PGDATA=/var/lib/postgresql/data; mounts: volume:looped-l14_pgdata->/var/lib/postgresql/data" },
+    { "id": "record-survives", "passed": true, "observed": "wrote l14-validate-1794251523; db container 9c1d… -> 41a7…; after replacement GET /status/… -> 200 with 1 record(s)" },
+    { "id": "graceful-stop", "passed": true, "observed": "api: PID 1 'python3 -m beacon api', stop took 0.5s, exit code 0 | worker: … stop took 1.4s, exit code 0" },
+    { "id": "no-secret-in-logs", "passed": true, "observed": "116 log lines scanned; no password or secret-shaped value" },
+    { "id": "fixture-kept", "passed": true, "observed": "late-start fixture still in db entrypoint" }
+  ],
+  "explanation": "api exited after its bounded retry (~37 s) while db became ready at ~45 s; db had no health check and api waited only for service_started. Restored the pg_isready health check over TCP and condition: service_healthy; up --wait took 50 s and all services became healthy.",
+  "cleanupStatus": "reported"
+}

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: beacon
+  labels:
+    looped.lab/profile: kind-basic
+    # Pod Security admission: Beacon runs as UID 10001 with no privileges, so
+    # the restricted profile is enforced, not merely warned about.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.33

@@ -1,0 +1,14 @@
+# Beacon defaults baked into the kind-basic image. Kubernetes manifests
+# override values with BEACON_<SECTION>_<KEY> environment variables taken from
+# ConfigMaps and Secrets (L16).
+server:
+  listen: 0.0.0.0
+  port: 8080
+app:
+  version: "1.4.0"
+  environment: kind-lab
+  admin_enabled: false
+store:
+  kind: memory
+queue:
+  kind: none

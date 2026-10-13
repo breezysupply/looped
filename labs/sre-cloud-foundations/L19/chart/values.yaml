@@ -1,0 +1,60 @@
+# Beacon chart defaults (= dev). Environment files (values-staging.yaml, values-prod.yaml)
+# override only what differs. values.schema.json rejects wrong types, unknown keys, moving
+# tags and unit-less memory before anything reaches the cluster.
+replicaCount: 1
+
+image:
+  # built and loaded into kind by L19/setup.sh; a real registry would be e.g. registry.lab/beacon
+  repository: looped-l19-beacon
+  # pinned release; the schema refuses anything but MAJOR.MINOR.PATCH
+  tag: "1.4.0"
+  # optional immutable reference; when set it wins over tag (sha256:<64 hex>)
+  digest: ""
+  pullPolicy: IfNotPresent
+
+# added to every object so lab scripts can scope cleanup to this lab
+commonLabels:
+  looped.lab/id: L19
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  environment: dev
+  adminEnabled: false
+  inject:
+    delayMs: 0
+    failRate: 0
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+probes:
+  startup:
+    path: /healthz
+    periodSeconds: 2
+    failureThreshold: 30
+  readiness:
+    path: /ready
+    periodSeconds: 5
+    failureThreshold: 3
+  liveness:
+    path: /healthz
+    periodSeconds: 10
+    failureThreshold: 3
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+rollout:
+  maxUnavailable: 0
+  maxSurge: 1
+
+nodeSelector: {}
+tolerations: []

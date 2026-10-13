@@ -147,7 +147,10 @@ def main() -> int:
     code, out, err = dc(["run", "--rm", "--no-deps", "-T", "--label", f"{LABEL}=L14", "--entrypoint", "python3", "api", "-c", probe], timeout=90)
     r.check("store-host-resolves", code == 0, (out.strip() or err.strip())[-200:])
 
-    ok, last = api_ready(150 if variant == "variant-b" else 90)
+    if states["api"].get("Running"):
+        ok, last = api_ready(150 if variant == "variant-b" else 90)
+    else:
+        ok, last = False, {"code": 0, "body": "api container is not running (" + str(states["api"].get("Status", "missing")) + ")"}
     store_pg = '"store": "postgres"' in last["body"]
     r.check("api-ready", ok and store_pg, f"GET /ready -> {last['code'] or 'no answer'} {last['body'][:120]}")
 

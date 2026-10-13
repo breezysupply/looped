@@ -1,0 +1,79 @@
+# beacon-report: a small batch-report service that keeps a fixed in-memory cache
+# (REPORT_WORKING_SET_MB). Its memory need is a property of the workload, not a tuning knob.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beacon-report-script
+  namespace: beacon
+  labels: {app: beacon-report, looped.lab/id: L17}
+data:
+  report.py: |
+    import os
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    mb = int(os.environ.get("REPORT_WORKING_SET_MB", "96"))
+    print("beacon-report: warming %d MiB report cache" % mb, flush=True)
+    cache = bytearray(mb * 1024 * 1024)
+    for i in range(0, len(cache), 4096):  # touch every page so it is really resident
+        cache[i] = 1
+    print("beacon-report: cache warm (%d MiB); serving /healthz on :8081" % mb, flush=True)
+
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = ("ok cache_mib=%d\n" % (len(cache) // 1048576)).encode()
+            self.send_response(200 if self.path == "/healthz" else 404)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+
+    HTTPServer(("0.0.0.0", 8081), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beacon-report
+  namespace: beacon
+  labels: {app: beacon-report, looped.lab/id: L17}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: beacon-report}
+  template:
+    metadata:
+      labels: {app: beacon-report, looped.lab/id: L17}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: report
+          image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+          command: ["python3", "-u", "/opt/report/report.py"]
+          env:
+            - {name: REPORT_WORKING_SET_MB, value: "96"}
+            - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          ports:
+            - {name: http, containerPort: 8081}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 160Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: script, mountPath: /opt/report, readOnly: true}
+      volumes:
+        - name: script
+          configMap: {name: beacon-report-script}

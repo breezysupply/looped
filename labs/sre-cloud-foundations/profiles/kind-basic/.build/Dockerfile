@@ -1,13 +1,13 @@
-# syntax=docker/dockerfile:1
-# Beacon image for L14 (the L13 image, solved). Build context: work/app/,
-# which holds beacon/ (the package), conf/, wheels/, requirements.lock and this file.
+# Beacon image for the kind-basic profile (the solved L13 image).
+# build-image.sh assembles the context in .build/: beacon/ (the package),
+# conf/, wheels/, requirements.lock and this file.
 #
 # Base pinned by version AND by the multi-platform index digest resolved for
 # this course (linux/amd64 + linux/arm64/v8 both in the index):
 #   docker buildx imagetools inspect python:3.12.7-slim-bookworm
 FROM python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
 
-LABEL looped.lab/id="L14" \
+LABEL looped.lab/id="kind-basic" \
       org.opencontainers.image.title="beacon" \
       org.opencontainers.image.version="1.4.0"
 

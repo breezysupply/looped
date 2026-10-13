@@ -1,0 +1,23 @@
+# kind cluster for the core Kubernetes labs (L15, L16 and later kind-basic labs).
+# Tested with kind v0.29.0, whose release notes pair Kubernetes v1.33.1 with
+# the node image below; the digest is the multi-platform index (linux/amd64 and
+# linux/arm64), the same digest kind v0.29.0 itself defaults to.
+#   kind create cluster --config kind-config.yaml      (setup.sh does this)
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: looped-foundations
+networking:
+  apiServerAddress: "127.0.0.1"   # the API server is reachable from this Mac only
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+    labels:
+      looped.lab/profile: kind-basic
+  - role: worker
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+    labels:
+      looped.lab/profile: kind-basic
+  - role: worker
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+    labels:
+      looped.lab/profile: kind-basic

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Beacon image for L13. Build context: this directory (work/ after setup.sh),
 # which holds beacon/ (the package), conf/, requirements.lock and this file.
 #

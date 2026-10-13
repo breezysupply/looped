@@ -1,0 +1,34 @@
+# Least privilege for the deploy bot (ServiceAccount beacon-deployer), namespace beacon only.
+# It must: read beacon-api's Deployment, patch it (new image / annotations), watch the rollout,
+# list pods and read their logs. Nothing else: no delete, no Secrets, no exec, no RBAC changes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: beacon-deployer, namespace: beacon, labels: {looped.lab/id: L18}}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: beacon-deployer, namespace: beacon, labels: {looped.lab/id: L18}}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: beacon-deployer
+subjects:
+  - kind: ServiceAccount
+    name: beacon-deployer
+    namespace: beacon

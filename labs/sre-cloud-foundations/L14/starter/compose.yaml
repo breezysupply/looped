@@ -48,6 +48,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+        # Beacon does not re-open a dropped database connection (its /ready
+        # turns 503 and stays there), so when Compose restarts or recreates db
+        # it must restart api too.
+        restart: true
     ports:
       - "127.0.0.1:18014:8080"
     volumes:

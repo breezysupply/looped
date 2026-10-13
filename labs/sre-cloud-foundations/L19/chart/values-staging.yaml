@@ -1,0 +1,4 @@
+# staging: two replicas so a rolling update never drops to zero ready pods
+replicaCount: 2
+config:
+  environment: staging
