@@ -1093,7 +1093,7 @@
      maps, block lists, scalars and quoted strings. It says so when it meets
      anything else rather than guessing. */
   function parseYaml(text) {
-    var lines = String(text).split('\n').map(function (l) { return l.replace(/\s+#.*$/, '').replace(/\s+$/, ''); })
+    var lines = String(text).split('\n').map(function (l) { return /^\s*#/.test(l) ? '' : l.replace(/\s+#.*$/, '').replace(/\s+$/, ''); })
       .filter(function (l) { return l.trim() && l.trim() !== '---'; });
     var i = 0;
     function indentOf(l) { return l.match(/^ */)[0].length; }

@@ -51,7 +51,7 @@ function play(m, seed) {
 /* deterministic snapshot of a world: files, dirs, and the scenario state */
 function snap(w) {
   const seen = new WeakSet();
-  return JSON.stringify({ fs: w.fs || w.root || null, files: w.files, sre: w.sre, units: w.units, procs: w.procs, k8s: w.k8sModel && w.k8sModel.state }, (k, v) => {
+  return JSON.stringify({ fs: w.fs || w.root || null, files: w.files, sre: w.sre, units: w.units, procs: w.procs, k8s: w.k8sModel || null }, (k, v) => {
     if (typeof v === 'function') return undefined;
     if (v && typeof v === 'object') { if (seen.has(v)) return '[cycle]'; seen.add(v); }
     return v;

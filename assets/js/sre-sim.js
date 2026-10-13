@@ -595,7 +595,9 @@
         if (!staged2.length && !st.git.merging) return err('nothing to commit, working tree clean');
         staged2.forEach(function (p2) { st.git.files[p2] = st.git.stagedContent[p2]; });
         var sha = fnv(msg + st.clock).toString(16) + fnv('x' + msg).toString(16);
-        st.git.log.unshift({ sha: (sha + '0000000000000000').slice(0, 40), msg: msg, files: staged2.slice() });
+        while (sha.length < 40) sha += fnv(sha).toString(16);   /* full-length, deterministic */
+        sha = sha.slice(0, 40);
+        st.git.log.unshift({ sha: sha, msg: msg, files: staged2.slice() });
         st.git.staged = []; st.git.stagedContent = {};
         if (st.git.merging) { st.git.log[0].merge = st.git.merging; st.git.merging = null; st.git.conflicts = []; }
         st.git.ahead = (st.git.ahead || 0) + 1;
@@ -618,7 +620,7 @@
         if (a[1] && a[1] !== 'HEAD' && target.sha.indexOf(a[1]) !== 0) { target = st.git.log.filter(function (c) { return c.sha.indexOf(a[1]) === 0; })[0]; }
         if (!target || !target.before) return err('error: this simulation can only revert commits whose parent content it holds (HEAD' + (target && !target.before ? ', which has no recorded parent content' : '') + ')');
         Object.keys(target.before).forEach(function (p3) { st.git.files[p3] = target.before[p3]; writeFile(w, p3, target.before[p3]); });
-        st.git.log.unshift({ sha: (fnv('revert' + target.sha).toString(16) + '0000000000000000000000000000').slice(0, 40), msg: 'Revert "' + target.msg + '"', reverts: target.sha });
+        st.git.log.unshift({ sha: (function (x) { while (x.length < 40) x += fnv(x).toString(16); return x.slice(0, 40); })(fnv('revert' + target.sha).toString(16)), msg: 'Revert "' + target.msg + '"', reverts: target.sha });
         st.git.ahead = (st.git.ahead || 0) + 1;
         return ok('[' + st.git.branch + ' ' + st.git.log[0].sha.slice(0, 7) + '] Revert "' + target.msg + '"');
       }
