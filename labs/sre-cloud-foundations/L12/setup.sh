@@ -6,7 +6,9 @@
 # work/envs/<env>/. Idempotent: an existing work/ is reused.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L12_PROJECT"
 l12_guard
 
 if [ -d "$WORK" ]; then

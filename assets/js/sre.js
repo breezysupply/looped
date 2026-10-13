@@ -680,7 +680,8 @@
     var missing = required.filter(function (id) { return !byId_[id]; });
     var failedCritical = L.validation.filter(function (v) { return v.critical && byId_[v.id] && !byId_[v.id].passed; }).map(function (v) { return v.id; });
     var failedAny = p.checks.filter(function (c) { return !c.passed; }).map(function (c) { return c.id; });
-    var outcome = missing.length || failedAny.length ? 'failed' : 'passed';
+    /* required = critical checks; an advisory check that failed is kept in the record but does not fail the lab */
+    var outcome = missing.length || failedCritical.length ? 'failed' : 'passed';
     var a = addAttempt({
       activityId: L.id, moduleId: L.moduleId, kind: 'lab', contentVersion: p.contentVersion, seed: p.seed || null,
       mode: p.executionMode, assistance: p.assistance, startedAt: p.startedAt || now(), completedAt: p.completedAt || now(),

@@ -6,7 +6,9 @@
 # Writes work/TICKET.md (what the learner is told) and work/.l12-inject.json.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L12_PROJECT"
 l12_guard
 DEV="$WORK/envs/dev"
 [ -f "$DEV/terraform.tfstate" ] || die "no dev state; run setup.sh first"

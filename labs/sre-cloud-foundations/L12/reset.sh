@@ -4,7 +4,9 @@
 # the same variant (or LOOPED_VARIANT).
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L12_PROJECT"
 l12_guard
 PREV="$HERE/.work-previous"
 V="$(cat "$WORK/.variant" 2>/dev/null || echo variant-a)"

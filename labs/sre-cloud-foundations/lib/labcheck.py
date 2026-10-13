@@ -96,7 +96,9 @@ class Report:
         return env
 
     def passed(self) -> bool:
-        return all(c["passed"] for c in self.checks if c["critical"]) and all(c["passed"] for c in self.checks)
+        # the lab passes on its required (critical) checks; advisory checks are
+        # reported and kept in the evidence but do not fail the run
+        return bool(self.checks) and all(c["passed"] for c in self.checks if c["critical"])
 
     def required_passed(self) -> bool:
         return all(c["passed"] for c in self.checks if c["critical"])
