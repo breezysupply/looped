@@ -1770,6 +1770,9 @@
                 return api;
               },
               registered: function (name) { return Object.prototype.hasOwnProperty.call(CMD, name); },
+              /* the built-in/registered implementation, for a world verb that wraps it
+                 (e.g. a scenario's kubectl that adds NetworkPolicy and delegates the rest) */
+              builtin: function (name) { return Object.prototype.hasOwnProperty.call(CMD, name) ? CMD[name] : null; },
               /* what a registered command needs to look native */
               util: { ok: ok, err: err, flags: flags, pad: pad, lines: lines,
                       basename: basename, dirname: dirname, mountOf: mountOf,

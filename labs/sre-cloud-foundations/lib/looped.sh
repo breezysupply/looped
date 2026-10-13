@@ -96,3 +96,27 @@ confirm() {
   read -r ans
   case "$ans" in y|Y|yes) return 0 ;; *) die "cancelled" ;; esac
 }
+
+# ── workstation guard (fixture/design labs that only read and write files) ──
+# require_workstation <tool>...   — the named tools exist; nothing outside the
+# lab directory will be touched. Used by labs whose "environment" is a set of
+# fixtures (IAM cases, architecture inventories, SLO data, API fixtures).
+require_workstation() {
+  local t
+  for t in "$@"; do command -v "$t" >/dev/null 2>&1 || die "$t not found (see docs/sre-cloud-foundations/setup.md)"; done
+  return 0
+}
+
+# ── Terraform working-directory guard ───────────────────────────────────
+# require_terraform_dir <dir> — the directory belongs to a lab (…/LNN/…),
+# uses only a local backend, and its state file (if any) lives inside it.
+# Labs never point Terraform at a cloud backend or a shared state.
+require_terraform_dir() {
+  local d="$1"
+  command -v terraform >/dev/null 2>&1 || die "terraform not found (see docs/sre-cloud-foundations/setup.md)"
+  [ -d "$d" ] || die "terraform dir $d missing"
+  case "$(cd "$d" && pwd)" in "$SRE_ROOT"/L[0-9][0-9]/*|"$SRE_ROOT"/L[0-9][0-9]) ;; *) die "terraform dir $d is not inside a lab directory; refusing" ;; esac
+  if grep -RqsE 'backend[[:space:]]+"(s3|azurerm|gcs|remote|http|consul|pg|kubernetes)"|^[[:space:]]*cloud[[:space:]]*\{' "$d"/*.tf 2>/dev/null; then
+    die "terraform dir $d declares a remote backend or cloud block; lab workspaces use local state only"
+  fi
+}

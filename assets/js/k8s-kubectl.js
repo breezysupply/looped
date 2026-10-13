@@ -938,11 +938,17 @@
       if (spec.replicas != null) { if (spec.replicas === 0) K.risky(m, raw, 'Scaling to zero removes all serving capacity.'); obj.replicas = spec.replicas; }
       if (spec.template) {
         var tp = spec.template;
-        var ch = changeTemplate(m, obj, function (tpl) {
+        var applyTp = function (tpl) {
           if (tp.metadata && tp.metadata.labels) merge(tpl.labels = tpl.labels || {}, tp.metadata.labels, true);
           if (tp.metadata && tp.metadata.annotations) merge(tpl.annotations = tpl.annotations || {}, tp.metadata.annotations, true);
           if (tp.spec) merge(tpl, podSpecIn(tp.spec), strategic);
-        }, raw);
+        };
+        /* validate on a copy first, as the API server would: a merge patch that
+           replaces the containers list can drop a container's image */
+        var trial = K.clone(obj.template); applyTp(trial);
+        var noImage = (trial.containers || []).map(function (c, i) { return c && !c.image ? i : -1; }).filter(function (i) { return i !== -1; });
+        if (!(trial.containers || []).length || noImage.length) return fail('The Deployment "' + obj.name + '" is invalid: spec.template.spec.containers' + (noImage.length ? '[' + noImage[0] + '].image: Required value' : ': Required value'));
+        var ch = changeTemplate(m, obj, applyTp, raw);
         if (!K.matches(obj.selector, obj.template.labels)) {
           return fail('The Deployment "' + obj.name + '" is invalid: spec.template.metadata.labels: Invalid value: ' + JSON.stringify(obj.template.labels) + ': `selector` does not match template `labels`');
         }

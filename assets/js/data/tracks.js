@@ -153,11 +153,16 @@ LX.tracks = [
       'assets/js/data/sre-lessons-3.js', 'assets/js/data/sre-lessons-4.js',
       'assets/js/data/sre-questions-1.js', 'assets/js/data/sre-questions-2.js',
       'assets/js/data/sre-questions-3.js', 'assets/js/data/sre-questions-4.js',
-      'assets/js/data/sre-labs.js', 'assets/js/data/sre-designs.js',
+      'assets/js/data/sre-labs.js', 'assets/js/data/sre-labs-2.js',
+      'assets/js/data/sre-labs-3.js', 'assets/js/data/sre-labs-4.js',
+      'assets/js/data/sre-labs-5.js', 'assets/js/data/sre-labs-6.js',
+      'assets/js/data/sre-labs-7.js', 'assets/js/data/sre-designs.js',
       'assets/js/data/sre-diagnostic.js', 'assets/js/data/sre-reviews.js',
       'assets/js/data/sre-branches.js',
       'assets/js/data/sre-scenarios-1.js', 'assets/js/data/sre-scenarios-2.js',
       'assets/js/data/sre-scenarios-3.js', 'assets/js/data/sre-scenarios-4.js',
+      'assets/js/data/sre-scenarios-5.js', 'assets/js/data/sre-scenarios-6.js',
+      'assets/js/data/sre-scenarios-7.js',
       'assets/js/data/sre-quiz.js'
     ],
     cats: {

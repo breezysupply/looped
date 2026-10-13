@@ -242,6 +242,7 @@ DES.forEach(d => {
   ok(arr(d.rubric, 4) && d.rubric.every(r => str(r.id) && str(r.label)), w + 'rubric dimensions (4+)');
   ok(str(d.reference, 400), w + 'reference discussion (400+ chars)');
   ok(d.timeboxMins >= 30 && d.timeboxMins <= 45, w + 'timebox 30–45 min');
+  ok(arr(d.sourceIds, 1) && d.sourceIds.every(x => srcIds.indexOf(x) !== -1), w + 'sources resolve');
 });
 
 /* ── diagnostic ────────────────────────────────────────────────── */
@@ -280,6 +281,11 @@ CL.forEach(c => {
   ok(c.defaultEnabled === false, w + 'disabled by default');
   ok(!/eks|aks|gke/i.test(c.allowedResources.join(' ')) || c.id === 'C03', w + 'no managed Kubernetes outside C03');
   ok(!/nat gateway/i.test(c.allowedResources.join(' ')), w + 'no NAT gateway in allowed resources');
+  /* every repository path a cloud extension tells the learner to use must exist */
+  (c.commands.concat([c.brief]).join('\n').match(/labs\/sre-cloud-foundations\/[\w./-]+/g) || []).forEach(p => {
+    const clean = p.replace(/[.,;:)]+$/, '');
+    ok(require('fs').existsSync(H.repoFile(clean)), w + 'referenced path exists: ' + clean);
+  });
 });
 ok(SRC.length >= 20 && uniq(srcIds), 'source register (20+)');
 SRC.forEach(s => ok(str(s.title) && /^https:\/\//.test(s.url) && /^\d{4}-\d\d-\d\d$/.test(s.retrieved) && ['verified', 'index-only', 'historical'].indexOf(s.status) !== -1 && str(s.scope), s.id + ': title, url, retrieved date, status, scope'));

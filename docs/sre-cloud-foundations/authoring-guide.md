@@ -27,8 +27,8 @@ locking is deprecated; Kubernetes `apps/v1`; no `:latest` tags; kind with pinned
 | Lesson | `les-mNN-KK` | `assets/js/data/sre-lessons-{1..4}.js` (1: M01–M04, 2: M05–M08, 3: M09–M12, 4: M13–M16) |
 | Question | `q-mNN-bKK` (bank) / `q-mNN-gKK` (gate variant) | `assets/js/data/sre-questions-{1..4}.js` (same split) |
 | Review prompt | `rev-mNN-KK` | pushed onto `LX.sreReviews` from the questions file of that module |
-| Lab spec | `L01`–`L32` | `assets/js/data/sre-labs.js` + `labs/sre-cloud-foundations/LNN/` |
-| Scenario | mission id `sre-sNN`, `sre.scenarioId` `SNN` | `assets/js/data/sre-scenarios-{1..4}.js` |
+| Lab spec | `L01`–`L32` | `assets/js/data/sre-labs.js` (L01–L08), `sre-labs-{2..7}.js` (four labs each: L09–L12 … L29–L32) + `labs/sre-cloud-foundations/LNN/` |
+| Scenario | mission id `sre-sNN`, `sre.scenarioId` `SNN` | `assets/js/data/sre-scenarios-1.js` (S01–S08), `sre-scenarios-{2..7}.js` (four each: S09–S12 … S29–S32) |
 | Design | `D01`–`D06` | `assets/js/data/sre-designs.js` |
 
 Objectives (`obj-mNN-KK`), modules and weeks are fixed in `assets/js/data/sre-modules.js`. Read
@@ -114,3 +114,11 @@ See `S01`–`S08` in `assets/js/data/sre-scenarios-1.js`. World is a function of
 state, never typed strings; `sre.unsafe` lists the documented shortcut(s) with a `test(ctx)`.
 `tests/data/test-sre-scenarios.js` plays each scenario: reveal ladder solves it, an alternative
 path solves it, the unsafe shortcut fails it, verifying first proves nothing, reset is exact.
+
+Each scenario therefore also declares `sre.alt(variant)` — a different valid investigation and
+repair as a list of commands — and every unsafe entry carries `demo` (a command string, a list,
+or `function (ctx, variant)`) that performs the shortcut. Evidence checks use the quote-aware
+helpers `LXSim.ran/saw/lastIs/lastCode`: a command counts only where it starts a list or pipeline
+segment, and output is matched against that command's own output. Scenario-specific verbs live
+inside the scenario file (closures over the world state, bound with `LXSim.bind`); to extend a
+built-in such as `kubectl`, wrap `LXShell.builtin('kubectl')` in a world verb.

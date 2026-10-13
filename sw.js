@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-ac3f3eb3';
+var CACHE = 'looped-912e3a9c';
 var ASSETS = [
   './',
   './index.html',
@@ -104,6 +104,12 @@ var ASSETS = [
   './assets/js/data/sre-questions-3.js',
   './assets/js/data/sre-questions-4.js',
   './assets/js/data/sre-labs.js',
+  './assets/js/data/sre-labs-2.js',
+  './assets/js/data/sre-labs-3.js',
+  './assets/js/data/sre-labs-4.js',
+  './assets/js/data/sre-labs-5.js',
+  './assets/js/data/sre-labs-6.js',
+  './assets/js/data/sre-labs-7.js',
   './assets/js/data/sre-designs.js',
   './assets/js/data/sre-diagnostic.js',
   './assets/js/data/sre-reviews.js',
@@ -112,6 +118,9 @@ var ASSETS = [
   './assets/js/data/sre-scenarios-2.js',
   './assets/js/data/sre-scenarios-3.js',
   './assets/js/data/sre-scenarios-4.js',
+  './assets/js/data/sre-scenarios-5.js',
+  './assets/js/data/sre-scenarios-6.js',
+  './assets/js/data/sre-scenarios-7.js',
   './assets/js/data/sre-quiz.js'
 ];
 

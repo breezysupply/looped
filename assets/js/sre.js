@@ -672,6 +672,8 @@
     else p.checks.forEach(function (c, i) { if (!c || typeof c.id !== 'string' || c.id.length > 60 || typeof c.passed !== 'boolean') errs.push('checks[' + i + '] needs a string id and boolean passed'); if (c && c.observed != null && (typeof c.observed !== 'string' || c.observed.length > 600)) errs.push('checks[' + i + '].observed must be a string under 600 characters'); });
     if (p.environment != null && (typeof p.environment !== 'object' || JSON.stringify(p.environment).length > 2000)) errs.push('environment must be a small object');
     if (/(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|Bearer [A-Za-z0-9._-]{20,})/.test(text)) errs.push('the report appears to contain a credential; sanitise it before importing');
+    /* the evidence-example.json shipped with each lab documents the schema; it is never a result */
+    if (typeof p.note === 'string' && /example|schema/i.test(p.note)) errs.push('this is the lab\'s example file (its note says so), not a report from validate.py; run the validator and import its output');
     if (errs.length) return { ok: false, err: errs.join('; ') };
     var required = L.validation.map(function (v) { return v.id; });
     var byId_ = {}; p.checks.forEach(function (c) { byId_[c.id] = c; });

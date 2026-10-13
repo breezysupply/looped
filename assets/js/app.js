@@ -420,7 +420,10 @@
       /* coming back from a track that displaced this page: return to it */
       setView(state.returnView); state.returnView = null;
     } else if (!viewAllowed(from)) {
-      state.returnView = from;
+      /* leaving one track's home page (Prep, Course) for another track: keep the
+         page that home displaced, rather than remembering the home itself */
+      var fromHome = Object.keys(HOME).some(function (k) { return HOME[k] === from; });
+      if (!fromHome || !state.returnView) state.returnView = fromHome ? null : from;
       setView(HOME[id] && groupOf(from).id === 'learn' ? HOME[id] : visibleViews(groupOf(from))[0].v);
     } else if (HOME[id] && groupOf(from).id === 'learn' && from !== HOME[id]) {
       state.returnView = from;
