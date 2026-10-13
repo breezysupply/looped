@@ -1,0 +1,6 @@
+{
+  "title": "Beacon status (corp.lab edge)",
+  "template": "status.html.j2",
+  "custom_templates": true,
+  "operator_template_dir": "/etc/beacon-report/templates"
+}

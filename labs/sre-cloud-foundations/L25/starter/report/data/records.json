@@ -1,0 +1,7 @@
+[
+  {"sensor_id": "s-101", "status": "ok", "endpoint": "s-101.edge.corp.lab"},
+  {"sensor_id": "s-102", "status": "warn", "endpoint": "S-102.Edge.corp.lab."},
+  {"sensor_id": "s-103", "status": "ok", "endpoint": "bücher-7.edge.corp.lab"},
+  {"sensor_id": "s-104", "status": "ok", "endpoint": "s-104.edge.corp.lab"},
+  {"sensor_id": "s-105", "status": "<script>alert(1)</script>", "endpoint": "s-105.edge.corp.lab"}
+]

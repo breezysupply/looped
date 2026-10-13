@@ -1,0 +1,61 @@
+# Beacon availability and latency SLO rules — draft from the observability guild.
+# SLO: 99.5% of eligible requests over 30 days (error budget 0.005).
+groups:
+  - name: beacon-slo-sli
+    rules:
+      - record: beacon:sli_eligible:rate5m
+        expr: sum(rate(beacon_http_requests_total{job="beacon"}[5m]))
+      - record: beacon:sli_eligible:rate30m
+        expr: sum(rate(beacon_http_requests_total{job="beacon"}[30m]))
+      - record: beacon:sli_eligible:rate1h
+        expr: sum(rate(beacon_http_requests_total{job="beacon"}[1h]))
+      - record: beacon:sli_eligible:rate6h
+        expr: sum(rate(beacon_http_requests_total{job="beacon"}[6h]))
+      - record: beacon:sli_errors:rate5m
+        expr: sum(rate(beacon_http_requests_total{job="beacon", code!~"2.."}[5m]))
+      - record: beacon:sli_errors:rate30m
+        expr: sum(rate(beacon_http_requests_total{job="beacon", code!~"2.."}[30m]))
+      - record: beacon:sli_errors:rate1h
+        expr: sum(rate(beacon_http_requests_total{job="beacon", code!~"2.."}[1h]))
+      - record: beacon:sli_errors:rate6h
+        expr: sum(rate(beacon_http_requests_total{job="beacon", code!~"2.."}[6h]))
+      - record: beacon:sli_error_ratio:rate5m
+        expr: beacon:sli_errors:rate5m / beacon:sli_eligible:rate5m
+      - record: beacon:sli_error_ratio:rate30m
+        expr: beacon:sli_errors:rate30m / beacon:sli_eligible:rate30m
+      - record: beacon:sli_error_ratio:rate1h
+        expr: beacon:sli_errors:rate1h / beacon:sli_eligible:rate1h
+      - record: beacon:sli_error_ratio:rate6h
+        expr: beacon:sli_errors:rate6h / beacon:sli_eligible:rate6h
+      - record: beacon:sli_latency_good_ratio:rate5m
+        expr: |
+          sum(rate(beacon_http_request_duration_seconds_bucket{job="beacon", le="0.3"}[5m]))
+          /
+          sum(rate(beacon_http_request_duration_seconds_count{job="beacon"}[5m]))
+
+  - name: beacon-slo-alerts
+    rules:
+      - alert: BeaconErrorBudgetBurnFast
+        expr: beacon:sli_error_ratio:rate1h > (14.4 * 0.005) and beacon:sli_error_ratio:rate5m > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: beacon-availability
+        annotations:
+          summary: Beacon is burning its 30-day error budget at more than 14.4x
+      - alert: BeaconErrorBudgetBurnSlow
+        expr: beacon:sli_error_ratio:rate6h > (6 * 0.005) and beacon:sli_error_ratio:rate30m > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: beacon-availability
+        annotations:
+          summary: Beacon is burning its 30-day error budget at more than 6x
+      - alert: BeaconSLINoData
+        expr: absent(beacon_http_requests_total{job="beacon"})
+        for: 10m
+        labels:
+          severity: ticket
+          slo: beacon-availability
+        annotations:
+          summary: No Beacon request metrics for 10 minutes; the SLO cannot be evaluated

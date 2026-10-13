@@ -1,0 +1,22 @@
+{
+  "objective": 0.995,
+  "window_days": 30,
+  "availability_sli": {
+    "numerator": "WRITE: which events count as bad (metric, labels)",
+    "denominator": "WRITE: which events are eligible (metric, labels)",
+    "exclusions": ["WRITE: what you exclude and why"]
+  },
+  "latency_sli": {
+    "threshold_s": 0.3,
+    "numerator": "WRITE: which events count as fast enough",
+    "denominator": "WRITE: which events are eligible"
+  },
+  "budget": {
+    "eligible": null,
+    "bad": null,
+    "allowed_bad": null,
+    "consumed_pct": null,
+    "remaining_bad": null
+  },
+  "decision": "WRITE: what this budget state means for the next release and for on-call"
+}

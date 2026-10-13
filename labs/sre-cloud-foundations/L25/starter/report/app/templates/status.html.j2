@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{{ title }}</title></head>
+<body>
+<h1>{{ title }}</h1>
+<p>{{ summary.total }} records from {{ summary.hosts | length }} endpoints (beacon-report {{ version }})</p>
+<ul>{% for status, n in summary.by_status.items() %}<li>{{ status }}: {{ n }}</li>{% endfor %}</ul>
+<table>{% for r in records %}<tr><td>{{ r.sensor_id }}</td><td>{{ r.status }}</td><td>{{ r.endpoint }}</td></tr>{% endfor %}</table>
+</body></html>

@@ -1,0 +1,132 @@
+{
+ "variant-a": {
+  "month": "2026-09",
+  "counts": [
+   {
+    "route": "/status",
+    "code": "201",
+    "n": 9412880
+   },
+   {
+    "route": "/status",
+    "code": "400",
+    "n": 211400
+   },
+   {
+    "route": "/status",
+    "code": "503",
+    "n": 31950
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "200",
+    "n": 6120330
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "404",
+    "n": 98210
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "500",
+    "n": 12040
+   },
+   {
+    "route": "/jobs",
+    "code": "202",
+    "n": 1204500
+   },
+   {
+    "route": "/jobs",
+    "code": "429",
+    "n": 18300
+   },
+   {
+    "route": "/jobs",
+    "code": "503",
+    "n": 3120
+   },
+   {
+    "route": "/healthz",
+    "code": "200",
+    "n": 2592000
+   },
+   {
+    "route": "/healthz",
+    "code": "503",
+    "n": 1200
+   },
+   {
+    "route": "/metrics",
+    "code": "200",
+    "n": 518400
+   }
+  ]
+ },
+ "variant-b": {
+  "month": "2026-08",
+  "counts": [
+   {
+    "route": "/status",
+    "code": "201",
+    "n": 7810450
+   },
+   {
+    "route": "/status",
+    "code": "400",
+    "n": 402100
+   },
+   {
+    "route": "/status",
+    "code": "503",
+    "n": 52410
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "200",
+    "n": 5022700
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "404",
+    "n": 61880
+   },
+   {
+    "route": "/status/{sensor}",
+    "code": "504",
+    "n": 21330
+   },
+   {
+    "route": "/jobs",
+    "code": "202",
+    "n": 990120
+   },
+   {
+    "route": "/jobs",
+    "code": "401",
+    "n": 7020
+   },
+   {
+    "route": "/jobs",
+    "code": "500",
+    "n": 6005
+   },
+   {
+    "route": "/healthz",
+    "code": "200",
+    "n": 2678400
+   },
+   {
+    "route": "/healthz",
+    "code": "503",
+    "n": 9400
+   },
+   {
+    "route": "/metrics",
+    "code": "200",
+    "n": 535680
+   }
+  ]
+ }
+}

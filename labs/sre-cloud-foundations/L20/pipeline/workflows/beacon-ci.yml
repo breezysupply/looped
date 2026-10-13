@@ -1,0 +1,135 @@
+# Beacon delivery workflow (GitHub Actions syntax) — L20 reference.
+#
+# This file lives in the LAB, not in any repository's .github/workflows/, so nothing runs it here.
+# To run it hosted (optional, labelled as such in your evidence), copy it to .github/workflows/
+# of YOUR OWN repository that contains Beacon at its root, create the environments "staging"
+# and "prod" (prod with required reviewers), and the secrets REGISTRY_TOKEN and GITOPS_TOKEN.
+# The local executable equivalent is ../../ci-local.sh: the same stages in the same order with
+# the same gates — test, build, scan, publish (digest captured), promote by digest.
+#
+# Pinning: actions are pinned to release tags here for readability; in your repository pin them
+# to full commit SHAs (resolve with `gh api repos/<owner>/<action>/git/ref/tags/<tag>`). The
+# scanner image is pinned by tag and digest. Nothing uses a moving tag.
+name: beacon-delivery
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: registry.lab
+  IMAGE: registry.lab/beacon
+  TRIVY: ghcr.io/aquasecurity/trivy:0.57.1@sha256:5c59e08f980b5d4d503329773480fcea2c9bdad7e381d846fbf9f2ecb8050f6b
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.3.0
+        with:
+          python-version: "3.12.7"
+      - name: "unit tests (gate: a failure stops every job below)"
+        run: python3 -m unittest discover -s tests -t .
+
+  build:
+    needs: test
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - id: meta
+        name: release metadata
+        run: |
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          r = json.load(open("release.json"))
+          print("version=" + r["version"])
+          print("schema_min=%d" % r["schema"]["min"])
+          print("schema_max=%d" % r["schema"]["max"])
+          PY
+      - uses: docker/setup-buildx-action@v3.7.1
+      - name: "build a multi-arch OCI archive (nothing is pushed yet)"
+        uses: docker/build-push-action@v6.9.0
+        with:
+          context: .
+          platforms: linux/arm64,linux/amd64
+          provenance: true
+          sbom: true
+          outputs: type=oci,dest=beacon-oci.tar
+          build-args: |
+            BEACON_VERSION=${{ steps.meta.outputs.version }}
+            BEACON_COMMIT=${{ github.sha }}
+            SCHEMA_MIN=${{ steps.meta.outputs.schema_min }}
+            SCHEMA_MAX=${{ steps.meta.outputs.schema_max }}
+      - uses: actions/upload-artifact@v4.4.3
+        with:
+          name: beacon-oci
+          path: beacon-oci.tar
+          retention-days: 7
+
+  scan:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4.1.8
+        with:
+          name: beacon-oci
+      - name: "vulnerability scan of the exact archive that will be published (critical fails the gate)"
+        run: docker run --rm -v "$PWD:/in:ro" "$TRIVY" image --input /in/beacon-oci.tar --exit-code 1 --severity CRITICAL
+
+  publish:
+    needs: [build, scan]
+    runs-on: ubuntu-24.04
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@v4.1.8
+        with:
+          name: beacon-oci
+      - id: push
+        name: "push the scanned archive unchanged and capture its digest"
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | skopeo login --username beacon-ci --password-stdin "$REGISTRY"
+          skopeo copy --all --digestfile digest.txt oci-archive:beacon-oci.tar "docker://${IMAGE}:sha-${GITHUB_SHA}"
+          echo "digest=$(cat digest.txt)" >> "$GITHUB_OUTPUT"
+
+  promote-staging:
+    needs: [build, publish]
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          repository: example-org/beacon-gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
+      - name: "promote the DIGEST (never a tag) to staging, after the schema-compatibility gate"
+        run: |
+          python3 tools/promote.py --env staging --check-schema \
+            --image "${IMAGE}@${{ needs.publish.outputs.digest }}" \
+            --version "${{ needs.build.outputs.version }}" --commit "${GITHUB_SHA}"
+          git config user.name beacon-ci && git config user.email ci@corp.lab
+          git commit -am "promote staging: ${{ needs.publish.outputs.digest }}" && git push
+
+  promote-prod:
+    needs: [publish, promote-staging]
+    runs-on: ubuntu-24.04
+    environment: prod          # protected: required reviewers approve before this job starts
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          repository: example-org/beacon-gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
+      - name: "promote the digest staging verified (record, not tag), after the schema gate"
+        run: |
+          python3 tools/promote.py --env prod --from staging --check-schema \
+            --expect-digest "${{ needs.publish.outputs.digest }}"
+          git config user.name beacon-ci && git config user.email ci@corp.lab
+          git commit -am "promote prod: ${{ needs.publish.outputs.digest }}" && git push

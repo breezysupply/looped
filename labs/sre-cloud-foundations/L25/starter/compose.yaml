@@ -1,0 +1,87 @@
+# L25 — Beacon's database and its two consumers. Compose project looped-l25
+# (scripts always pass -p looped-l25 -f work/compose.yaml). The database port
+# is published on 127.0.0.1 only, for the validator's login tests.
+# Secret files live in work/secrets/ (mode 0600) and are mounted, never baked
+# into an image or written into this file.
+name: looped-l25
+
+x-consumer: &consumer
+  image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+  user: "${LOOPED_UID:-65534}:${LOOPED_GID:-65534}"
+  read_only: true
+  restart: unless-stopped
+  command: ["python3", "-u", "/lab/consumer.py"]
+  volumes:
+    - ../assets/consumer.py:/lab/consumer.py:ro
+    - ../assets/pgmini.py:/lab/pgmini.py:ro
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+    container_name: looped-l25-db
+    environment:
+      POSTGRES_DB: beacon
+      # the bootstrap superuser is only used through the local socket (docker exec)
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_admin
+    secrets:
+      - pg_admin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../assets/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:15025:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "beacon"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
+    labels:
+      looped.lab/id: L25
+
+  ingest:
+    <<: *consumer
+    container_name: looped-l25-ingest
+    environment:
+      BEACON_CONSUMER: ingest
+      BEACON_DB_USER: beacon_app
+      BEACON_DB_PASSWORD_FILE: /run/secrets/db
+      PYTHONDONTWRITEBYTECODE: "1"
+    secrets:
+      - db
+    labels:
+      looped.lab/id: L25
+
+  exporter:
+    <<: *consumer
+    container_name: looped-l25-exporter
+    environment:
+      BEACON_CONSUMER: exporter
+      BEACON_DB_USER: beacon_app
+      BEACON_DB_PASSWORD_FILE: /run/secrets/db
+      PYTHONDONTWRITEBYTECODE: "1"
+    secrets:
+      - db
+    labels:
+      looped.lab/id: L25
+
+secrets:
+  pg_admin:
+    file: ./secrets/pg-admin.txt
+  db:
+    file: ./secrets/db.txt
+
+volumes:
+  pgdata:
+    name: looped-l25-pgdata
+    labels:
+      looped.lab/id: L25
+
+networks:
+  default:
+    name: looped-l25-net
+    labels:
+      looped.lab/id: L25

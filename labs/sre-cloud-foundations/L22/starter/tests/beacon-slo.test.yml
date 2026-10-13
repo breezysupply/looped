@@ -1,0 +1,31 @@
+# Your promtool tests for work/rules/beacon-slo.rules.yml.
+#   docker run --rm --network none -v "$PWD/labs/sre-cloud-foundations/L22/work:/w:ro" \
+#     --entrypoint promtool prom/prometheus:v3.5.0 test rules /w/tests/beacon-slo.test.yml
+#
+# One example group is given. Add at least four more, one per scenario, and put the scenario
+# word in each `name:` — missing, spike, burn, zero — so the validator can find them:
+#   missing  the request counter disappears: no-data alert fires, burn alerts do not
+#   spike    a few minutes of errors after hours of health: nothing pages
+#   burn     a sustained error rate: the page fires within the hour and clears after recovery
+#   zero     only health checks and 4xx: the SLI has no eligible events, nothing fires
+# Tip: test alert STATE with `count(ALERTS{alertname="...",alertstate="firing"}) or vector(0)`
+# in promql_expr_test, or use alert_rule_test with exp_labels and exp_annotations.
+rule_files:
+  - ../rules/beacon-slo.rules.yml
+evaluation_interval: 1m
+
+tests:
+  - name: example healthy traffic, no errors, no alerts
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+100x60'
+    promql_expr_test:
+      - expr: sum(beacon:sli_error_ratio:rate5m)
+        eval_time: 30m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertstate="firing"}) or vector(0)
+        eval_time: 30m
+        exp_samples:
+          - value: 0

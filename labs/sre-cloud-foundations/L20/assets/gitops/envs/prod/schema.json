@@ -1,0 +1,17 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "beacon-prod-schema",
+    "namespace": "beacon",
+    "labels": {
+      "app": "beacon",
+      "env": "prod",
+      "looped.lab/id": "L20"
+    }
+  },
+  "data": {
+    "current": "0",
+    "applied": ""
+  }
+}

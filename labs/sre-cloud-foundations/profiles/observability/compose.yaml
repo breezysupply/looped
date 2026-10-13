@@ -1,0 +1,74 @@
+# LOOPED observability profile — Prometheus, Grafana, OpenTelemetry Collector
+# (contrib) and Jaeger, pinned to exact versions. Compose project: looped-obs
+# (setup.sh / teardown.sh always pass -p looped-obs). Every port binds to
+# 127.0.0.1. Labs join the network looped-obs-net to be scraped and to send
+# OTLP traces to looped-obs-otelcol:4318.
+name: looped-obs
+
+networks:
+  obs:
+    name: looped-obs-net
+
+services:
+  prometheus:
+    image: ${LOOPED_PROM_IMAGE:-prom/prometheus:v3.5.0}   # Docker Hub rate limit? LOOPED_PROM_IMAGE=quay.io/prometheus/prometheus:v3.5.0
+    container_name: looped-obs-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=1d
+      - --enable-feature=exemplar-storage
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
+    ports:
+      - "127.0.0.1:19090:9090"
+    networks: [obs]
+    labels:
+      looped.lab/profile: observability
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.131.0
+    container_name: looped-obs-otelcol
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otelcol/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "127.0.0.1:14318:4318"   # OTLP/HTTP from the host (labs inside the network use otelcol:4318)
+      - "127.0.0.1:13133:13133"  # collector health
+    networks: [obs]
+    depends_on: [jaeger]
+    labels:
+      looped.lab/profile: observability
+
+  jaeger:
+    image: jaegertracing/jaeger:2.9.0
+    container_name: looped-obs-jaeger
+    ports:
+      - "127.0.0.1:16686:16686"  # UI and query API (/api/traces/<id>)
+    networks: [obs]
+    labels:
+      looped.lab/profile: observability
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: looped-obs-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: lab-grafana-not-a-real-secret
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:13000:3000"
+    networks: [obs]
+    depends_on: [prometheus, jaeger]
+    labels:
+      looped.lab/profile: observability

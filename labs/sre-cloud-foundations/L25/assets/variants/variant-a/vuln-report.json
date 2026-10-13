@@ -1,0 +1,81 @@
+{
+  "note": "FIXTURE for L25: shaped like `pip-audit --format json` output so you can practise triage offline. The CVE ids, affected packages and fix versions are real public advisories (checked 2026-10); the descriptions are paraphrased. LAB-2026-0042 is invented for the lab and is not a real advisory. The scan ran against an OLDER lock file than the one in work/patch/report/requirements.txt (compare scanner.lock_sha256), as scans in a release queue often do.",
+  "scanner": {
+    "format": "pip-audit-json (fixture)",
+    "generated": "2026-10-06T09:12:00Z",
+    "target": "beacon-report 0.9.0 image, python deps",
+    "lock_sha256": "3f1c0d6b0c9a4e1e8d2b7a65f0e4c3b2a1908f7e6d5c4b3a2918071625344352"
+  },
+  "dependencies": [
+    {
+      "name": "idna",
+      "version": "3.6",
+      "vulns": [
+        {
+          "id": "CVE-2024-3651",
+          "fix_versions": [
+            "3.7"
+          ],
+          "aliases": [],
+          "description": "idna.encode() can take quadratic time on specially crafted input strings, so an attacker who controls the string being encoded can cause a denial of service (CPU exhaustion)."
+        }
+      ]
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.3",
+      "vulns": [
+        {
+          "id": "CVE-2024-34064",
+          "fix_versions": [
+            "3.1.4"
+          ],
+          "aliases": [],
+          "description": "The xmlattr filter accepted keys containing characters such as '/', '>' and '=' that are not valid in attribute names; if an application passes user-controlled keys to xmlattr, other attributes can be injected (XSS)."
+        },
+        {
+          "id": "CVE-2024-56201",
+          "fix_versions": [
+            "3.1.5"
+          ],
+          "aliases": [],
+          "description": "A bug in the template compiler lets an attacker who controls BOTH the content and the filename of a template execute arbitrary Python code, regardless of whether the sandbox is used."
+        },
+        {
+          "id": "CVE-2024-56326",
+          "fix_versions": [
+            "3.1.5"
+          ],
+          "aliases": [],
+          "description": "The sandboxed environment did not detect indirect calls to str.format, so an attacker who controls the content of a template rendered in the sandbox can execute arbitrary Python code."
+        },
+        {
+          "id": "CVE-2025-27516",
+          "fix_versions": [
+            "3.1.6"
+          ],
+          "aliases": [],
+          "description": "The sandboxed environment's interaction with the |attr filter allows an attacker who controls the content of a template rendered in the sandbox to execute arbitrary Python code."
+        }
+      ]
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.2",
+      "vulns": []
+    },
+    {
+      "name": "beacon-report",
+      "version": "0.9.0",
+      "vulns": [
+        {
+          "id": "LAB-2026-0042",
+          "fix_versions": [],
+          "aliases": [],
+          "description": "Internal review note (invented for this lab): 'the --out directory handling may allow writing outside the intended directory'. Not reproduced, no fix version, owner not yet assigned."
+        }
+      ]
+    }
+  ],
+  "fixes": []
+}
