@@ -12,12 +12,7 @@ require_kind_context "$SRE_CTX_BASIC" "$SRE_KIND_BASIC"
 require_workstation helm docker python3 kind tar
 docker info >/dev/null 2>&1 || die "Docker is not reachable"
 
-kc_basic apply -f - >/dev/null <<NS
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: $SRE_NS
-NS
+kc_basic get namespace "$SRE_NS" >/dev/null 2>&1 || die "namespace $SRE_NS missing in $SRE_KIND_BASIC; run profiles/kind-basic/setup.sh (it creates it with Pod Security 'restricted')"
 others="$(k_basic get deploy,statefulset -o jsonpath='{range .items[*]}{.kind}/{.metadata.name}={.metadata.labels.looped\.lab/id}{"\n"}{end}' 2>/dev/null | grep -v '=L19$' || true)"
 [ -z "$others" ] || warn "namespace $SRE_NS also holds objects from other labs: $(echo "$others" | tr '\n' ' ')— they do not affect L19, but their teardown.sh frees memory."
 case "$(l19_release_state)" in

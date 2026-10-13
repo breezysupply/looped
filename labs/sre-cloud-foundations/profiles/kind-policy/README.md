@@ -47,7 +47,8 @@ downloads the manifest to `~/.cache/looped/`, verifies the SHA-256, applies it s
 (the CRDs are too large for client-side apply), sets `FELIX_IGNORELOOSERPF=true` on
 `calico-node` (Felix refuses to start when a kind node's `rp_filter` is "loose", which some
 Docker hosts set; harmless otherwise), waits for Calico, the nodes and CoreDNS, creates the
-`beacon` namespace and runs the self-test. It is idempotent: on an existing `looped-policy`
+`beacon` namespace with Pod Security admission `restricted` enforced (as in kind-basic), puts
+your previous kubectl current-context back (`kind create` switches it) and runs the self-test. It is idempotent: on an existing `looped-policy`
 cluster it checks and completes instead of recreating, and it refuses to continue if kindnet
 pods are present (the cluster was created some other way).
 

@@ -16,12 +16,7 @@ docker info >/dev/null 2>&1 || die "Docker is not reachable"
 workers="$(kc_basic get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.taints[*].key}{"\n"}{end}' | awk '$2 !~ /control-plane/' | grep -c . || true)"
 [ "$workers" -ge 2 ] || warn "$SRE_KIND_BASIC has $workers schedulable worker node(s); checkpoints c1–c3 work, but the drain drill (c4) needs two workers."
 kc_basic get storageclass standard >/dev/null 2>&1 || die "StorageClass 'standard' (kind's default local-path provisioner) not found in $SRE_KIND_BASIC"
-kc_basic apply -f - >/dev/null <<NS
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: $SRE_NS
-NS
+kc_basic get namespace "$SRE_NS" >/dev/null 2>&1 || die "namespace $SRE_NS missing in $SRE_KIND_BASIC; run profiles/kind-basic/setup.sh (it creates it with Pod Security 'restricted')"
 others="$(k_basic get deploy,statefulset -o jsonpath='{range .items[*]}{.kind}/{.metadata.name}={.metadata.labels.looped\.lab/id}{"\n"}{end}' 2>/dev/null | grep -v '=L17$' || true)"
 [ -z "$others" ] || warn "namespace $SRE_NS also holds objects from other labs: $(echo "$others" | tr '\n' ' ')— run their teardown.sh first; L17 measures scheduling and memory."
 

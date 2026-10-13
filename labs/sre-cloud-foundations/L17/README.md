@@ -32,6 +32,8 @@ Module M09 · ~180 min practical across weeks 25–26 (four checkpoints) · prof
   a missing StorageClass. No load generator runs unbounded.
 - `assets/drain-drill.sh` uses eviction (budgets honoured), a timeout, never `--force` or
   `--disable-eviction`, and always uncordons the node on exit.
+- Namespace `beacon` enforces Pod Security `restricted` (kind-basic profile): every pod here runs
+  unprivileged, including PostgreSQL as its own user (uid 999) with all capabilities dropped.
 - Images: `looped-l17-beacon:1.4.0` (built from `assets/Dockerfile`, loaded with `kind load`),
   `python:3.12.7-slim-bookworm` and `postgres:16.4`, both pinned by digest. The database password
   is the placeholder `lab-l17-db-password-not-a-real-secret`.

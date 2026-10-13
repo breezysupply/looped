@@ -22,6 +22,7 @@ sha256_of() {
 kv="$(kind version 2>/dev/null | awk '{print $2}')"
 [ "$kv" = "$KIND_VERSION_TESTED" ] || warn "kind $kv found; this profile was written against $KIND_VERSION_TESTED (node image pinned in kind-config.yaml)"
 
+prev="$(kubectl config current-context 2>/dev/null || true)"
 if kind get clusters 2>/dev/null | grep -qx "$SRE_KIND_POLICY"; then
   info "kind cluster $SRE_KIND_POLICY exists; checking it instead of recreating"
 else
@@ -30,6 +31,10 @@ else
   fi
   info "creating kind cluster $SRE_KIND_POLICY (default CNI disabled; nodes stay NotReady until Calico is installed)"
   kind create cluster --name "$SRE_KIND_POLICY" --config "$HERE/kind-config.yaml" --wait 0s
+fi
+# kind create switches the current context; nothing in the course relies on it, so put it back
+if [ -n "$prev" ] && [ "$prev" != "$SRE_CTX_POLICY" ]; then
+  kubectl config use-context "$prev" >/dev/null && info "kubectl current-context restored to $prev"
 fi
 require_kind_context "$SRE_CTX_POLICY" "$SRE_KIND_POLICY"
 
@@ -67,6 +72,9 @@ metadata:
   name: $SRE_NS
   labels:
     looped.lab/profile: kind-policy
+    # same Pod Security level as the kind-basic profile: L18's pods run unprivileged
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.33
 NS
 
 say ""

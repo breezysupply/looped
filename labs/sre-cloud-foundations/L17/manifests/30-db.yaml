@@ -39,9 +39,20 @@ spec:
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
+      # Pod Security "restricted" (enforced on namespace beacon by the kind-basic profile): the
+      # official image runs fine as its postgres user (uid 999) without root or capabilities.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: {type: RuntimeDefault}
       containers:
         - name: postgres
           image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
           env:
             - {name: POSTGRES_DB, value: beacon}
             - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}

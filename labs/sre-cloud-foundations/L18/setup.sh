@@ -16,12 +16,7 @@ case "$ready" in ""|0/*) die "Calico is not running in $SRE_KIND_POLICY (calico-
 if kc_policy -n kube-system get pods -l app=kindnet -o name 2>/dev/null | grep -q .; then
   die "kindnet runs in $SRE_KIND_POLICY; this is not the kind-policy profile's cluster"
 fi
-kc_policy apply -f - >/dev/null <<NS
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: $SRE_NS
-NS
+kc_policy get namespace "$SRE_NS" >/dev/null 2>&1 || die "namespace $SRE_NS missing in $SRE_KIND_POLICY; run profiles/kind-policy/setup.sh"
 
 BUILD="$WORK/build"
 mkdir -p "$WORK"

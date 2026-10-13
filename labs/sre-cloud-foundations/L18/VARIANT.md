@@ -16,8 +16,11 @@ prepares a different missing verb and a different policy defect. The symptoms lo
 distance (the bot stops; the API cannot use the database); the evidence that separates them is
 not. Rewrite the RBAC and Policy sections and import `evidence/variant.json`.
 
-**Changed-symptom extension (no validator):** with everything green, add a second API replica
-from a different label set (`kubectl -n beacon run api-debug --image=looped-l18-beacon:1.4.0
---labels app=beacon-api-debug -- api`). Predict whether it can reach the database, prove it with
-`probe.py` through `kubectl exec`, and explain why label hygiene is part of network security.
-Delete the debug pod afterwards (`kubectl -n beacon delete pod api-debug`).
+**Changed-symptom extension (no validator):** with everything green, take one beacon-report pod
+out of its ReplicaSet by relabelling it as the API
+(`kubectl --context kind-looped-policy -n beacon label pod <report-pod> app=beacon-api --overwrite`;
+the ReplicaSet starts a replacement because the pod no longer matches its selector). Predict
+whether the relabelled pod can now reach the database, prove it with `probe.py` through
+`kubectl exec`, and explain why label hygiene (who may set labels, and admission rules on them)
+is part of network security. Delete the orphaned pod afterwards
+(`kubectl --context kind-looped-policy -n beacon delete pod <that pod>`).
