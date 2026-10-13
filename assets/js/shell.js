@@ -650,6 +650,12 @@
       else files.push(t);
     }
     if (!scripts.length) return err('usage: sed [-n] [-i] script [file]');
+    /* -i edits each file on its own, as GNU sed does */
+    if (inPlace && files.length > 1) {
+      var head = a.slice(0, a.length - files.length);
+      for (var fi = 0; fi < files.length; fi++) { var r1 = CMD.sed(w, head.concat([files[fi]]), stdin); if (r1.code) return r1; }
+      return ok('');
+    }
     var parsed = sedParse(scripts.join(';'), ere);
     if (parsed.error) return err('sed (simulation): ' + parsed.error);
     var src = files.length ? fileOrStdin(w, files, stdin) : { text: stdin || '' };
