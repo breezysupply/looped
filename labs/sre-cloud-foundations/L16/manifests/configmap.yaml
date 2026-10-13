@@ -1,0 +1,13 @@
+# Non-secret configuration for Beacon, delivered as BEACON_<SECTION>_<KEY> env vars.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beacon-config
+  namespace: beacon
+  labels:
+    app.kubernetes.io/name: beacon
+    looped.lab/id: L16
+data:
+  BEACON_APP_ENVIRONMENT: kind-lab-l16
+  BEACON_SERVER_PORT: "8080"
+  BEACON_STORE_KIND: memory
