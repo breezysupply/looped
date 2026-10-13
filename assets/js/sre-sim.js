@@ -99,7 +99,12 @@
   function stamp(st) { return '2026-10-13T' + hms(32400 + (st.clock || 0)) + 'Z'; }
 
   /* every scenario verb goes through here: it costs logical time and lets the
-     scenario's own tick hook run (reconcilers, probes, recurrence timers) */
+     scenario's own tick hook run (reconcilers, probes, recurrence timers).
+     NOTE for authors: LXShell.run ALSO calls st.hooks before and after every
+     command line (built-ins included) without advancing the clock, so a hook
+     runs up to three times per command. Hooks must be idempotent for a given
+     st.clock: derive state from files, or step a model only when the clock
+     has moved since the hook's last run (keep st._lastTick). */
   function wrap(st, fn) {
     return function (w, a, stdin) {
       st.clock = (st.clock || 0) + PER_COMMAND;

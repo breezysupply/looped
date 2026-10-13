@@ -102,30 +102,30 @@ LX.missions = LX.missions || [];
       ['CVE-2026-91101', 'urllib3', 'CRITICAL', 'Proxy-Authorization header kept on cross-origin redirects', ['2.0.7'], '2.2.2', 'fixed'],
       ['CVE-2026-91102', 'certifi', 'HIGH', 'Bundle still trusts two distrusted root certificate authorities', ['2024.2.2'], '2024.8.30', 'fixed'],
       ['CVE-2026-91103', 'pyyaml', 'HIGH', 'Code execution when full_load()/FullLoader parses untrusted YAML', ['6.0.1', '6.0.2'], '', 'affected', 'full_load|FullLoader|unsafe_load|yaml\\.load\\(',
-        { d: 'not_affected', j: 'vulnerable_code_not_in_execute_path', detail: 'Beacon calls only yaml.safe_load (src/beacon/config.py); full_load/FullLoader/unsafe_load are never called' }],
+        { d: 'not_affected', j: 'vulnerable_code_not_in_execute_path', detail: 'Beacon calls only yaml.safe_load (src/beacon/config.py), full_load/FullLoader/unsafe_load are never called' }],
       ['CVE-2026-91104', 'gcc-12', 'HIGH', 'Stack protector not applied to some variable-length arrays', ['12.2.0-14'], '12.2.0-14+deb12u1', 'fixed', null,
-        { d: 'not_affected', j: 'component_not_present', detail: 'gcc-12 is installed only in the builder stage; the final image has no compiler' }],
+        { d: 'not_affected', j: 'component_not_present', detail: 'gcc-12 is installed only in the builder stage, the final image has no compiler' }],
       ['CVE-2026-91105', 'linux-libc-dev', 'CRITICAL', 'Kernel: use-after-free in nf_tables set handling', ['6.1.112-1'], '6.1.115-1', 'fixed', null,
-        { d: 'not_affected', j: 'component_not_present', detail: 'kernel headers exist only in the builder stage; the final image does not contain them' }],
+        { d: 'not_affected', j: 'component_not_present', detail: 'kernel headers exist only in the builder stage, the final image does not contain them' }],
       ['CVE-2026-91106', 'libsqlite3-0', 'HIGH', 'Heap overflow in the FTS5 tokenizer with a crafted MATCH expression', ['3.40.1-2+deb12u1'], '', 'affected', 'MATCH',
-        { d: 'accepted', owner: 'data-team', expires: '2026-12-15', detail: 'search passes user text to FTS5 MATCH; no fixed package yet; cap q at 128 chars and re-check weekly' }],
+        { d: 'accepted', owner: 'data-team', expires: '2026-12-15', detail: 'search passes user text to FTS5 MATCH, no fixed package yet, cap q at 128 chars and re-check weekly' }],
       ['CVE-2026-91107', 'idna', 'UNKNOWN', 'Excessive CPU in idna.encode() with very long crafted labels (not yet scored)', ['3.6', '3.7'], '', 'under_investigation', null,
-        { d: 'under_investigation', owner: 'platform-team', expires: '2026-11-13', detail: 'not scored yet; hostnames come from config; re-check when the advisory is scored' }]
+        { d: 'under_investigation', owner: 'platform-team', expires: '2026-11-13', detail: 'not scored yet, hostnames come from config, re-check when the advisory is scored' }]
     ],
     b: [
       ['CVE-2026-91201', 'libssl3', 'CRITICAL', 'Buffer over-read in X.509 name-constraint checking during TLS handshakes', ['3.0.14-1~deb12u2'], '3.0.15-1~deb12u1', 'fixed'],
       ['CVE-2026-91201', 'openssl', 'CRITICAL', 'Buffer over-read in X.509 name-constraint checking during TLS handshakes', ['3.0.14-1~deb12u2'], '3.0.15-1~deb12u1', 'fixed'],
       ['CVE-2026-91202', 'jinja2', 'HIGH', 'Sandbox escape through the |attr filter', ['3.1.3'], '3.1.4', 'fixed'],
       ['CVE-2026-91203', 'cryptography', 'HIGH', 'NULL dereference when loading a malformed PKCS#12 bundle', ['42.0.4', '43.0.1'], '', 'affected', 'pkcs12|load_key_and_certificates',
-        { d: 'not_affected', j: 'vulnerable_code_not_in_execute_path', detail: 'Beacon uses cryptography only for Fernet tokens (src/beacon/tokens.py); no PKCS#12 loading anywhere' }],
+        { d: 'not_affected', j: 'vulnerable_code_not_in_execute_path', detail: 'Beacon uses cryptography only for Fernet tokens (src/beacon/tokens.py), no PKCS#12 loading anywhere' }],
       ['CVE-2026-91204', 'git', 'HIGH', 'Code execution when cloning a repository with crafted submodules', ['1:2.39.5-0+deb12u1'], '1:2.39.5-0+deb12u2', 'fixed', null,
-        { d: 'not_affected', j: 'component_not_present', detail: 'git is installed only in the builder stage; the final image has no git' }],
+        { d: 'not_affected', j: 'component_not_present', detail: 'git is installed only in the builder stage, the final image has no git' }],
       ['CVE-2026-91205', 'libcurl4', 'CRITICAL', 'Heap overflow in the SOCKS5 proxy handshake with a long hostname', ['7.88.1-10+deb12u7'], '7.88.1-10+deb12u8', 'fixed', null,
-        { d: 'not_affected', j: 'component_not_present', detail: 'libcurl4 exists only in the builder stage; the final image does not contain it' }],
+        { d: 'not_affected', j: 'component_not_present', detail: 'libcurl4 exists only in the builder stage, the final image does not contain it' }],
       ['CVE-2026-91206', 'libexpat1', 'HIGH', 'Unbounded entity expansion in the XML parser', ['2.5.0-1+deb12u1'], '', 'affected', 'ElementTree|xml\\.etree|expat',
-        { d: 'accepted', owner: 'ingest-team', expires: '2026-12-01', detail: 'partner feeds are parsed with ElementTree; no fixed package yet; feeds come only from allow-listed partners over mTLS' }],
+        { d: 'accepted', owner: 'ingest-team', expires: '2026-12-01', detail: 'partner feeds are parsed with ElementTree, no fixed package yet, feeds come only from allow-listed partners over mTLS' }],
       ['CVE-2026-91207', 'markupsafe', 'UNKNOWN', 'Possible quadratic time in escape() on crafted input (not yet scored)', ['2.1.5'], '', 'under_investigation', null,
-        { d: 'under_investigation', owner: 'platform-team', expires: '2026-11-13', detail: 'not scored yet; report templates escape server-side data only; re-check when scored' }]
+        { d: 'under_investigation', owner: 'platform-team', expires: '2026-11-13', detail: 'not scored yet, report templates escape server-side data only, re-check when scored' }]
     ]
   };
   var S25_SRC = {
@@ -315,11 +315,11 @@ LX.missions = LX.missions || [];
             log.push('pinned ' + mp[1].toLowerCase() + '==' + mp[2] + ' in requirements.txt');
           } else log.push('ignored --bump "' + b + '" (want NAME==VERSION or base=TAG)');
         });
+        S.writeFile(w, S25_DIR + '/requirements.txt', req); S.writeFile(w, S25_DIR + '/Dockerfile', dock);
         var base = s25BaseOf(dock), pins = s25Pins(req);
         if (!S25_BASES[base]) return S.err((log.length ? log.join('\n') + '\n' : '') + 'ERROR: failed to solve: registry.lab/base/python:' + base + ': failed to resolve source metadata: not found\n(the internal mirror has: ' + Object.keys(S25_BASES).join(', ') + ')');
         var bad = Object.keys(pins).filter(function (k) { return !S25_PYPI[k] || S25_PYPI[k].indexOf(pins[k]) === -1; })[0];
         if (bad) return S.err((log.length ? log.join('\n') + '\n' : '') + ' => [builder 4/4] RUN pip wheel --wheel-dir /wheels -r /src/requirements.txt\nERROR: Could not find a version that satisfies the requirement ' + bad + '==' + pins[bad] + ' (from versions: ' + ((S25_PYPI[bad] || []).join(', ') || 'none') + ')\nERROR: No matching distribution found for ' + bad + '==' + pins[bad] + '\nERROR: failed to solve: process "/bin/sh -c pip wheel ..." did not complete successfully: exit code: 1');
-        S.writeFile(w, S25_DIR + '/requirements.txt', req); S.writeFile(w, S25_DIR + '/Dockerfile', dock);
         s.builds++;
         s.img = { n: s.builds, tag: 'registry.lab/beacon/api:1.8.0-rc' + s.builds, base: base, pins: pins };
         s.img.digest = 'sha256:' + h64('S25-' + v + JSON.stringify(s.img));
@@ -567,7 +567,7 @@ LX.missions = LX.missions || [];
         if (st0 === 'Running') wl.containers.forEach(function (c) { var a = avail(c.ref); if (st0 === 'Running' && a !== 'ok') { st0 = a === 'external' ? 'ErrImagePull' : 'ImagePullBackOff'; why = c; ext = a === 'external'; } });
         if (st0 === 'Running' && wl.name === 'beacon-api' && !wl.init.length && rel.ver === '1.8.0' && s.schema < 18) st0 = 'CrashLoopBackOff';
         var ver = wl.name === 'beacon-redis' ? '7.2.5' : rel.ver;
-        out.push({ name: podName(wl.name, wl.name === 'beacon-redis' ? 'r' : rel.ver + JSON.stringify(rel.sets)), wl: wl, status: st0, why: why, ext: ext, ver: ver, ready: st0 === 'Running' });
+        out.push({ name: podName(wl.name, wl.name === 'beacon-redis' ? 'r' : rel.ver + (Object.keys(rel.sets).length ? JSON.stringify(rel.sets) : '')), wl: wl, status: st0, why: why, ext: ext, ver: ver, ready: st0 === 'Running' });
         if (st0 !== 'Running' && wl.name !== 'beacon-redis' && rel.prev) out.push({ name: podName(wl.name, rel.prev), wl: wl, status: 'Running', ver: rel.prev, ready: true, old: true });
       });
       return out;
@@ -719,7 +719,7 @@ LX.missions = LX.missions || [];
         var ns = nsOf(a), verb = a[0], what = a[1], ps = pods();
         if (ns !== 'beacon' && ns !== '*' && (verb === 'get' || verb === 'describe' || verb === 'logs')) return S.ok('No resources found in ' + ns + ' namespace.');
         if (verb === 'get' && /^(pods?|po)$/.test(what || '')) {
-          return S.ok(S.table(['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE'], ps.map(function (p) { return [p.name, p.ready ? '1/1' : '0/1', p.status, p.status === 'CrashLoopBackOff' ? 5 : 0, p.old ? '35d' : '4m']; })));
+          return S.ok(S.table(['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE'], ps.map(function (p) { return [p.name, p.ready ? '1/1' : '0/1', p.status, p.status === 'CrashLoopBackOff' ? 5 : 0, p.old || (p.ver === '1.7.3' && s.release.rev === 3) ? '35d' : '4m']; })));
         }
         if (verb === 'get' && /^(events?|ev)$/.test(what || '')) {
           var ev = []; ps.forEach(function (p) { if (!p.ready) ev = ev.concat(events(p)); });
@@ -1152,6 +1152,352 @@ LX.missions = LX.missions || [];
       clues: ['The success rate before the first change is the baseline the system can return to.', 'Idempotent replays served is a count of retried writes the API recognised.'],
       passRubric: ['Shows from the timeline that adding replicas made it worse and why (connections to the bottleneck)', 'Explains how layered immediate retries multiply database work and sustain the overload', 'Bounds retries to one layer with backoff, jitter and a budget, and caps pools/concurrency with shedding', 'Verifies sustained recovery and that no write was duplicated (idempotency key)'],
       prereqs: ['les-m14-01', 'les-m14-02'], refs: ['T01', 'T08']
+    }
+  });
+  /* ═══ S28 · Incident seems resolved then returns ═══════════════════════
+     Clock 0 = 09:00:00Z; the learner arrives at 09:25:00 (clock 1500). The
+     recurring cause runs on the clock in 10-second steps, whether the
+     learner runs a scenario verb, a built-in, or `sleep`. */
+  var S28_INC = 'INC-0412', S28_LOG = '/var/log/beacon/api-debug.log', S28_APILOG = '/var/log/beacon/api.log', S28_ENV = '/etc/beacon/beacon.env', S28_CRON = '/etc/cron.d/beacon-export', S28_EXPLOG = '/var/log/beacon/export.log', S28_SYSLOG = '/var/log/syslog';
+  var GiB = 1073741824, MiB = 1048576, S28_DEBUG_RATE = Math.round(400 * MiB / 60), S28_INFO_RATE = Math.round(2 * MiB / 60), S28_WINDOW = 900;
+  function s28Fam(v) { return v === 'a' ? [/\/api-debug\.log/, /\/var\/log\/beacon\/api\.log/] : [/\/var\/log\/syslog/, /\/var\/log\/beacon\/export\.log/]; }
+  function s28FieldMatch(field, val) {
+    return String(field).split(',').some(function (p) {
+      if (p === '*') return true;
+      var st0 = /^\*\/(\d+)$/.exec(p); if (st0) return val % Number(st0[1]) === 0;
+      var rg = /^(\d+)-(\d+)(\/(\d+))?$/.exec(p); if (rg) return val >= +rg[1] && val <= +rg[2] && (!rg[4] || (val - rg[1]) % +rg[4] === 0);
+      return /^\d+$/.test(p) && +p === val;
+    });
+  }
+  function s28CronLine(text) {
+    var l = String(text || '').split('\n').filter(function (x) { return /beacon-export/.test(x) && !/^\s*#/.test(x) && /^\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+/.test(x); })[0];
+    if (!l) return null;
+    var f = l.trim().split(/\s+/);
+    return { min: f[0], hour: f[1], primary: !/beacon-db-replica/.test(l) && /beacon-db-primary/.test(l), line: l };
+  }
+  function s28Business(cl) { for (var h = 7; h <= 19; h++) if (s28FieldMatch(cl.hour, h)) return true; return false; }
+
+  function s28World(seed) {
+    var S = SIM(), v = S.variantOf(seed, ['a', 'b']);
+    var s = { clock: 1500, risky: [], hooks: [], variant: v, level: v === 'a' ? 'debug' : 'info', pid: 2417, startedAt: v === 'a' ? 990 : 0, full: false, exp: null, expSeq: 0, evidenceGone: false, stableSince: null, mustPass: null, lastTotal: null, _at: 1500,
+      inc: { id: S28_INC, sev: 'SEV2', title: v === 'a' ? 'Beacon writes failing' : 'Beacon writes slow and failing', status: 'resolved', resolvedBy: 'sam', reopenedAt: null, premature: false, updates: [], followups: [], timeline: [] } };
+    var T = function (sec, who, text) { s.inc.timeline.push({ at: sec, who: who, text: text }); };
+    if (v === 'a') {
+      T(160, 'alertmanager', 'ALERT BeaconWriteErrors FIRING (POST /v1/records 5xx 97%)');
+      T(250, 'sam', 'investigating; /var at 100% on beacon-vm');
+      T(510, 'sam', 'removed /var/log/beacon/api-debug.log (4.1G) to free space; df unchanged??');
+      T(990, 'sam', 'restarted beacon (systemctl restart beacon); /var back to 76%');
+      T(1030, 'alertmanager', 'ALERT BeaconWriteErrors resolved');
+      T(1205, 'sam', 'resolved: "restart freed the space, all good"');
+    } else {
+      T(80, 'alertmanager', 'ALERT BeaconWriteLatency FIRING (POST /v1/records p99 > 5s, 41% 5xx)');
+      T(300, 'sam', 'investigating; DB CPU 100% on beacon-db-primary');
+      T(840, 'sam', 'failed over beacon-db-primary to the standby (promoted); writes recover');
+      T(880, 'alertmanager', 'ALERT BeaconWriteLatency resolved');
+      T(1205, 'sam', 'resolved: "failover fixed it"');
+    }
+    var disks = v === 'a'
+      ? [{ fs: '/dev/nvme0n1p1', size: 8 * GiB, mount: '/', base: Math.round(3.1 * GiB) }, { fs: '/dev/nvme1n1', size: 20 * GiB, mount: '/var', base: Math.round(15.27 * GiB) }, { fs: '/dev/nvme2n1', size: 100 * GiB, mount: '/srv', base: 12 * GiB }]
+      : [{ fs: '/dev/nvme0n1p1', size: 8 * GiB, mount: '/', base: Math.round(3.1 * GiB) }, { fs: '/dev/nvme1n1', size: 20 * GiB, mount: '/var', base: Math.round(9.4 * GiB) }];
+    function U() { return SH().util; }
+    function nodeOf(w, p) { return U().node(w, p); }
+    function famTotal(w) {
+      return s28Fam(v).map(function (re) { var t = 0; Object.keys(w.fs).forEach(function (p) { var n = w.fs[p]; if (n.t === 'f' && re.test(p)) t += n.orig != null ? n.orig : U().sizeOf(n); }); return t; });
+    }
+    function varDisk(w) { return (w.disks || []).filter(function (d) { return d.mount === '/var'; })[0]; }
+    function used(w, d) { var t = d.base || 0; Object.keys(w.fs).forEach(function (p) { var n = w.fs[p]; if (n.t === 'f' && U().mountOf(w, p) === d) t += U().sizeOf(n); }); return t; }
+    function append(w, p, line) { var n = nodeOf(w, p); if (!n) return; var sz = U().sizeOf(n); n.content = (n.content || '') + line + '\n'; n.size = Math.max(sz, 0) + line.length + 1; }
+    function apiProc(w) { return (w.procs || []).filter(function (p) { return /beacon api/.test(p.cmd); })[0]; }
+    /* ── fix state, decided from what is on disk and running now ── */
+    function fixedA(w) {
+      var d = varDisk(w), n = nodeOf(w, S28_LOG);
+      return s.level === 'info' && used(w, d) < 0.85 * d.size && !s.evidenceGone && famTotal(w)[0] > 0 && !s.full;
+    }
+    function fixedB(w) { var cl = s28CronLine(S.readFile(w, S28_CRON)); return !(cl && cl.primary && s28Business(cl)) && !(s.exp && s.exp.primary); }
+    function fixed(w) { return v === 'a' ? fixedA(w) : fixedB(w); }
+    function symptom() { return v === 'a' ? s.full : !!(s.exp && s.exp.primary && s.clock - s.exp.start >= 30); }
+    function step(w, t) {
+      /* evidence: a family of log files whose (uncompressed) size went down lost data */
+      var tot = famTotal(w);
+      if (s.lastTotal) tot.forEach(function (x, i) { if (x < s.lastTotal[i] - 1) s.evidenceGone = true; });
+      if (v === 'a') {
+        var d = varDisk(w), rate = s.level === 'debug' ? S28_DEBUG_RATE : S28_INFO_RATE, grow = rate * 10, free = d.size - used(w, d), p = apiProc(w);
+        if (p) {
+          var add = Math.max(0, Math.min(grow, free));
+          var n = nodeOf(w, S28_LOG), del = (w.deleted || []).filter(function (x) { return x.path === S28_LOG && x.pid === p.pid; })[0];
+          if (n) n.size = U().sizeOf(n) + add;
+          else if (del) { del.size += add; d.base += add; }
+          var nowFull = grow > free;
+          if (nowFull && !s.full) { s.full = true; T(t, 'alertmanager', 'ALERT BeaconWriteErrors FIRING (POST /v1/records 5xx 100%)'); append(w, S28_APILOG, S.stamp({ clock: t }) + ' ERROR POST /v1/records write failed: [Errno 28] No space left on device'); }
+          if (!nowFull && s.full && free > 64 * MiB) { s.full = false; T(t, 'alertmanager', 'ALERT BeaconWriteErrors resolved'); }
+        }
+      } else {
+        var cl = s28CronLine(S.readFile(w, S28_CRON)), sec = 32400 + t;
+        if (s.exp && t - s.exp.start >= 720) { append(w, S28_EXPLOG, S.stamp({ clock: t }) + ' export --full finished: 1,284,113 rows in 12m00s'); if (s.exp.primary) T(t, 'alertmanager', 'ALERT BeaconWriteLatency resolved'); s.exp = null; w.procs = (w.procs || []).filter(function (x) { return !/beacon-export/.test(x.cmd); }); }
+        if (cl && !s.exp && sec % 60 === 0 && s28FieldMatch(cl.min, Math.floor(sec / 60) % 60) && s28FieldMatch(cl.hour, Math.floor(sec / 3600))) {
+          s.expSeq++; var pid = 5100 + s.expSeq * 7;
+          s.exp = { pid: pid, dbpid: 88200 + s.expSeq * 13, start: t, primary: cl.primary };
+          (w.procs = w.procs || []).push({ pid: pid, user: 'beacon', cmd: '/usr/local/bin/beacon-export --full', cpu: 4, mem: 1 });
+          append(w, S28_SYSLOG, 'Oct 13 ' + S.hms(sec) + ' beacon-vm CRON[' + pid + ']: (beacon) CMD (' + cl.line.trim().split(/\s+/).slice(6).join(' ') + ')');
+          append(w, S28_EXPLOG, S.stamp({ clock: t }) + ' export --full start (dsn ' + (cl.primary ? 'beacon-db-primary' : 'beacon-db-replica') + ')');
+        }
+        if (s.exp && s.exp.primary && t - s.exp.start === 30) T(t, 'alertmanager', 'ALERT BeaconWriteLatency FIRING (POST /v1/records p99 > 5s, 41% 5xx)');
+      }
+      /* verification window: continuous time with the cause removed and no symptom */
+      if (fixed(w) && !symptom()) {
+        if (s.stableSince == null) {
+          s.stableSince = t;
+          if (v === 'b') { var nx = t + 10; while ((32400 + nx) % 1800 !== 0) nx += 10; s.mustPass = nx; }
+        }
+      } else { s.stableSince = null; s.mustPass = null; }
+      s.lastTotal = famTotal(w);
+    }
+    function advance(w) { while (s._at < s.clock) { s._at += 10; step(w, s._at); } if (!s.lastTotal) s.lastTotal = famTotal(w); else { var tot = famTotal(w); tot.forEach(function (x, i) { if (x < s.lastTotal[i] - 1) s.evidenceGone = true; }); s.lastTotal = tot; } }
+    s.hooks.push(function (x, w) { advance(w); });
+    function stableEnough() { return s.stableSince != null && s.clock - s.stableSince >= S28_WINDOW && (s.mustPass == null || s.clock >= s.mustPass + 60); }
+    s.api = { fixed: function (w) { return fixed(w); }, stable: stableEnough, symptom: symptom };
+    function restart(w) {
+      var old = apiProc(w);
+      (w.deleted || []).filter(function (x) { return old && x.pid === old.pid; }).forEach(function (x) { var d = U().mountOf(w, x.path); if (d) d.base = Math.max(0, (d.base || 0) - x.size); });
+      w.deleted = (w.deleted || []).filter(function (x) { return !old || x.pid !== old.pid; });
+      var lvl = S.kvGet(S.readFile(w, S28_ENV) || '', 'LOG_LEVEL') || 'info';
+      s.level = /debug/i.test(lvl) ? 'debug' : 'info';
+      s.pid += 113; s.startedAt = s.clock;
+      w.procs = (w.procs || []).filter(function (p) { return !/beacon api/.test(p.cmd); });
+      w.procs.push({ pid: s.pid, user: 'beacon', cmd: 'python3 -m beacon api', cpu: 3, mem: 2, open: v === 'a' ? [S28_LOG] : [] });
+      if (v === 'a' && !nodeOf(w, S28_LOG)) U().mkfile(w, S28_LOG, '', { owner: 'beacon', group: 'beacon', mode: '640', size: 0 });
+      var d = varDisk(w); if (v === 'a' && s.full && d.size - used(w, d) > 64 * MiB) { s.full = false; T(s.clock, 'alertmanager', 'ALERT BeaconWriteErrors resolved'); }
+    }
+    function checkUpdate(text) {
+      var now = 32400 + s.clock, nm = /next update[^0-9]{0,30}(\d{1,2}):(\d{2})/i.exec(text) || /\b(\d{1,2}):(\d{2})\s*(utc|z)\b/i.exec(text);
+      var nextOk = !!nm && (+nm[1] * 3600 + +nm[2] * 60) > now;
+      return { scope: /\b(beacon|api|writes?|ingest|records|post)\b/i.test(text), impact: /\d+\s*%|\berrors?\b|\bfail|\bunavailable|\bdegraded|\bslow|\btime ?outs?\b|\busers?\b|\bclients?\b/i.test(text), next: nextOk, nextSeen: !!nm };
+    }
+    var verbs = {
+      incident: function (w, a) {
+        var sub = a[0], id = a[1], inc = s.inc;
+        if (!sub || sub === '--help') return S.ok('incident (simulation of the incident tracker)\nUsage: incident show [ID] | incident reopen ID [--reason "…"] | incident status ID investigating|identified|monitoring\n       incident update ID "TEXT" | incident followup ID --owner NAME "TEXT" | incident resolve ID [--summary "…"]');
+        if (sub === 'list') return S.ok(S.table(['ID', 'SEV', 'STATUS', 'TITLE'], [[inc.id, inc.sev, inc.status.toUpperCase(), inc.title]]));
+        if (id && id !== inc.id) return S.err('incident: ' + id + ': not found (open incidents: ' + inc.id + ')');
+        if (sub === 'show') {
+          var lines = [inc.id + '  ' + inc.sev + '  ' + inc.title + '  status: ' + inc.status.toUpperCase() + (inc.status === 'resolved' ? ' (by ' + inc.resolvedBy + ')' : ''), 'service: beacon (beacon-vm)   IC: you (handover from sam at 09:25)', 'timeline:'];
+          inc.timeline.slice().sort(function (x, y) { return x.at - y.at; }).forEach(function (e) { lines.push('  ' + S.hms(32400 + e.at) + 'Z  ' + S.pad(e.who, 13) + e.text); });
+          if (inc.updates.length) { lines.push('status updates:'); inc.updates.forEach(function (u) { lines.push('  ' + S.hms(32400 + u.at) + 'Z  ' + u.text); }); }
+          if (inc.followups.length) { lines.push('follow-ups:'); inc.followups.forEach(function (f) { lines.push('  [' + f.owner + '] ' + f.text); }); }
+          return S.ok(lines.join('\n'));
+        }
+        var f = multi(a.slice(2), ['reason', 'owner', 'summary', 'message']), text = (one(f, 'message') || f.pos.join(' ')).trim();
+        if (sub === 'reopen') {
+          if (inc.status !== 'resolved') return S.err('incident: ' + inc.id + ' is already open (' + inc.status + ')');
+          inc.status = 'investigating'; inc.reopenedAt = s.clock;
+          T(s.clock, 'you', 'reopened' + (one(f, 'reason') ? ': ' + one(f, 'reason') : '') + ' (original start 09:0' + (v === 'a' ? '2' : '1') + ' kept)');
+          return S.ok(inc.id + ' reopened at ' + S.stamp(s) + ' (status investigating); post an update for stakeholders');
+        }
+        if (sub === 'status') {
+          if (['investigating', 'identified', 'monitoring'].indexOf(id ? a[2] : '') === -1) return S.err('incident status ID investigating|identified|monitoring');
+          if (inc.status === 'resolved') return S.err('incident: ' + inc.id + ' is resolved; reopen it first');
+          inc.status = a[2]; T(s.clock, 'you', 'status -> ' + a[2]); return S.ok(inc.id + ' status ' + a[2]);
+        }
+        if (sub === 'update') {
+          if (!text) return S.err('incident update ID "TEXT"');
+          if (inc.status === 'resolved') return S.err('incident: ' + inc.id + ' is resolved; reopen it before posting updates');
+          var ch = checkUpdate(text), ok2 = ch.scope && ch.impact && ch.next;
+          inc.updates.push({ at: s.clock, text: text, ok: ok2 });
+          return S.ok('posted at ' + S.stamp(s) + ' to #inc-0412 and the status page\nchecks: scope ' + (ch.scope ? 'yes' : 'MISSING (what service/feature is affected?)') + ' · impact ' + (ch.impact ? 'yes' : 'MISSING (what do users see, how much?)') + ' · next update ' + (ch.next ? 'yes' : ch.nextSeen ? 'NOT IN THE FUTURE' : 'MISSING ("next update HH:MM UTC")'));
+        }
+        if (sub === 'followup') {
+          var owner = one(f, 'owner');
+          if (!owner || owner === true || text.length < 10) return S.err('incident followup ID --owner NAME "what will be done" (both required)');
+          inc.followups.push({ owner: owner, text: text, at: s.clock });
+          return S.ok('follow-up recorded for ' + owner);
+        }
+        if (sub === 'resolve') {
+          if (inc.status === 'resolved') return S.err('incident: ' + inc.id + ' is already resolved');
+          if (!(fixed(w) && stableEnough())) inc.premature = true;
+          inc.status = 'resolved'; inc.resolvedBy = 'you';
+          T(s.clock, 'you', 'resolved' + (one(f, 'summary') ? ': ' + one(f, 'summary') : ''));
+          return S.ok(inc.id + ' resolved at ' + S.stamp(s));
+        }
+        return S.unsupported('incident', sub, ['show', 'list', 'reopen', 'status', 'update', 'followup', 'resolve']);
+      },
+      curl: function (w, a) {
+        var fl = multi(a, ['data', 'request', 'write-out', 'output']), url = a.filter(function (x) { return /^https?:\/\//.test(x); })[0];
+        var wi = a.indexOf('-w'), wout = wi !== -1 ? a[wi + 1] : one(fl, 'write-out'), xi = a.indexOf('-X'), method = xi !== -1 ? a[xi + 1] : one(fl, 'request') || (a.indexOf('-d') !== -1 || one(fl, 'data') ? 'POST' : 'GET');
+        if (!url) return S.err('curl: no URL specified!');
+        var m = /^https?:\/\/(127\.0\.0\.1:8080|localhost:8080|beacon\.corp\.lab)(\/[^\s?]*)?/.exec(url);
+        if (!m) return S.err('curl: (6) Could not resolve host (this simulation serves http://127.0.0.1:8080 and https://beacon.corp.lab)', 6);
+        var path = m[2] || '/', code = 404, body = 'not found';
+        if (path === '/healthz') { code = 200; body = 'ok'; }
+        else if (path === '/v1/records' && method === 'POST') {
+          if (v === 'a' && s.full) { code = 500; body = '{"error": "write failed: [Errno 28] No space left on device"}'; }
+          else if (v === 'b' && symptom()) { code = 504; body = 'upstream timed out after 5000 ms'; }
+          else { code = 201; body = '{"id": ' + (91022 + s.clock) + ', "status": "accepted"}'; }
+        } else if (path === '/v1/records') { code = 200; body = '{"records": [], "next": null}'; }
+        if (wout && /http_code/.test(wout)) return S.ok(String(code));
+        return { out: (a.indexOf('-i') !== -1 ? 'HTTP/1.1 ' + code + '\n\n' : '') + body + '\n', code: 0 };
+      },
+      systemctl: function (w, a) {
+        var sub = a[0], unit = (a[1] || '').replace(/\.service$/, '');
+        if (unit !== 'beacon' && sub !== '--help') return S.err('Unit ' + (a[1] || '') + '.service could not be found (this simulation manages beacon.service)', 5);
+        var p = apiProc(w);
+        if (sub === 'restart') { restart(w); return S.ok(''); }
+        if (sub === 'status') return S.ok('● beacon.service - Beacon API (course starter service)\n     Loaded: loaded (/etc/systemd/system/beacon.service; enabled)\n     Active: active (running)\n   Main PID: ' + (p ? p.pid : '-') + ' (python3)\n     Environment: from ' + S28_ENV + ' (LOG_LEVEL=' + s.level + ' at start)');
+        if (sub === 'is-active') return S.ok('active');
+        if (sub === 'cat') return S.ok('# /etc/systemd/system/beacon.service\n[Service]\nUser=beacon\nEnvironmentFile=' + S28_ENV + '\nExecStart=/usr/bin/python3 -m beacon api\nRestart=on-failure');
+        return S.unsupported('systemctl', sub || '', ['status beacon', 'restart beacon', 'is-active beacon', 'cat beacon']);
+      },
+      journalctl: function (w, a) {
+        var lines = [];
+        if (v === 'a') lines = [].concat(s.full ? ['beacon[' + s.pid + ']: ERROR POST /v1/records write failed: [Errno 28] No space left on device'] : ['beacon[' + s.pid + ']: INFO POST /v1/records 201 14ms']);
+        else lines = [].concat(symptom() ? ['beacon[' + s.pid + ']: WARN db: statement timeout after 5000 ms (INSERT INTO records …)'] : ['beacon[' + s.pid + ']: INFO POST /v1/records 201 16ms']);
+        return S.ok(['Oct 13 ' + S.hms(32400 + s.startedAt) + ' beacon-vm systemd[1]: Started beacon.service - Beacon API (course starter service).', 'Oct 13 ' + S.hms(32400 + s.startedAt) + ' beacon-vm beacon[' + s.pid + ']: INFO starting beacon api (LOG_LEVEL=' + s.level + ')'].concat(lines.map(function (l) { return 'Oct 13 ' + S.hms(32400 + s.clock) + ' beacon-vm ' + l; })).join('\n'));
+      },
+      logrotate: function (w, a) {
+        var conf = a.filter(function (x) { return x.charAt(0) !== '-'; })[0];
+        if (!conf || S.readFile(w, conf) == null) return S.err('logrotate: usage: logrotate [-f] [-v] CONFIG (the Beacon config is /etc/logrotate.d/beacon)');
+        if (a.indexOf('-f') === -1 && a.indexOf('--force') === -1) return S.ok('(no logs past their size/age limit yet; -f forces a rotation)');
+        var out = [];
+        U().walk(w, '/var/log/beacon').filter(function (p) { return /\.log$/.test(p) && nodeOf(w, p) && nodeOf(w, p).t === 'f'; }).forEach(function (p) {
+          var n = nodeOf(w, p), sz = U().sizeOf(n);
+          for (var k = 6; k >= 1; k--) { var o = nodeOf(w, p + '.' + k + '.gz'); if (o) { w.fs[U().resolve(w, p + '.' + (k + 1) + '.gz')] = o; delete w.fs[U().resolve(w, p + '.' + k + '.gz')]; } }
+          var gz = U().mkfile(w, p + '.1.gz', '(gzip data, simulated: ' + sz + ' bytes of ' + p.split('/').pop() + ')\n', { owner: n.owner, group: n.group, mode: n.mode, size: Math.max(1, Math.round(sz / 20)) });
+          gz.orig = sz + (n.orig || 0);
+          n.size = 0; n.orig = undefined;
+          out.push('rotating ' + p + ' (copytruncate, compress): ' + sz + ' bytes -> ' + p.split('/').pop() + '.1.gz');
+        });
+        return S.ok(a.indexOf('-v') !== -1 ? out.join('\n') : '');
+      },
+      gzip: function (w, a) {
+        var file = a.filter(function (x) { return x.charAt(0) !== '-'; })[0], n = file && nodeOf(w, file);
+        if (!n || n.t !== 'f') return S.err('gzip: ' + (file || '') + ': No such file or directory');
+        var abs = U().resolve(w, file), sz = U().sizeOf(n);
+        var gz = U().mkfile(w, abs + '.gz', '(gzip data, simulated: ' + sz + ' bytes)\n', { owner: n.owner, group: n.group, mode: n.mode, size: Math.max(1, Math.round(sz / 20)) }); gz.orig = sz;
+        var holder = (w.procs || []).filter(function (p) { return (p.open || []).indexOf(abs) !== -1; })[0];
+        if (holder) { (w.deleted = w.deleted || []).push({ path: abs, size: sz, pid: holder.pid, cmd: holder.cmd }); var d = U().mountOf(w, abs); if (d) d.base = (d.base || 0) + sz; }
+        delete w.fs[abs];
+        return S.ok('');
+      },
+      psql: function (w, a) {
+        var ci = a.indexOf('-c'), q = ci !== -1 ? a.slice(ci + 1).join(' ').replace(/^["']|["']$/g, '') : null, lc = (q || '').toLowerCase();
+        if (!q) return S.err('psql (simulation): use psql -h beacon-db-primary -c "SQL"');
+        var cm = /pg_(cancel|terminate)_backend\((\d+)\)/.exec(lc);
+        if (cm) { var hit = s.exp && s.exp.dbpid === +cm[2]; if (hit) { append(w, S28_EXPLOG, S.stamp(s) + ' ERROR canceling statement due to user request'); if (s.exp.primary) T(s.clock, 'alertmanager', 'ALERT BeaconWriteLatency resolved'); s.exp = null; w.procs = (w.procs || []).filter(function (x) { return !/beacon-export/.test(x.cmd); }); }
+          return S.ok(' pg_' + cm[1] + '_backend\n-------------------\n ' + (hit ? 't' : 'f') + '\n(1 row)'); }
+        if (/from\s+pg_stat_activity/.test(lc)) {
+          var rows = [[31877, 'beacon', 'beacon-api', 'active', S.hms(32400 + s.clock - 1) + 'Z', 'INSERT INTO records (sensor, status, idempotency_key) …'], [31880, 'beacon', 'beacon-api', 'idle', S.hms(32400 + s.clock - 3) + 'Z', 'SELECT id, sensor, status FROM records WHERE …']];
+          if (v === 'b' && s.exp && s.exp.primary) rows.unshift([s.exp.dbpid, 'export', 'beacon-export', 'active', S.hms(32400 + s.exp.start) + 'Z', 'COPY (SELECT r.*, s.* FROM records r JOIN sensors s ON …) TO STDOUT']);
+          return S.ok(S.table(['pid', 'usename', 'application_name', 'state', 'query_start', 'query'], rows) + '(' + rows.length + ' rows)');
+        }
+        return S.err('psql (simulation): supported here: select … from pg_stat_activity; select pg_cancel_backend(PID) / pg_terminate_backend(PID)', 2);
+      },
+      pkill: function (w, a) {
+        if (v === 'b' && s.exp && /beacon-export/.test(a.join(' '))) { append(w, S28_EXPLOG, S.stamp(s) + ' export --full killed (SIGTERM)'); if (s.exp.primary) T(s.clock, 'alertmanager', 'ALERT BeaconWriteLatency resolved'); s.exp = null; w.procs = (w.procs || []).filter(function (x) { return !/beacon-export/.test(x.cmd); }); return S.ok(''); }
+        return { out: '', code: 1 };
+      },
+      sleep: function (w, a) { var n = Math.min(600, Math.max(0, parseInt(a[0], 10) || 0)); s.clock += Math.floor(n / 10) * 10; advance(w); return { out: '', code: 0 }; },
+      edit: S.verbs.edit()
+    };
+    /* built-ins still advance the scenario clock here: time is the point of this incident */
+    var builtinsClocked = clocked(['df', 'du', 'ls', 'cat', 'tail', 'head', 'grep', 'lsof', 'rm', 'truncate', 'mv', 'cp', 'stat', 'ps', 'sed']);
+    Object.keys(builtinsClocked).forEach(function (k) { verbs[k] = builtinsClocked[k]; });
+    var debugLines = 'DEBUG beacon.api: request POST /v1/records headers={…} body_bytes=412\nDEBUG beacon.store: INSERT records sensor=lab-sensor-0117 params=(…)\nDEBUG beacon.api: response 201 in 14ms\n';
+    var files = [{ path: S28_ENV, content: v === 'a' ? '# Beacon environment (read by beacon.service)\nBEACON_CONFIG=/etc/beacon/beacon.yaml\n# BEA-311 (lee, 08:20): debug logging to chase a parser bug; revert after\nLOG_LEVEL=debug\n' : '# Beacon environment (read by beacon.service)\nBEACON_CONFIG=/etc/beacon/beacon.yaml\nLOG_LEVEL=info\n', owner: 'root', mode: '640' },
+      { path: S28_APILOG, content: '2026-10-13T09:02:31Z ERROR POST /v1/records write failed: ' + (v === 'a' ? '[Errno 28] No space left on device' : 'statement timeout after 5000 ms') + '\n2026-10-13T09:1' + (v === 'a' ? '6:30' : '4:05') + 'Z INFO beacon api started\n', owner: 'beacon', mode: '640', size: v === 'a' ? 48 * MiB : 31 * MiB },
+      { path: '/etc/logrotate.d/beacon', content: '/var/log/beacon/*.log {\n    size 100M\n    rotate 7\n    compress\n    copytruncate\n    missingok\n}\n' },
+      { path: '/srv/archive/README', content: 'Long-term log archive (separate disk). Incident evidence goes here, never to /dev/null.\n' }];
+    if (v === 'a') files.push({ path: S28_LOG, content: debugLines, owner: 'beacon', mode: '640', size: S28_DEBUG_RATE * (1500 - 1080) });
+    else files.push({ path: S28_CRON, content: '# Partner export (PR #77, lee, 2026-10-13 08:50): every 30 min, from the primary because the replica lags\nSHELL=/bin/sh\n*/30 * * * * beacon /usr/local/bin/beacon-export --full --dsn postgresql://export@beacon-db-primary.corp.lab/beacon >> ' + S28_EXPLOG + ' 2>&1\n', owner: 'root' },
+      { path: S28_EXPLOG, content: '2026-10-13T08:00:02Z export --incremental start (dsn beacon-db-replica)\n2026-10-13T08:01:40Z export --incremental finished: 9,412 rows\n2026-10-13T09:00:01Z export --full start (dsn beacon-db-primary)\n2026-10-13T09:14:02Z ERROR server closed the connection unexpectedly\n', owner: 'beacon', size: 6 * 1024 },
+      { path: S28_SYSLOG, content: 'Oct 13 08:00:01 beacon-vm CRON[4011]: (beacon) CMD (/usr/local/bin/beacon-export --incremental --dsn postgresql://export@beacon-db-replica.corp.lab/beacon >> ' + S28_EXPLOG + ' 2>&1)\nOct 13 08:50:12 beacon-vm cron[612]: (*system*) RELOAD (/etc/cron.d/beacon-export)\nOct 13 09:00:01 beacon-vm CRON[4120]: (beacon) CMD (/usr/local/bin/beacon-export --full --dsn postgresql://export@beacon-db-primary.corp.lab/beacon >> ' + S28_EXPLOG + ' 2>&1)\n', size: 2 * MiB });
+    return { user: 'root', host: 'beacon-vm', cwd: '/root', dirs: [{ path: '/var/log/beacon' }, { path: '/srv/archive' }, { path: '/etc/cron.d' }], disks: disks,
+      procs: [{ pid: 2417, user: 'beacon', cmd: 'python3 -m beacon api', cpu: 3, mem: 2, open: v === 'a' ? [S28_LOG] : [] }, { pid: 612, user: 'root', cmd: '/usr/sbin/cron -f', cpu: 0, mem: 0 }],
+      files: files, sre: s, extra: S.bind(s, verbs) };
+  }
+  function s28Sleeps(c) {
+    var s = st(c), need = s.stableSince == null ? 910 : Math.max(s.stableSince + S28_WINDOW, s.mustPass == null ? 0 : s.mustPass + 60) - s.clock + 30, out = [];
+    while (need > 0) { out.push('sleep ' + Math.min(600, Math.ceil(need / 10) * 10)); need -= 600; }
+    return out;
+  }
+  var S28_POST = 'curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/v1/records -d \'{"sensor": "lab-sensor-0001", "status": "ok"}\'';
+  var S28_UPDATE = 'incident update INC-0412 "Reopened: Beacon API writes (POST /v1/records) are failing or slow again for all clients, reads are fine. The 09:18 mitigation removed the symptom, not the cause, we have found a recurring trigger and are fixing it. Next update 10:15 UTC."';
+  var S28_PALETTE = ['incident show INC-0412', 'curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/v1/records', 'df -h /var', 'ls -lh /var/log/beacon/', 'cat /etc/cron.d/beacon-export', 'grep CRON /var/log/syslog', 'psql -c "select pid, usename, state, query from pg_stat_activity"', 'incident reopen INC-0412', 'incident update INC-0412 "…"', 'sleep 300', 'incident followup INC-0412 --owner NAME "…"', 'incident resolve INC-0412'];
+
+  LX.missions.push({
+    id: 'sre-s28', track: 'sre', cat: 'scenario', level: 'intermediate', mins: 30, kind: 'incident',
+    title: 'Incident INC-0412 was closed at 09:20; you are taking over',
+    brief: function () { return 'INC-0412 (Beacon writes failing) was declared resolved at 09:20 after a quick mitigation, and you are taking over incident command at 09:25 on beacon-vm. Before anyone moves on, decide whether it is really over. If it is not, handle it properly: an accurate incident record, a time-stamped update for stakeholders, the real cause found and removed, a verification window before closing, and an owned follow-up.'; },
+    keys: S28_PALETTE,
+    world: s28World,
+    objectives: [
+      { id: 'record', stage: 'evidence', text: 'Read the incident record: what failed, what was done, and on what evidence it was closed',
+        hint: 'A resolution is a claim. What evidence does the timeline give for it?', hint2: '`incident show INC-0412`.',
+        reveal: 'incident show INC-0412',
+        done: function (c) { return saw(c, /incident\s+(show|list)\b/, /INC-0412[\s\S]*RESOLVED/); } },
+      { id: 'trigger', stage: 'evidence', text: 'Find what is still driving the symptom, and when it will bite next',
+        hint: 'The mitigation changed something temporary. What on this host is still doing what it did before 09:00?', hint2: 'Watch the resource that failed over a minute or two (df, ls -lh, logs), and look for things that run on a schedule or were changed this morning (environment files, /etc/cron.d, syslog).',
+        reveal: function (c) { return st(c).variant === 'a' ? 'df -h /var && sleep 60 && df -h /var && tail -n 3 /var/log/beacon/api-debug.log && cat /etc/beacon/beacon.env' : 'grep CRON /var/log/syslog && cat /etc/cron.d/beacon-export'; },
+        done: function (c) { return st(c).variant === 'a' ? saw(c, /df\b/, /\s\/var\s*$/m) && saw(c, /(cat|grep|tail|head|less)\b.*(beacon\.env|api-debug)/, /LOG_LEVEL=debug|DEBUG/) : saw(c, /(cat|grep|less|head)\b.*\/etc\/cron\.d|crontab\b/, /\*\/30[^\n]*beacon-export/); } },
+      { id: 'reopen', stage: 'fix', text: 'Reopen the incident accurately and post a time-stamped update with scope, impact and the next update time',
+        hint: 'Stakeholders were told it was over. What do they need to know now, and when will they hear next?', hint2: '`incident reopen INC-0412 --reason "…"`, then `incident update INC-0412 "…"` naming what is affected, what users see, and "next update HH:MM UTC".',
+        reveal: 'incident reopen INC-0412 --reason "the cause was not removed, the symptom recurs on a schedule" && ' + S28_UPDATE,
+        done: function (c) { var i = st(c).inc; return i.reopenedAt != null && i.updates.some(function (u) { return u.ok && u.at >= i.reopenedAt; }); } },
+      { id: 'cause', stage: 'fix', text: 'Remove the recurring cause without destroying the evidence',
+        hint: 'Stop the thing that keeps happening; keep what explains it.', hint2: 'Change the setting or the schedule that drives it and apply it (restart a service, or edit the cron entry); reclaim space by rotating and compressing, never by deleting.',
+        reveal: function (c) { return st(c).variant === 'a' ? "sed -i 's/^LOG_LEVEL=debug$/LOG_LEVEL=info/' /etc/beacon/beacon.env && systemctl restart beacon && logrotate -f /etc/logrotate.d/beacon" : "sed -i 's/beacon-db-primary/beacon-db-replica/' /etc/cron.d/beacon-export" + (st(c).exp && st(c).exp.primary ? ' && psql -c "select pg_cancel_backend(' + st(c).exp.dbpid + ')"' : ''); },
+        explain: 'Variant a: debug logging left on writes ~400 MB/min to /var; turning it off and rotating the log (copytruncate + compress) stops the growth and frees space while keeping the evidence. Variant b: a 30-minute cron job runs a full export against the primary; pointing it at the replica (or moving it off-hours) stops the recurring load.',
+        done: function (c) { return st(c).api.fixed(c.w); } },
+      { id: 'window', stage: 'verify', text: 'Keep watching through a verification window (15 minutes, and past the next time the trigger would have fired) and show the user path working',
+        hint: 'It looked fixed at 09:20 too.', hint2: '`sleep 600`, `sleep 300`, then a real write: `curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/v1/records`.',
+        reveal: function (c) { return s28Sleeps(c).concat([S28_POST]).join(' && '); },
+        done: function (c) { var s = st(c); return s.api.fixed(c.w) && s.api.stable() && lastIs(c, /curl\b.*\/v1\/records/, /^201\s*$/m); } },
+      { id: 'close', stage: 'verify', text: 'Record the follow-up with an owner, then resolve the incident',
+        hint: 'Something made this possible and is not fixed yet. Who owns it?', hint2: '`incident followup INC-0412 --owner NAME "…"`, then `incident resolve INC-0412 --summary "…"`.',
+        reveal: function (c) { return 'incident followup INC-0412 --owner lee "' + (st(c).variant === 'a' ? 'BEA-311: debug logging needs a size cap and an expiry, alert on /var growth rate, not only on full' : 'PR #77: fix replica lag or move the full export off-hours, add statement_timeout for the export role') + '" && incident resolve INC-0412 --summary "cause removed and verified over a full window"'; },
+        done: function (c) { var i = st(c).inc; return i.status === 'resolved' && i.resolvedBy === 'you' && !i.premature && i.followups.some(function (f) { return f.owner && f.text.length >= 20; }) && lastIs(c, /incident\s+resolve\b/, /resolved at/); } }
+    ],
+    sre: {
+      scenarioId: 'S28', moduleId: 'M14', lab: 'L28', variants: ['a', 'b'],
+      symptom: 'Writes failed this morning; a mitigation made the symptom vanish and the incident was closed within minutes.',
+      neutralTitle: 'Incident closed after a quick mitigation',
+      neutralBrief: 'A Beacon write outage was declared resolved minutes after a mitigation made the symptom vanish. You are taking over incident command. Decide whether it is over; if not, keep the record accurate, update stakeholders, find and remove the cause, verify over a window and record an owned follow-up.',
+      impact: 'Clients could not submit sensor status records (POST /v1/records) for about 15 minutes this morning.',
+      changes: 'Several changes on beacon-vm this morning; a restart or database failover at about 09:15.',
+      spoilers: ['debug', 'LOG_LEVEL', 'cron', 'export', 'disk full', 'deleted file', 'logrotate', 'replica'],
+      tools: ['incident show|reopen|status|update|followup|resolve', 'curl (user path)', 'df, du, ls, cat, tail, grep, lsof +L1, stat', 'systemctl status|restart beacon, journalctl -u beacon', 'logrotate -f, gzip, sed -i, edit', 'psql -c (pg_stat_activity, pg_cancel_backend)', 'pkill -f beacon-export', 'sleep N'],
+      grammar: ['`incident show INC-0412`, `incident reopen INC-0412 [--reason "…"]`, `incident status INC-0412 investigating|identified|monitoring`, `incident update INC-0412 "TEXT"`, `incident followup INC-0412 --owner NAME "TEXT"`, `incident resolve INC-0412 [--summary "…"]`',
+        '`curl [-s] [-o /dev/null] [-w "%{http_code}"] [-X POST] http://127.0.0.1:8080/v1/records|/healthz`', '`systemctl status|restart beacon`, `logrotate -f [-v] /etc/logrotate.d/beacon`, `gzip FILE`', '`psql -c "select … from pg_stat_activity"`, `psql -c "select pg_cancel_backend(PID)"`', '`sleep N` (≤ 600) advances the clock; every other command advances it 10 s'],
+      palette: S28_PALETTE,
+      assumptions: ['You are root on beacon-vm and incident commander from 09:25.', 'The incident tool posts updates to the incident channel and status page.', 'Nothing else changes on the host while you work.'],
+      simplified: ['Time is logical: every command is 10 seconds and `sleep` advances further; the recurring cause runs on that clock.', 'Disk usage is modelled from file sizes and a fixed growth rate; compression is a fixed 20:1. A file deleted while a process holds it keeps its space until the process restarts, as on Linux.', 'The database, cron and the incident tracker are bounded stand-ins; psql answers only the listed queries.', 'Update checks look for scope, impact and a future "next update" time in the text; a human still judges whether the update is clear and true.'],
+      unsafe: [
+        { label: 'resolved before the verification window passed', why: 'Closing the incident before the cause is removed and the service has stayed healthy for a full window (including the next time the trigger would fire) repeats the 09:20 mistake: stakeholders stop watching just before it comes back.',
+          test: function (c) { return !!st(c).inc.premature; },
+          demo: ['incident reopen INC-0412', 'incident resolve INC-0412'] },
+        { label: 'deleted or truncated the evidence', why: 'Logs are the record of what happened and why. Deleting or truncating them destroys the evidence for the postmortem (and a file deleted while a process holds it does not even free the space).',
+          test: function (c) { return !!st(c).evidenceGone; },
+          demo: function (c, v) { return v === 'a' ? 'rm /var/log/beacon/api-debug.log' : 'rm /var/log/beacon/export.log'; } }
+      ],
+      alt: function (v) {
+        if (v === 'a') return ['incident list', 'incident show INC-0412', S28_POST, 'ls -lh /var/log/beacon/', 'sleep 30', 'ls -lh /var/log/beacon/', 'df -h /var', 'grep LOG_LEVEL /etc/beacon/beacon.env',
+          'incident reopen INC-0412 --reason "/var is filling again at ~400 MB/min"', 'incident status INC-0412 identified',
+          'incident update INC-0412 "Beacon API writes will fail again within minutes (disk on beacon-vm filling), 0% of POST /v1/records are failing right now but impact returns at 100% when full. Next update 10:00 UTC."',
+          'edit /etc/beacon/beacon.env LOG_LEVEL info', 'gzip /var/log/beacon/api-debug.log', 'lsof +L1', 'systemctl restart beacon', 'df -h /var', 'incident status INC-0412 monitoring',
+          'sleep 600', 'sleep 320', S28_POST, 'incident followup INC-0412 --owner platform-team "Alert on the growth rate of /var, cap debug logging by size and time, and document why rm does not free space for open files"',
+          'incident resolve INC-0412 --summary "debug logging off, log compressed and kept, 15 min stable"'];
+        return ['incident show INC-0412', 'tail -n 5 /var/log/beacon/export.log', 'ls -l /etc/cron.d/', 'cat /etc/cron.d/beacon-export', 'incident reopen INC-0412',
+          'incident update INC-0412 "Beacon writes (POST /v1/records) will slow down and time out again at 09:30 for all clients when a scheduled export hits the database; next update 09:45 UTC."',
+          "sed -i 's/^\\*/# */' /etc/cron.d/beacon-export", 'cat /etc/cron.d/beacon-export', 'sleep 600', 'sleep 600', 'sleep 120', 'psql -c "select pid, usename, state, query from pg_stat_activity"', S28_POST,
+          'incident followup INC-0412 --owner data-team "Re-enable the full export only against a replica or off-hours, with a statement_timeout for the export role"', 'incident resolve INC-0412'];
+      },
+      mechanism: 'The mitigation removed the symptom, not the cause, and the incident was closed with no verification window. (a) Debug logging (left on since 08:20 for another ticket) writes ~400 MB/min to /var. Someone deleted the 4 GB debug log at 09:08, but the process held it open, so no space came back until the 09:16 restart released it; the new log then filled /var again by about 09:30. Fix: turn debug logging off and restart, rotate and compress the log (copytruncate keeps the open file valid) to reclaim space while keeping the evidence. (b) A cron entry added at 08:50 runs a full export against the primary every 30 minutes; the 09:14 failover killed the 09:00 run, and the 09:30 run brought the load back. Fix: point it at the replica or move it off-hours (and cancel a running export). In both, reopen the incident (keeping the original start time), post an update with scope, impact and next update time, verify across a window that includes the next trigger, then resolve with an owned follow-up for the condition that allowed it.',
+      alternatives: [
+        { h: 'The restart/failover fixed a one-off glitch', out: 'Ruled out: the resource is trending back to the failure (a), or the trigger is on a schedule that fires again at :30 (b).' },
+        { h: 'The database or disk hardware is failing', out: 'Ruled out: the growth matches the debug log rate exactly (a); load appears only while the export runs (b).' },
+        { h: 'Free space by deleting old logs', out: 'Rejected: it destroys evidence, and a file still held open frees nothing until restart.' }
+      ],
+      clues: ['/healthz answers 200 throughout: it does not exercise writes.', 'The incident timeline keeps the original start time when reopened.'],
+      passRubric: ['Shows the cause was still present after the mitigation (trend or schedule), not just that the symptom returned', 'Reopens with an accurate, time-stamped update (scope, impact, next update)', 'Removes the recurring trigger while preserving evidence', 'Verifies across a window that includes the next trigger before resolving, and records an owned follow-up'],
+      prereqs: ['les-m14-04', 'les-m14-05'], refs: ['T01', 'T15']
     }
   });
 })();

@@ -118,6 +118,8 @@
     for (i = 0; i < line.length; i++) {
       var ch = line[i];
       if (quote) {
+        /* in "…" a backslash escapes only $ ` " and \ (bash), everything else stays literal */
+        if (quote === '"' && ch === '\\' && i + 1 < line.length && '$`"\\'.indexOf(line[i + 1]) !== -1) { i++; cur += line[i] === '$' ? '\u0011' : line[i]; continue; }
         if (ch === quote) { quote = null; cur += '\u0001Q'; }
         else if (quote === "'") {
           /* single quotes are literal: hide $, * and ? from expansion */
@@ -1638,7 +1640,11 @@
     var segs = [], cur = '', quote = null, op = null, ops = [];
     for (var i = 0; i < line.length; i++) {
       var ch = line[i];
-      if (quote) { cur += ch; if (ch === quote) quote = null; continue; }
+      if (quote) {
+        /* inside "…" a backslash escapes the next character, so \" does not end the quote */
+        if (quote === '"' && ch === '\\' && i + 1 < line.length) { cur += ch + line[i + 1]; i++; continue; }
+        cur += ch; if (ch === quote) quote = null; continue;
+      }
       if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue; }
       if (ch === ';') { segs.push(cur); ops.push(';'); cur = ''; continue; }
       if (ch === '&' && line[i + 1] === '&') { segs.push(cur); ops.push('&&'); cur = ''; i++; continue; }
