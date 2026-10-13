@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyArchiveOutsideEndpoint",
+      "Effect": "Deny",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::beacon-archive-lab",
+        "arn:aws:s3:::beacon-archive-lab/*"
+      ],
+      "Condition": {
+        "StringNotEquals": {
+          "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+        }
+      }
+    }
+  ]
+}

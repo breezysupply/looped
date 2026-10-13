@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteProcessed",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::beacon-archive-lab/processed/*"
+    },
+    {
+      "Sid": "ArchiveKey",
+      "Effect": "Allow",
+      "Action": [
+        "kms:GenerateDataKey",
+        "kms:Decrypt"
+      ],
+      "Resource": "arn:aws:kms:us-west-2:111122223333:key/7f3c2a10-5b4e-4d6f-9a8b-1c2d3e4f5a6b"
+    }
+  ]
+}

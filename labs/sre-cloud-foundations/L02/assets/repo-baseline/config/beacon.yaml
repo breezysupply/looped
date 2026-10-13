@@ -1,0 +1,18 @@
+# Beacon lab configuration (L02). Validate before you commit:
+#   PYTHONPATH=labs/sre-cloud-foundations/beacon python3 -m beacon validate-config --config config/beacon.yaml
+server:
+  listen: 127.0.0.1
+  port: 8080
+  request_timeout_s: 10
+app:
+  version: "1.4.0"
+  environment: lab
+  admin_enabled: false
+store:
+  kind: memory
+queue:
+  kind: none
+inject:
+  delay_ms: 0
+  fail_rate: 0.0
+  ready_fail: false

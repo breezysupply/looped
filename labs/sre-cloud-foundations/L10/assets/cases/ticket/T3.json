@@ -1,0 +1,15 @@
+{
+  "id": "T3",
+  "description": "exporter decrypts the SSE-KMS data key of an export object",
+  "request": {
+    "principal": "beacon-exporter",
+    "action": "kms:Decrypt",
+    "resource": "arn:aws:kms:us-west-2:111122223333:key/7f3c2a10-5b4e-4d6f-9a8b-1c2d3e4f5a6b",
+    "context": {
+      "aws:CurrentTime": "2026-10-13T15:00:00Z",
+      "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+    },
+    "session": "work/session.json"
+  },
+  "expect": "Allow"
+}

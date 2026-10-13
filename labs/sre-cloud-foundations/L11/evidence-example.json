@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L11 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L11",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-c",
+  "startedAt": "2027-01-11T17:00:00Z",
+  "completedAt": "2027-01-11T18:47:03Z",
+  "environment": { "profile": "workstation", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "terraform": "1.13.3", "variant_file": "variant-c", "workspace": "labs/sre-cloud-foundations/L11/work" },
+  "checks": [
+    { "id": "workspace-local", "passed": true, "observed": "local state at work/terraform.tfstate" },
+    { "id": "lockfile-pinned", "passed": true, "observed": "lockfile identical to the committed one (local 2.9.1, random 3.9.1)" },
+    { "id": "fmt", "passed": true, "observed": "terraform fmt -check clean" },
+    { "id": "tf-validate", "passed": true, "observed": "Success! The configuration is valid." },
+    { "id": "tf-test", "passed": true, "observed": "5 passed, 0 failed; runs=5 expect_failures=3 store-path test=yes" },
+    { "id": "input-validation", "passed": true, "observed": "all three bad inputs refused at plan time by validation" },
+    { "id": "no-change-plan", "passed": true, "observed": "No changes: configuration, state and files agree" },
+    { "id": "generated-config", "passed": true, "observed": "Beacon accepts it; sha256 matches output" },
+    { "id": "deploy-id-stable", "passed": true, "observed": "deploy_id 2bdee987 (baseline 2bdee987)" },
+    { "id": "graph-evidence", "passed": true, "observed": "graph saved with manifest -> config and manifest -> random_id edges" },
+    { "id": "notes", "passed": false, "observed": "sections present, chars=310" }
+  ],
+  "explanation": "Plan wanted to create local_file.config; plan -refresh=false was clean, so the file had been deleted out of band. Applied the one-resource plan; deploy_id unchanged.",
+  "cleanupStatus": "pending"
+}

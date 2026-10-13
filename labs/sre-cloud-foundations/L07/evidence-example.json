@@ -1,0 +1,25 @@
+{
+  "note": "EXAMPLE of the evidence schema for L07 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L07",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2026-12-01T18:00:00Z",
+  "completedAt": "2026-12-15T20:10:00Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "variant_file": "variant-a" },
+  "checks": [
+    { "id": "tests-pass", "passed": true, "observed": "your suite on your code: ran 21, OK" },
+    { "id": "tests-are-fair", "passed": true, "observed": "your suite on the reference implementation: ran 21, OK" },
+    { "id": "tests-catch-bugs", "passed": true, "observed": "broken variants caught by your tests: 7/7" },
+    { "id": "edge-cases", "passed": true, "observed": "13/13 generated cases match the reference" },
+    { "id": "incident", "passed": true, "observed": "incident-variant-a.jsonl: exit 1, summary equal" },
+    { "id": "deterministic", "passed": true, "observed": "incident-variant-a.jsonl: text output identical across 3 hash seeds: True; --json identical: True; summaries produced: True" },
+    { "id": "bounded-memory", "passed": true, "observed": "peak RSS 12800 KiB for 30k rows, 12488 KiB for 300k rows (42 MiB file): grew -0.3 MiB" },
+    { "id": "notes", "passed": true, "observed": "evidence/L07-notes.md: 1240 chars; O(n) explained" }
+  ],
+  "explanation": "Streaming generator, counters per service/status and a message table; O(n) time, memory bounded by distinct keys. Bad rows raise with file:line and exit 2; offsets converted to UTC; ties sorted by message.",
+  "cleanupStatus": "not-applicable"
+}

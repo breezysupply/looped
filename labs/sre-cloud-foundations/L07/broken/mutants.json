@@ -1,0 +1,41 @@
+{
+  "note": "Deliberately broken variants of solution/logsummary.py. validate.py applies each patch (exact text, must match once) to the reference and runs YOUR tests against it: a good suite fails on every one. Names describe the bug; read them after your attempt if you want to keep the exercise blind.",
+  "base": "solution/logsummary.py",
+  "mutants": [
+    {
+      "id": "skips-malformed-rows",
+      "find": "                raise MalformedInput(f\"{where}: invalid JSON ({e.msg})\") from None",
+      "replace": "                continue"
+    },
+    {
+      "id": "ignores-utc-offset",
+      "find": "    return parsed.astimezone(timezone.utc)",
+      "replace": "    return parsed.replace(tzinfo=timezone.utc)"
+    },
+    {
+      "id": "errors-on-stdout",
+      "find": "        err.write(f\"logsummary: error: {e}\\n\")",
+      "replace": "        out.write(f\"logsummary: error: {e}\\n\")"
+    },
+    {
+      "id": "always-exit-zero",
+      "find": "    return EXIT_ERRORS_FOUND if summary[\"errors\"] else EXIT_OK",
+      "replace": "    return EXIT_OK"
+    },
+    {
+      "id": "unordered-ties",
+      "find": "key=lambda kv: (-kv[1], kv[0])",
+      "replace": "key=lambda kv: -kv[1]"
+    },
+    {
+      "id": "crashes-on-empty",
+      "find": "    window = {\"start\": _iso(start), \"end\": _iso(end)} if start is not None and end is not None else None",
+      "replace": "    window = {\"start\": _iso(start), \"end\": _iso(end)}"
+    },
+    {
+      "id": "missing-key-traceback",
+      "find": "            raise MalformedInput(f\"{where}: missing key {key!r}\")",
+      "replace": "            pass"
+    }
+  ]
+}

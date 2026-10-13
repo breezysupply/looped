@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadExports",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::beacon-archive-lab"
+    },
+    {
+      "Sid": "DbSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:us-west-2:111122223333:secret:beacon/db-*"
+    },
+    {
+      "Sid": "DecryptOps",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "arn:aws:kms:us-west-2:111122223333:key/c4d5e6f7-0a1b-4c2d-8e3f-5a6b7c8d9e0f"
+    }
+  ]
+}

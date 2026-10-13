@@ -1,0 +1,13 @@
+# Beacon configuration baked into the L13 image (YAML subset, see beacon/README.md).
+# Environment variables BEACON_<SECTION>_<KEY> override any value at run time.
+server:
+  listen: 0.0.0.0
+  port: 8080
+app:
+  version: "1.4.0"
+  environment: container-lab
+  admin_enabled: false
+store:
+  kind: memory
+queue:
+  kind: none

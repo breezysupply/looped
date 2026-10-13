@@ -1,0 +1,9 @@
+{
+  "service": "beacon",
+  "listen_port": 8080,
+  "health": {
+    "path": "/ready",
+    "expect_status": 200
+  },
+  "expect_version": "1.4.0"
+}

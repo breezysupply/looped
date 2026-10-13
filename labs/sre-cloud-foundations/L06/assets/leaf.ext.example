@@ -1,0 +1,8 @@
+# x509 v3 extensions for a lab server certificate (used with `openssl x509 -req -extfile`).
+# Copy, set the DNS name(s) the clients will use, and keep the rest.
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature
+extendedKeyUsage = serverAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
+subjectAltName = DNS:CHANGE-ME.corp.lab

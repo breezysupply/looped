@@ -1,0 +1,9 @@
+{"ts": "2026-09-14T10:00:00Z", "service": "beacon-api", "status": 200, "level": "info", "msg": "request"}
+{"ts": "2026-09-14T10:00:01Z", "service": "beacon-api", "status": 201, "level": "info", "msg": "request"}
+{"ts": "2026-09-14T10:00:02Z", "service": "beacon-worker", "status": 200, "level": "info", "msg": "job done"}
+{"ts": "2026-09-14T10:00:03Z", "service": "beacon-api", "status": 503, "level": "error", "error": "store unavailable"}
+{"ts": "2026-09-14T10:00:04Z", "service": "beacon-api", "status": 503, "level": "error", "error": "store unavailable"}
+{"ts": "2026-09-14T10:00:05Z", "service": "beacon-worker", "status": 500, "level": "error", "error": "job handler crashed"}
+{"ts": "2026-09-14T10:00:06Z", "service": "beacon-api", "status": 404, "level": "info", "msg": "request"}
+
+{"ts": "2026-09-14T10:00:07Z", "service": "beacon-worker", "status": 200, "level": "error", "msg": "retry budget exhausted"}

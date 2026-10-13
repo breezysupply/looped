@@ -1,0 +1,2 @@
+{"ts": "2026-09-14T10:00:00Z", "service": "beacon-api", "status": 200}
+{"ts": "2026-09-14T10:00:01Z", "status": 500, "error": "no service field"}

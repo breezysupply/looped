@@ -1,0 +1,16 @@
+# Build-context hygiene for the Beacon image: send only what the image needs.
+# Version control, editor and Python caches
+.git
+**/__pycache__
+**/*.pyc
+# local environment files and anything secret-shaped never enter an image
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+# lab paperwork stays on the host
+evidence
+notes
+*.md
+Dockerfile
+.dockerignore

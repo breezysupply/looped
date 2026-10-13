@@ -1,0 +1,26 @@
+{
+  "note": "EXAMPLE of the evidence schema for L05 — not a result. Real reports come from validate.py on your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L05",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-11-17T18:00:00Z",
+  "completedAt": "2026-11-17T19:40:00Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "namespaces": ["looped-l05-client", "looped-l05-rtr", "looped-l05-srv"] },
+  "checks": [
+    { "id": "topology", "passed": true, "observed": "namespaces: looped-l05-client, looped-l05-rtr, looped-l05-srv; fixtures not running: none" },
+    { "id": "authoritative-data", "passed": true, "observed": "@10.55.2.54 api.beacon.corp.lab A +norec -> NOERROR aa=True answer=['10.55.2.80']" },
+    { "id": "delegation", "passed": true, "observed": "@10.55.2.53 api.beacon.corp.lab A +norec -> NOERROR aa=False authority NS=['ns1.beacon.corp.lab.'] glue={'ns1.beacon.corp.lab.': '10.55.2.54'}" },
+    { "id": "recursive-result", "passed": true, "observed": "@10.55.2.10 api.beacon.corp.lab A -> NOERROR answer=['10.55.2.80']" },
+    { "id": "route", "passed": true, "observed": "route get 10.55.2.80: 10.55.2.80 via 10.55.1.1 dev l05-c0 src 10.55.1.10; gateways in client table: ['10.55.1.1']" },
+    { "id": "user-path", "passed": true, "observed": "client GET http://api.beacon.corp.lab:8080/healthz -> ok" },
+    { "id": "no-bypass", "passed": true, "observed": "client nameservers=['10.55.2.10']; hosts entries for api.beacon.corp.lab: none" },
+    { "id": "resolver-kept", "passed": true, "observed": "resolver kept its cache process (cleared narrowly)" },
+    { "id": "evidence-quoted", "passed": true, "observed": "notes: authoritative answer with aa flag quoted; failing evidence quoted; 1004 chars" }
+  ],
+  "explanation": "Child answered aa 10.55.2.80; resolver said NXDOMAIN with the child SOA in AUTHORITY at TTL 3412 and falling. A negative answer cached before the record existed. Flushed that one name.",
+  "cleanupStatus": "reported"
+}
