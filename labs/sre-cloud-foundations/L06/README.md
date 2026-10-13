@@ -32,7 +32,7 @@ SNI and Host while connecting to loopback. Add `--noproxy '*'` if your shell has
 
 ## Steps and checkpoints
 
-**Checkpoint c1 — reproduce with verification on, then look at the handshake (week 8, session 1).**
+**Checkpoint c1 — reproduce with verification on, then look at the handshake (week 7).**
 
 1. `sudo bash labs/sre-cloud-foundations/L06/setup.sh`
 2. Reproduce as a client that trusts only the lab CA:
@@ -43,7 +43,7 @@ SNI and Host while connecting to loopback. Add `--noproxy '*'` if your shell has
 4. Proxy and backend: `cat /opt/beacon-l06/proxy.json`, `ss -ltnp | grep -E ':8446|:8086'`,
    `tail -3 /opt/beacon-l06/run/proxy-access.log`.
 
-**Checkpoint c2 — fix properly, prove it (session 2).**
+**Checkpoint c2 — fix properly, prove it (week 7).**
 
 5. Change only what the evidence names: the proxy's certificate/key paths, a new server
    certificate issued by the lab CA with the right SAN (template: `/opt/beacon-l06/leaf.ext.example`),

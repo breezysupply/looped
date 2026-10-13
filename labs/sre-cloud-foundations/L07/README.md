@@ -1,6 +1,6 @@
 # L07 — A log summariser you can trust: CLI, exit codes, tests that catch bugs
 
-Module M04 · ~150 min practical (three sessions) · profile `linux-arm64` · runs **inside the course VM**
+Module M04 · ~150 min practical (five sessions over two weeks) · profile `linux-arm64` · runs **inside the course VM**
 (any Linux with Python 3.9+ works; no root needed)
 
 ## Ticket
@@ -41,24 +41,34 @@ edge-case files at run time and compares your CLI with a reference implementatio
 
 ## Steps and checkpoints
 
-**Checkpoint c1 — functions and the happy path (week 9).**
+**Checkpoint c1 — functions over collections (week 9, session 1).**
 
 1. `bash labs/sre-cloud-foundations/L07/setup.sh`, then `cd labs/sre-cloud-foundations/L07/work`.
-2. Implement `parse_ts`, `read_records`, `summarize` until the two example tests pass:
+2. Implement `parse_ts` and `summarize` (counters per service and status, the message table, the
+   UTC window) until `test_sample_counts_by_service` passes:
    `python3 -m unittest discover -s . -p 'test_*.py'`.
 
-**Checkpoint c2 — failure classes, CLI and tests (week 10).**
+**Checkpoint c2 — files, JSON and the CLI (week 9, session 2).**
 
-3. For each failure class decide: raise, report or skip — and write it down in
-   `evidence/L07-notes.md`. Implement `render` and `main`.
+3. Implement `read_records` as a generator over the file, `render` for the text output, and the
+   argument handling in `main` (`PATH`, `--top`, `--json`). Run it on every file in `fixtures/`.
+
+**Checkpoint c3 — tests you can trust (week 9, session 3).**
+
 4. Write tests for every edge case: empty file, malformed row, missing key, non-integer status,
-   naive and offset timestamps, ties in the ranking, exit codes, stdout versus stderr, determinism.
-   Test the **contract**, not private helpers.
+   naive and offset timestamps, ties in the ranking, determinism. Test the **contract**, not private
+   helpers. Run `validate.py` once just to see which broken variants your suite does not catch yet.
 
-**Checkpoint c3 — the incident and the explanation (week 11).**
+**Checkpoint c4 — exceptions, stderr and exit codes (week 10, session 1).**
 
-5. `python3 logsummary.py data/incident-<variant>.jsonl; echo "exit=$?"` — paste it into your notes.
-6. Explain the complexity and the memory behaviour; then
+5. For each failure class decide: raise, report or skip — and write it down in
+   `evidence/L07-notes.md`. Make `main` return 0 / 1 / 2, write errors only to stderr, never let a
+   traceback escape for bad input. Add the tests that pin this down.
+
+**Checkpoint c5 — complexity, memory and the incident (week 10, session 2).**
+
+6. `python3 logsummary.py data/incident-<variant>.jsonl; echo "exit=$?"` — paste it into your notes.
+7. Explain why the scan is O(n) and what memory grows with; then
    `python3 labs/sre-cloud-foundations/L07/validate.py --explanation-file labs/sre-cloud-foundations/L07/evidence/L07-notes.md`
 
 ## How validation works (and why your tests matter)

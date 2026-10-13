@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Beacon image for L13. Build context: this directory (work/ after setup.sh),
 # which holds beacon/ (the package), conf/, requirements.lock and this file.
 #
@@ -10,10 +11,16 @@ LABEL looped.lab/id="L13" \
       org.opencontainers.image.title="beacon" \
       org.opencontainers.image.version="1.4.0"
 
-# Pinned extras (PostgreSQL driver, Redis client), every file hash-checked.
-# Only wheels are accepted, so nothing compiles inside the build.
+# Pinned extras (PostgreSQL driver, Redis client) from a local wheelhouse:
+# setup.sh downloads the exact wheels on the host (pip download, both
+# architectures) into wheels/, and the build installs them with no index and
+# every file hash-checked. The wheels are bind-mounted for this one step, so
+# they never become an image layer, and the build needs no network beyond
+# pulling the pinned base.
 COPY requirements.lock /tmp/requirements.lock
-RUN pip install --no-cache-dir --only-binary=:all: --require-hashes -r /tmp/requirements.lock \
+RUN --mount=type=bind,source=wheels,target=/tmp/wheels \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 pip install --no-cache-dir --no-index --find-links=/tmp/wheels \
+        --only-binary=:all: --require-hashes -r /tmp/requirements.lock \
     && rm /tmp/requirements.lock
 
 # Unprivileged user with a fixed UID/GID so a Kubernetes securityContext can match it.

@@ -1,0 +1,27 @@
+{
+  "note": "EXAMPLE of the evidence schema for L08 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L08",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2026-12-15T18:00:00Z",
+  "completedAt": "2026-12-29T20:00:00Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "variant_file": "variant-a" },
+  "checks": [
+    { "id": "unit-tests-pass", "passed": true, "observed": "your suite on your client: ran 15, OK" },
+    { "id": "tests-are-fair", "passed": true, "observed": "your suite on the reference client: ran 15, OK" },
+    { "id": "tests-catch-bugs", "passed": true, "observed": "broken clients caught by your tests: 7/7" },
+    { "id": "integration-list", "passed": true, "observed": "faults mode: exit 0 in 5.8s; items 57 (unique 57) of 57" },
+    { "id": "retry-after", "passed": true, "observed": "page 1: Retry-After 2s, retried after 2.02s" },
+    { "id": "bounded-time", "passed": true, "observed": "stalled page 4 (8s): retried after 2.5s; 10 GETs for 6 pages and 4 injected faults; run took 5.8s" },
+    { "id": "pagination-loop", "passed": true, "observed": "loop mode: exit 3 after 4 GETs in 0.2s" },
+    { "id": "post-policy", "passed": true, "observed": "without key: exit 3, 1 POST(s), 1 refresh(es) performed; with key: exit 0, 2 POST(s) all keyed, 1 refresh(es) performed" },
+    { "id": "no-secret-leak", "passed": true, "observed": "token absent from 9 captured outputs, the workspace (outside .secrets/) and evidence/" },
+    { "id": "notes", "passed": true, "observed": "evidence/L08-notes.md: 989 chars; idempotency and Retry-After discussed" }
+  ],
+  "explanation": "GET retries on timeout/429/5xx/invalid JSON, Retry-After honoured, three retries max; POST retried only with one Idempotency-Key; repeated page token stops with exit 3; token only in the Authorization header.",
+  "cleanupStatus": "reported"
+}

@@ -41,7 +41,7 @@ The VM's own interfaces, routes and resolver are never touched.
 
 ## Steps and checkpoints
 
-**Checkpoint c1 — narrow by layer (week 7, session 1).**
+**Checkpoint c1 — narrow by layer (week 6).**
 
 1. `sudo bash labs/sre-cloud-foundations/L05/setup.sh`
 2. Reproduce from the client: `sudo ip netns exec looped-l05-client curl -sS --noproxy '*' --max-time 5 http://api.beacon.corp.lab:8080/healthz`.
@@ -51,7 +51,7 @@ The VM's own interfaces, routes and resolver are never touched.
    `dig @10.55.2.54 +norec …` (child). Read the status, the `aa` flag, the AUTHORITY section, TTLs.
 4. Route: `sudo ip -n looped-l05-client route`, `ip -n looped-l05-client route get 10.55.2.80`.
 
-**Checkpoint c2 — fix the narrowest thing, prove the user path (session 2).**
+**Checkpoint c2 — fix the narrowest thing, prove the user path (week 6).**
 
 5. Fix only what the evidence names: a zone file (then bump its serial and
    `sudo kill -HUP $(cat /opt/beacon-l05/run/auth-parent.pid)` / `auth-child.pid`), one entry in the
