@@ -190,7 +190,7 @@
     return m ? m[1].replace(/^["']|["']$/g, '').trim() : undefined;
   }
   function kvSet(text, key, value) {
-    var re = new RegExp('^(\\s*' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*=\\s*)(.*)$', 'm');
+    var re = new RegExp('^([ \\t]*' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*=[ \\t]*)(.*)$', 'm');   /* [ \\t], not \\s: an empty value must not swallow the next line */
     if (!re.test(String(text))) return null;
     return String(text).replace(re, '$1' + value);
   }
