@@ -596,7 +596,7 @@ LX.missions = LX.missions || [];
   }
   function s30Logs(v, seed) {
     var base = 14 * 3600, n = 0, gw = [], cl = [], samples = { '429': [], 'timeout': [], '401': [], '403': [], 'stream': [] };
-    function g(sec, o) { o.ts = s30Stamp(base, sec); o.request_id = ridOf(seed, n++); o.org = 'org_kestrel'; gw.push(o); return o; }
+    function g(sec, o) { var r = { ts: s30Stamp(base, sec), request_id: ridOf(seed, n++), org: 'org_kestrel' }; Object.keys(o).forEach(function (k) { r[k] = o[k]; }); gw.push(r); return r; }
     function c(sec, line) { cl.push(s30Stamp(base, sec) + ' ' + line); }
     var ok = function (sec, host, path, win, key) {
       var lat = WINDOW_SEC[win] + (n % 3) * 0.4, o = g(sec, { key_id: key || 'key_k7a2', method: 'POST', path: path || '/v1/summaries', window: win, max_tokens: 6000, stream: false, status: 200, latency_ms: Math.round(lat * 1000), client: host });
@@ -808,20 +808,22 @@ LX.missions = LX.missions || [];
         }
         if (['current', 'rotated'].indexOf(key) === -1) return res('', 2, 'repro: --key must be current (the sandbox org\'s active key) or rotated (a key revoked by rotation)');
         var srv = WINDOW_SEC[win] + (ep === '/v1/forecast' ? 4 : 0);
-        var reserved = 0, results = [];
+        var reserved = 0, results = [], saw429 = false, honor = !!f['honor-retry-after'];
         L3.push('> ' + burst + ' x POST ' + ep + ' window=' + win + ' max_tokens=' + maxT + ' stream=' + !!f.stream + ' timeout=' + to + 's plan=' + plan + (proxy ? ' via proxy closing connections after ' + proxy + 's' : '') + '  (Authorization: Bearer [redacted sandbox ' + key + ' key])');
         for (var i = 0; i < burst; i++) {
           state.reproSeq++;
-          var rid = 'req_mock_' + hex('mock' + state.reproSeq + state.seed, 10), r = null;
-          if (key === 'rotated') r = { code: 401, line: '< 401 authentication_error "invalid api key (revoked)" x-request-id: ' + rid };
-          else if (ep === '/v1/forecast' && plan !== 'enterprise') r = { code: 403, line: '< 403 permission_error "organization is not entitled to /v1/forecast (plan: standard)" x-request-id: ' + rid };
-          else if (reserved + maxT > TPM) {
-            var ra = 38;
-            r = { code: 429, line: '< 429 rate_limit_error "tokens per minute limit exceeded" retry-after: ' + ra + ' x-ratelimit-limit-tokens: ' + TPM + ' x-ratelimit-remaining-tokens: ' + (TPM - reserved) + ' x-request-id: ' + rid };
-            if (f['honor-retry-after']) { r.line += '\n  client waits ' + ra + ' s (Retry-After), attempt 2 of max 4 -> '; r.retried = true; }
+          var rid = 'req_mock_' + hex('mock' + state.reproSeq + state.seed, 10);
+          if (key === 'rotated') { L3.push('< 401 authentication_error "invalid api key (revoked)" x-request-id: ' + rid); results.push(401); continue; }
+          if (ep === '/v1/forecast' && plan !== 'enterprise') { L3.push('< 403 permission_error "organization is not entitled to /v1/forecast (plan: standard)" x-request-id: ' + rid); results.push(403); continue; }
+          if (reserved + maxT > TPM) {
+            saw429 = true;
+            L3.push('< 429 rate_limit_error "tokens per minute limit exceeded" retry-after: 38 x-ratelimit-limit-tokens: ' + TPM + ' x-ratelimit-remaining-tokens: ' + Math.max(0, TPM - reserved) + ' x-request-id: ' + rid);
+            if (!honor) { results.push(429); continue; }
+            L3.push('  client waits 38 s (Retry-After), then retries once the minute has rolled over (attempt 2 of at most 4)');
+            reserved = 0;
+            state.reproSeq++;
+            rid = 'req_mock_' + hex('mock' + state.reproSeq + state.seed, 10);
           }
-          if (r && r.code === 429 && r.retried) { results.push(429); r.code = 0; L3.push(r.line.replace(/ -> $/, '')); rid = 'req_mock_' + hex('mock-r' + state.reproSeq + state.seed, 10); }
-          else if (r) { L3.push(r.line); results.push(r.code); continue; }
           reserved += maxT;
           var cut = proxy && proxy < srv;
           if (f.stream) {
@@ -833,11 +835,10 @@ LX.missions = LX.missions || [];
         }
         var okAll = results.every(function (x) { return x === 200 || x === 'stream-ok'; });
         /* what this run demonstrated, per failure class */
-        if (results.indexOf(429) !== -1 && !f['honor-retry-after']) mark('429', 'fail');
-        if (burst > 1 && okAll && (f['honor-retry-after'] ? results.indexOf(429) !== -1 || reserved > 0 : true) && maxT * burst > 6000) mark('429', 'ok');
-        if (results.indexOf(429) !== -1 && f['honor-retry-after'] && okAll) { mark('429', 'fail'); mark('429', 'ok'); }
+        if (saw429) mark('429', 'fail');
+        if (burst > 1 && okAll && burst * maxT >= 20000) mark('429', 'ok');
         if (results.indexOf('timeout') !== -1 && win === '30d') mark('timeout', 'fail');
-        if (win === '30d' && srv > 30 && okAll && ep === '/v1/summaries') mark('timeout', 'ok');
+        if (win === '30d' && okAll && ep === '/v1/summaries') mark('timeout', 'ok');
         if (results.indexOf(401) !== -1) mark('401', 'fail');
         if (key === 'current' && okAll && state.repro['401'] && state.repro['401'].fail) mark('401', 'ok');
         if (results.indexOf(403) !== -1) mark('403', 'fail');
@@ -887,7 +888,7 @@ LX.missions = LX.missions || [];
         hint: 'Our side records every request, including the ones whose response the client never saw.',
         hint2: '`jq -c \'select(.status >= 400 or .terminal_event_sent == false)\' /var/log/beacon-gw/requests.jsonl` and compare ids and timestamps with the customer log.',
         reveal: 'jq -c \'select(.status >= 400 or .terminal_event_sent == false)\' /var/log/beacon-gw/requests.jsonl',
-        done: function (c) { var s = st(c); return S30_CLASSES[s.variant].every(function (k) { return c.ran.some(function (x, i) { return SIM().cmdIs(x, GWLOG) && S30_GW[k].test(c.out[i] || '') && s.samples[k].some(function (id) { return (c.out[i] || '').indexOf(id) !== -1; }); }); }); } },
+        done: function (c) { var s = st(c); return S30_CLASSES[s.variant].every(function (k) { return c.ran.some(function (x, i) { return SIM().cmdIs(x, GWLOG) && s.samples[k].some(function (id) { return (c.out[i] || '').indexOf(id) !== -1; }); }); }); } },
       { id: 'account', stage: 'evidence', text: 'Check the customer\'s account settings that bear on these failures',
         hint: 'Plans, quotas, entitlements and keys explain a lot of 4xx responses.',
         hint2: '`account show` (or `account limits`, `account entitlements`, `account keys`).',

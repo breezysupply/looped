@@ -46,7 +46,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(beacon_l21_requests_total{status_class=\"5xx\"}[1m])) / sum(rate(beacon_l21_requests_total[1m]))"
+          "expr": "sum(rate(beacon_l21_requests_total{status_class=\"5xx\"}[1m]) or 0 * rate(beacon_l21_requests_total[1m])) / sum(rate(beacon_l21_requests_total[1m]))"
         }
       ]
     },

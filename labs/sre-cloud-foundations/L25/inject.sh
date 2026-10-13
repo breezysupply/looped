@@ -11,6 +11,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L25_PROJECT"
 l25_guard
 [ -f "$WORK/compose.yaml" ] || die "no work/; run setup.sh first"
 V="${LOOPED_VARIANT:-${1:-variant-a}}"

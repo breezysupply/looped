@@ -249,7 +249,7 @@ def main():
     dspans = jaeger_trace(dtid) if re.fullmatch(r"[0-9a-f]{32}", dtid) else None
     slow = [s for s in dspans or [] if (s["name"].startswith("registry") if claimed == "dependency" else s["name"] == "checksum") and s["duration_s"] >= 0.2]
     r.check("latency-diagnosis", claimed == want and bool(slow),
-            f"claimed {claimed or '-'}; trace {dtid[:12] or '-'}…: " + (f"slow span {slow[0]['name']} {slow[0]['duration_s'] * 1000:.0f} ms" if slow else ("not in Jaeger" if not dspans else "no span ≥200 ms of the claimed kind")) + ("" if claimed == want else "; the evidence points elsewhere"))
+            f"claimed {claimed if claimed in ('dependency', 'local-cpu') else 'nothing yet'}; trace {dtid[:12] if re.fullmatch(r'[0-9a-f]{32}', dtid) else '-'}: " + (f"slow span {slow[0]['name']} {slow[0]['duration_s'] * 1000:.0f} ms" if slow else ("not in Jaeger" if not dspans else "no span ≥200 ms of the claimed kind")) + ("" if claimed == want else "; the evidence points elsewhere"))
     lat = []
     for i in range(30):
         s0 = time.monotonic()

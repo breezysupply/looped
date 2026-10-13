@@ -1,0 +1,228 @@
+# L29 translation worksheet — Beacon (D01 / L09) on Azure and Google Cloud.
+# YAML subset (see assets/xlate.py): maps, "- " lists, "|" blocks, [a, b] lists, # comments.
+# Fictional names only. Nothing here was deployed; this is a paper translation.
+schema: looped.xlate/v1
+source_design: "D01 two-AZ Beacon, inventory labs/sre-cloud-foundations/L09/assets/draft-inventory.json"
+author: "colleague's draft, finish and correct it"
+providers:
+  azure:
+    region: "one Azure region with availability zones (check the region before you assume zones)"
+    diagram: |
+      (draw the Azure translation here: Mermaid flowchart text is fine)
+    rows:
+      - concept: network
+        aws: "VPC vpc-beacon-lab, 10.40.0.0/16, in us-west-2 (a regional object)"
+        aws_ref: vpc-beacon-lab
+        target: "Virtual network vnet-beacon-lab, 10.40.0.0/16, in one Azure region"
+        scope: regional
+        difference: "Both are regional containers for private address space. A VNet has no internet gateway object: inbound and outbound paths come from public IPs, NAT Gateway or load balancers attached to resources and subnets."
+      - concept: subnet
+        aws: "Eight zonal subnets: pub, api, worker and data in us-west-2a and us-west-2b"
+        aws_ref: api-a
+        target: "Four subnets: snet-appgw, snet-api, snet-worker, snet-data; zones chosen per resource"
+        scope: regional
+        difference: "An Azure subnet spans every availability zone of its region, so one subnet per AZ per tier collapses to one subnet per tier; zone placement moves to each resource's zone or zone-redundancy setting."
+      - concept: egress
+        aws: "nat-a and nat-b, one NAT gateway per AZ for the worker subnets (partner webhooks)"
+        aws_ref: nat-a
+        target: "Azure NAT Gateway attached to snet-worker"
+        scope: zonal
+        difference: "A subnet can have one NAT Gateway, and its zone behaviour (pinned to a zone, no zone, or zone-redundant) depends on the SKU; matching NAT-per-AZ may need per-zone subnets. Check the current SKU documentation before claiming zone independence."
+      - concept: load-balancer
+        aws: "Public Application Load Balancer alb in pub-a and pub-b"
+        aws_ref: alb
+        target: "Application Gateway v2, zone-redundant, public frontend IP, in snet-appgw"
+        scope: regional
+        difference: "Application Gateway is regional like an ALB but needs its own dedicated subnet; zone redundancy is chosen at deployment. Azure Front Door would be a global service, a different design rather than a translation."
+      - concept: container-platform
+        aws: "ECS on Fargate: services api and worker, two tasks each"
+        aws_ref: api
+        target: "Azure Container Apps environment integrated with the VNet (AKS if the team wants Kubernetes)"
+        scope: regional
+        difference: "Container Apps is a managed environment built on Kubernetes that hides the cluster; ECS task definitions do not convert directly, and zone redundancy is an environment setting chosen when it is created."
+      - concept: database
+        aws: "RDS for PostgreSQL 16 db, Multi-AZ, PITR 7 days, encrypted with alias/beacon-data"
+        aws_ref: db
+        target: "Azure Database for PostgreSQL flexible server, zone-redundant high availability, private access"
+        scope: regional
+        difference: "Zone-redundant HA keeps a synchronous standby in another zone like Multi-AZ, but region support varies, the standby is not readable, and the networking mode (VNet integration or private endpoint) is fixed at creation."
+      - concept: object-storage
+        aws: "S3 bucket beacon-archive-lab (processed exports) reached through gateway endpoint vpce-s3"
+        aws_ref: vpce-s3
+        target: "Storage account with a blob container, public network access disabled, private endpoint in snet-worker"
+        scope: regional
+        difference: "Blob storage lives inside a storage account with its own firewall. There is no route-table gateway endpoint: private reachability comes from a private endpoint (a NIC with a private IP plus a private DNS zone) or a subnet service endpoint."
+      - concept: private-service-access
+        aws: "Interface endpoints for ECR, CloudWatch Logs, Secrets Manager and KMS in api-a and api-b"
+        aws_ref: vpce-ecr-api
+        target: "Private endpoints for Container Registry, Key Vault and Storage; Azure Monitor through a Private Link Scope"
+        scope: regional
+        difference: "Private endpoints are created per resource (this registry, this vault) rather than per service per AZ, and each needs a private DNS zone linked to the VNet; Azure Monitor uses a Private Link Scope instead of one endpoint."
+      - concept: workload-identity
+        aws: "ECS task roles role-api-task and role-worker-task, plus role-task-execution for image pulls and logs"
+        aws_ref: role-api-task
+        target: "User-assigned managed identities id-beacon-api and id-beacon-worker with Azure RBAC role assignments"
+        scope: resource
+        difference: "A managed identity is a Microsoft Entra service principal managed by Azure. Its permissions come from role assignments at a scope (subscription, resource group, resource); there is no identity policy document and no trust policy to edit."
+      - concept: resource-scope
+        aws: "AWS account 111122223333 holds every resource and every IAM principal of Beacon"
+        aws_ref: account
+        target: "Subscription sub-beacon-lab under a management group, resource group rg-beacon-lab"
+        scope: subscription
+        difference: "Resources live in a subscription and resource groups, but users, groups and service principals live in the Microsoft Entra tenant above every subscription, and RBAC is inherited from management groups down to resources."
+      - concept: secrets-and-keys
+        aws: "Secrets Manager beacon/db-* and the KMS key alias/beacon-data, reached through vpce-secrets and vpce-kms"
+        aws_ref: vpce-secrets
+        target: "Key Vault kv-beacon-lab holding the database secret and the data key, RBAC authorisation"
+        scope: regional
+        difference: "One Key Vault holds secrets and keys; access is through Azure RBAC (or legacy access policies), not a key policy document, and soft-delete and purge protection decide what can be recovered."
+  gcp:
+    region: "us-west1 (three zones; check the region before you assume zones)"
+    diagram: |
+      (draw the Google Cloud translation here: Mermaid flowchart text is fine)
+    rows:
+      - concept: network
+        aws: "VPC vpc-beacon-lab, 10.40.0.0/16, in us-west-2 (a regional object)"
+        aws_ref: vpc-beacon-lab
+        target: "VPC network beacon-lab in custom subnet mode"
+        scope: global
+        difference: "A Google Cloud VPC network is global: one network spans every region and its routes and firewall rules are global resources; only subnets are regional. There is no per-region VPC to mirror."
+      - concept: subnet
+        aws: "Eight zonal subnets: pub, api, worker and data in us-west-2a and us-west-2b"
+        aws_ref: api-a
+        target: "Regional subnets in us-west1: snet-run-egress and snet-data"
+        scope: regional
+        difference: "Subnets are regional and span every zone of the region, so the zonal subnet pairs become one subnet per purpose, and zone spread is configured on the workload or the managed service."
+      - concept: egress
+        aws: "nat-a and nat-b, one NAT gateway per AZ for the worker subnets (partner webhooks)"
+        aws_ref: nat-a
+        target: "Cloud NAT configured on a Cloud Router in us-west1"
+        scope: regional
+        difference: "Cloud NAT is a regional, software-defined configuration on a Cloud Router, not a gateway appliance in a zone; one configuration serves the region's subnets, so the one-NAT-per-AZ line item disappears."
+      - concept: load-balancer
+        aws: "Public Application Load Balancer alb in pub-a and pub-b"
+        aws_ref: alb
+        target: "Global external Application Load Balancer with a serverless network endpoint group"
+        scope: global
+        difference: "The global external Application Load Balancer has one anycast IP and is a global resource; a regional external Application Load Balancer also exists. Choosing global changes failure domains, certificates and logging."
+      - concept: container-platform
+        aws: "ECS on Fargate: services api and worker, two tasks each"
+        aws_ref: api
+        target: "Cloud Run services beacon-api and beacon-worker with Direct VPC egress (GKE Autopilot if the team wants Kubernetes)"
+        scope: regional
+        difference: "Cloud Run is regional and spreads instances across zones by itself; there are no tasks or subnets to place per zone. GKE Autopilot would manage nodes for you; GKE Standard would leave node pools to the operator."
+      - concept: database
+        aws: "RDS for PostgreSQL 16 db, Multi-AZ, PITR 7 days, encrypted with alias/beacon-data"
+        aws_ref: db
+        target: "Cloud SQL for PostgreSQL 16, high availability (regional), private IP"
+        scope: regional
+        difference: "Cloud SQL HA keeps a standby in another zone with synchronous replication; private IP uses private services access (VPC peering) or Private Service Connect, chosen when the instance networking is configured."
+      - concept: object-storage
+        aws: "S3 bucket beacon-archive-lab (processed exports) reached through gateway endpoint vpce-s3"
+        aws_ref: vpce-s3
+        target: "Cloud Storage bucket with uniform bucket-level access, reached with Private Google Access"
+        scope: regional
+        difference: "Bucket location can be a region, a dual-region or a multi-region; private reachability comes from Private Google Access on the subnet or a Private Service Connect endpoint for Google APIs, not a route-table gateway endpoint."
+      - concept: private-service-access
+        aws: "Interface endpoints for ECR, CloudWatch Logs, Secrets Manager and KMS in api-a and api-b"
+        aws_ref: vpce-ecr-api
+        target: "Private Google Access on the subnets; a Private Service Connect endpoint for Google APIs where a private IP is required"
+        scope: regional
+        difference: "Artifact Registry, Secret Manager, Cloud KMS and Cloud Logging are Google APIs reached the same way, so there is no per-service interface endpoint to create in each zone."
+      - concept: workload-identity
+        aws: "ECS task roles role-api-task and role-worker-task, plus role-task-execution for image pulls and logs"
+        aws_ref: role-api-task
+        target: "Service accounts sa-beacon-api and sa-beacon-worker attached to the Cloud Run services"
+        scope: project
+        difference: "A service account is a principal; roles are granted to it in IAM allow policies on the project or on single resources such as the bucket or the secret. In Google Cloud a role is a set of permissions, not an identity."
+      - concept: resource-scope
+        aws: "AWS account 111122223333 holds every resource and every IAM principal of Beacon"
+        aws_ref: account
+        target: "Project looped-beacon-lab inside a folder of the organisation"
+        scope: project
+        difference: "Projects hold resources and service accounts, but IAM is inherited from the organisation and folders above, and a service account from one project can be granted roles in another."
+      - concept: secrets-and-keys
+        aws: "Secrets Manager beacon/db-* and the KMS key alias/beacon-data, reached through vpce-secrets and vpce-kms"
+        aws_ref: vpce-secrets
+        target: "Secret Manager secret beacon-db and Cloud KMS key ring beacon-lab with key beacon-data"
+        scope: project
+        difference: "Secrets and keys are separate services; access is IAM on the secret or the key ring and key, inherited from the project, not a key policy, and Secret Manager replication is chosen per secret."
+responsibility:
+  - concern: control-plane
+    aws: "EKS runs the Kubernetes API server and etcd across several AZs"
+    azure: "AKS runs the control plane; the pricing tier decides the uptime SLA"
+    gcp: "GKE runs the control plane; regional clusters replicate it across zones"
+    provider_owns: "Control-plane availability, etcd backups and control-plane patching"
+    operator_owns: "Choosing the tier or regional option and which Kubernetes version runs"
+  - concern: node-os-patching
+    aws: "Managed node groups: the operator starts AMI updates; Fargate and Auto Mode shift more to AWS"
+    azure: "Node image upgrades are applied by the operator or by an auto-upgrade channel the operator configures"
+    gcp: "Standard: node auto-upgrade inside the operator's maintenance policy; Autopilot: Google manages nodes"
+    provider_owns: "Publishing patched node images and running the upgrade machinery"
+    operator_owns: "When and how nodes upgrade, surge settings, and testing workloads on new images"
+  - concern: kubernetes-upgrades
+    aws: "The operator upgrades the control plane, then nodes; old versions leave standard support"
+    azure: "The operator or an auto-upgrade channel upgrades; versions leave support on a published calendar"
+    gcp: "Release channels upgrade automatically within maintenance windows and exclusions"
+    provider_owns: "Offering versions, the upgrade mechanism and retiring old versions"
+    operator_owns: "Upgrade timing, removed APIs in manifests, add-on and chart compatibility"
+  - concern: workload-identity
+    aws: "EKS Pod Identity or IRSA maps a Kubernetes ServiceAccount to an IAM role"
+    azure: "Microsoft Entra Workload ID federates a ServiceAccount to a managed identity"
+    gcp: "Workload Identity Federation for GKE maps a ServiceAccount to IAM principals"
+    provider_owns: "Token exchange and the credential endpoints pods call"
+    operator_owns: "Which ServiceAccount maps to which identity, and what that identity may do"
+assumptions:
+  - claim_id: TR-01
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-02
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-03
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-04
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-05
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-06
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-07
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-08
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-09
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-10
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-11
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-12
+    verdict: ""
+    difference: ""
+    sources: []
+  - claim_id: TR-13
+    verdict: ""
+    difference: ""
+    sources: []
+limits: ""

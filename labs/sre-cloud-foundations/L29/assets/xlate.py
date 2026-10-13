@@ -229,6 +229,17 @@ def l09_ids() -> List[str]:
 
 # ── checks ─────────────────────────────────────────────────────────────────
 
+def salted(text: str) -> str:
+    """claims.json stores answers as salted hashes so they are not read by accident (not a secret)."""
+    import hashlib  # noqa: PLC0415
+    return hashlib.sha256(("looped-l29:" + text).encode()).hexdigest()[:16]
+
+
+def ngrams(text: str, n: int = 3) -> set:
+    words = re.findall(r"[a-z0-9]+(?:[-'][a-z0-9]+)*", (text or "").lower())
+    return {salted(" ".join(words[i:i + k])) for k in range(1, n + 1) for i in range(len(words) - k + 1)}
+
+
 EQUIV = re.compile(r"\bsame (thing |object |kind of object )?as\b|\bidentical\b|==|\bequivalent\b|\bone-to-one\b|\b1:1\b|\bdrop-in\b|\bexactly like\b|\bis just\b|\bmaps directly\b", re.I)
 NEGATION = re.compile(r"\bnot\b|\bno\b|n't\b|\bunlike\b|\bdiffer|\bneither\b|\bnever\b|\bwrong\b|\bmyth\b|\bassum", re.I)
 CLAIM_OF_PROFICIENCY = re.compile(
@@ -341,14 +352,14 @@ def check(ws: Any) -> Dict[str, List[str]]:
         v = str(r.get("verdict", "")).strip().lower()
         if v not in VERDICTS:
             out["claims"].append(f"{c['id']}: verdict must be one of {', '.join(VERDICTS)}")
-        elif v != c["expect"]:
+        elif salted(c["id"] + ":" + v) != c["expect_sha"]:
             out["claims"].append(f"{c['id']}: verdict disputed — check the claim against {', '.join(c['sources'])}")
         diff = r.get("difference") if isinstance(r.get("difference"), str) else ""
         if len(diff.strip()) < 60:
             out["claims"].append(f"{c['id']}: difference missing or under 60 chars")
         else:
-            low = diff.lower()
-            gaps = [g for g in c.get("must_mention", []) if not any(alt in low for alt in g.split("|"))]
+            grams = ngrams(diff)
+            gaps = [g for g in c.get("must_mention", []) if not any(alt in grams for alt in g)]
             if gaps:
                 out["claims"].append(f"{c['id']}: the difference does not yet name the deciding fact ({len(gaps)} missing)")
         s = r.get("sources")
@@ -366,6 +377,68 @@ def check(ws: Any) -> Dict[str, List[str]]:
         if CLAIM_OF_PROFICIENCY.search(s) and not NEGATION.search(s):
             out["honesty"].append(f"claims hands-on cloud proficiency: {s[:90]!r}")
     return out
+
+
+# ── drafts: patch and write (used by inject.sh) ─────────────────────────────
+
+def _select(node: Any, step: Any) -> Any:
+    if isinstance(step, dict):
+        (k, v), = step.items()
+        for item in node:
+            if isinstance(item, dict) and item.get(k) == v:
+                return item
+        raise XlateError(f"no list item with {k}={v}")
+    return node[step]
+
+
+def apply_patches(ws: Any, patches: List[Dict[str, Any]]) -> Any:
+    for p in patches:
+        node = ws
+        for step in p["path"][:-1]:
+            node = _select(node, step)
+        node[p["path"][-1]] = p["value"]
+    return ws
+
+
+def _dump_scalar(v: Any) -> str:
+    if v is None:
+        return '""'
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, int):
+        return str(v)
+    s = str(v)
+    if s == "" or re.search(r"(^[\s\-\[\]{}&*!|>'\"%@`#,?]|:\s|\s#|:$|^(true|false|null|~|-?\d+)$)", s, re.I):
+        return json.dumps(s, ensure_ascii=False)
+    return s
+
+
+def dump_yaml_subset(v: Any, ind: int = 0) -> str:
+    pad = " " * ind
+    out: List[str] = []
+    if isinstance(v, dict):
+        for k, x in v.items():
+            if isinstance(x, str) and "\n" in x:
+                out.append(f"{pad}{k}: |")
+                out += [(pad + "  " + ln) if ln else "" for ln in x.rstrip("\n").split("\n")]
+            elif isinstance(x, list) and x and all(not isinstance(i, (dict, list)) for i in x) and len(", ".join(map(str, x))) < 60 and all(re.fullmatch(r"[\w.-]+", str(i)) for i in x):
+                out.append(f"{pad}{k}: [{', '.join(str(i) for i in x)}]")
+            elif isinstance(x, (dict, list)) and x:
+                out.append(f"{pad}{k}:")
+                out.append(dump_yaml_subset(x, ind + 2))
+            elif isinstance(x, list):
+                out.append(f"{pad}{k}: []")
+            else:
+                out.append(f"{pad}{k}: {_dump_scalar(x)}")
+    elif isinstance(v, list):
+        for x in v:
+            if isinstance(x, dict) and x:
+                body = dump_yaml_subset(x, ind + 2).split("\n")
+                out.append(pad + "- " + body[0][ind + 2:])
+                out += body[1:]
+            else:
+                out.append(f"{pad}- {_dump_scalar(x)}")
+    return "\n".join(out)
 
 
 def main(argv: List[str]) -> int:

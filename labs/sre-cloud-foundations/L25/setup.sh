@@ -8,6 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L25_PROJECT"
 l25_guard
 docker compose version >/dev/null 2>&1 || die "Docker Compose v2 not found; see profiles/compose/README.md"
 

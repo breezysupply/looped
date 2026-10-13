@@ -8,7 +8,9 @@
 # Touches only work/patch/report/wheels/ and the image looped-l25-report:<tag>.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+. "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L25_PROJECT"
 l25_guard
 TAG="${1:-patched}"
 case "$TAG" in baseline|patched|[a-z0-9]*) ;; *) die "tag must be a simple lower-case word" ;; esac
