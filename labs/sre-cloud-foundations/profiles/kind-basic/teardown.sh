@@ -19,4 +19,4 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
 fi
 B="$HERE/.build"
 rm -rf "${B:?}"
-info "kind-basic removed: cluster $SRE_KIND_BASIC, image registry.lab/beacon:1.4.0, $B"
+info "kind-basic teardown done: cluster $SRE_KIND_BASIC absent, profile image (label $SRE_LABEL=kind-basic) and $B removed"

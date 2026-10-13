@@ -8,10 +8,10 @@
 # The course does not ship a digest it did not resolve itself.
 FROM python:3.12.7-slim-bookworm
 
-# pinned extras: PostgreSQL driver and Redis client for the compose/kind labs
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt \
-    && rm /tmp/requirements.txt
+# This reference image is standard-library only (memory/sqlite store, dir
+# queue). Images that need the PostgreSQL/Redis drivers in requirements.txt are
+# built by the labs from hash-checked wheels downloaded on the host
+# (L13/setup.sh, profiles/kind-basic/build-image.sh), never from an unpinned index.
 
 # an unprivileged user with a fixed uid so Kubernetes securityContext can match it
 RUN groupadd --gid 10001 beacon && useradd --uid 10001 --gid 10001 --home /app --shell /usr/sbin/nologin beacon \

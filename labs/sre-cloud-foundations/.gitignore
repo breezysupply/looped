@@ -7,3 +7,5 @@ L*/evidence/
 *.tfplan
 *.plan
 crash.log
+L*/work/
+profiles/*/.build/
