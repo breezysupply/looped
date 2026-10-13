@@ -980,3 +980,20 @@ table.tiers select { max-width: 100%; height: 36px; background: var(--bg-elev-2)
 .case-asks { display: flex; flex-wrap: wrap; gap: 6px; }
 .case-asks .chip { white-space: normal; text-align: left; height: auto; line-height: 1.3; padding-top: 6px; padding-bottom: 6px; }
 .case-asks .chip[disabled] { opacity: .6; cursor: default; }
+
+/* ── SRE & Cloud Deployment Foundations hub ─────────────────── */
+.prep-h4 { font-size: 15px; margin: 12px 0 4px; }
+.choice.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.choice.right, .slot.right { border-color: var(--accent); background: var(--accent-dim); }
+.choice.wrong, .slot.wrong { border-color: var(--red); }
+.feedback.ok { color: var(--accent); }
+.feedback.bad { color: var(--red); }
+.brief-wrap.week.now > summary { color: var(--accent); font-weight: 600; }
+.path-card.next .time-slot { color: var(--accent); }
+.term-err { color: var(--red); }
+.rubric { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0; }
+.rubric > span { min-width: 180px; font-size: 14px; }
+.notes-input { width: 100%; max-width: 100%; box-sizing: border-box; }
+input.notes-input { min-height: var(--tap); }
+.checklist label { display: block; padding: 4px 0; font-size: 14px; }
+.order-slots { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }

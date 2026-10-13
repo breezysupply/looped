@@ -13,19 +13,23 @@
     { id: 'learn',    label: 'Learn',    views: [
       /* track-scoped: only shown while that track is active */
       { v: 'prep',      label: 'Prep', track: 'onsite' },
-      /* the onsite track teaches through Prep and has no command reference,
-         playbooks or multiple-choice labs, so those pages would be empty */
-      { v: 'commands',  label: 'Commands',  hideFor: ['onsite'] },
-      { v: 'playbooks', label: 'Playbooks', hideFor: ['onsite'] },
+      { v: 'sre',       label: 'Course', track: 'sre' },
+      /* the onsite and SRE tracks teach through their own hub and have no
+         command reference, playbooks or multiple-choice labs, so those pages
+         would be empty */
+      { v: 'commands',  label: 'Commands',  hideFor: ['onsite', 'sre'] },
+      { v: 'playbooks', label: 'Playbooks', hideFor: ['onsite', 'sre'] },
       { v: 'drills',    label: 'Drills'    }
     ] },
     { id: 'practice', label: 'Practice', views: [
-      { v: 'labs',    label: 'Labs', hideFor: ['onsite'] },
+      { v: 'labs',    label: 'Labs', hideFor: ['onsite', 'sre'] },
       { v: 'sandbox', label: 'Sandbox' }
     ] },
     { id: 'quiz',     label: 'Quiz',     views: [ { v: 'quiz',   label: 'Quiz'   } ] },
     { id: 'review',   label: 'Review',   views: [ { v: 'review', label: 'Review' } ] }
   ];
+  /* a track whose Learn tab lands on its own page rather than Commands */
+  var HOME = { onsite: 'prep', sre: 'sre' };
   function visibleViews(g) {
     return g.views.filter(function (x) {
       return (!x.track || x.track === state.track) && (!x.hideFor || x.hideFor.indexOf(state.track) === -1);
@@ -325,6 +329,7 @@
     renderCommands(); renderScenarios(); renderDrills(); renderLabs();
     renderSaved(); renderStats();
     if (window.LXOnsite && state.track === 'onsite') window.LXOnsite.render();
+    if (window.LXSre && state.track === 'sre') window.LXSre.render();
   }
 
   /* the quiz and seed dropdowns list the active track's categories */
@@ -416,10 +421,10 @@
       setView(state.returnView); state.returnView = null;
     } else if (!viewAllowed(from)) {
       state.returnView = from;
-      setView(id === 'onsite' && groupOf(from).id === 'learn' ? 'prep' : visibleViews(groupOf(from))[0].v);
-    } else if (id === 'onsite' && groupOf(from).id === 'learn' && from !== 'prep') {
+      setView(HOME[id] && groupOf(from).id === 'learn' ? HOME[id] : visibleViews(groupOf(from))[0].v);
+    } else if (HOME[id] && groupOf(from).id === 'learn' && from !== HOME[id]) {
       state.returnView = from;
-      setView('prep');
+      setView(HOME[id]);
     } else renderSubnav(groupOf(from), from);
     if (LX.track.isLoaded(id)) { rebuildCatSelects(); renderAll(); return; }
     document.body.classList.add('loading-track');

@@ -1594,7 +1594,10 @@
       cores: seed.cores || 4, ip: seed.ip,
       /* the onsite track's reconciling cluster model: built fresh from the
          seed on every createWorld, which is what makes /reset exact */
-      k8sModel: seed.k8sModel && global.LXK8s ? global.LXK8s.create(seed.k8sModel) : null
+      k8sModel: seed.k8sModel && global.LXK8s ? global.LXK8s.create(seed.k8sModel) : null,
+      /* the SRE track's scenario state (sre-sim.js): built by the mission's
+         world function per seed, so it is already fresh on every createWorld */
+      sre: seed.sre || null
     };
     w.env = { HOME: '/home/' + w.user, USER: w.user, PWD: w.cwd, SHELL: '/bin/bash',
               PATH: '/usr/local/bin:/usr/bin:/bin' };

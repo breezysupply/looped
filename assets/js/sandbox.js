@@ -8,6 +8,13 @@
 
   var run = null;  // { mission, w, ran:[], last:{}, met:{}, revealed:0, hist:[], histIdx }
 
+  /* An SRE scenario's world is a function of its seed: the same seed rebuilds
+     the same state (reset), another seed is an independent variant. */
+  function worldOf(m, seed) { return typeof m.world === 'function' ? m.world(seed) : m.world; }
+  /* the graded block: onsite labs and SRE scenarios share the mode/hint UI */
+  function blk(m) { return (m || run.mission).onsite || (m || run.mission).sre; }
+  function isSre() { return !!(run && run.mission.sre); }
+
   /* man / apropos / guide read the same library the rest of the app uses */
   if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
 
@@ -47,6 +54,8 @@
       if (!intro.dataset.base) intro.dataset.base = intro.innerHTML;
       intro.innerHTML = tr === 'onsite'
         ? 'Incident labs on a <b>simulated</b> Kubernetes namespace with a bounded kubectl command set — nothing here touches a real cluster. Each lab runs in <b>Guided</b> or <b>Independent</b> mode; objectives are met by evidence and repaired state, never by typing the expected text. Stuck? Type <code>/hint</code>.'
+        : tr === 'sre'
+        ? 'Simulated incidents S01–S32 on <b>bounded models</b> (a Linux box, DNS, TLS, Terraform, a reconciling cluster, …) — practice with a model, not a real shell and not proof of real execution. Each runs <b>Guided</b> or <b>Independent</b> with a seeded variant; objectives are met by evidence and repaired state, an unsafe shortcut fails the attempt, and <code>/variant</code> starts a fresh independent variant. Type <code>/hint</code> when stuck and <code>help</code> for the supported tools.'
         : intro.dataset.base;
     }
     var list = (LX.missions || []).filter(function (m) {
@@ -57,7 +66,7 @@
 
     el.innerHTML = list.map(function (m) {
       var p = done[m.id];
-      if (m.onsite) return onsiteCard(m, p);
+      if (m.onsite || m.sre) return onsiteCard(m, p);
       var kind = m.kind === 'incident' ? 'incident' : m.kind === 'drill' ? 'drill' : 'free play';
       var badge = p ? '<span class="badge done">✓ solved' + (p.clean ? ' unaided' : '') + '</span>'
                     : (m.objectives.length ? '<span class="badge">' + m.objectives.length + ' objectives</span>'
@@ -77,14 +86,14 @@
   /* Onsite labs list under their neutral title: the guided title names the
      cause, and the list is seen before a mode is chosen. */
   function onsiteCard(m, p) {
-    var esc = U().esc, modes = (p && p.modes) || {};
+    var esc = U().esc, modes = (p && p.modes) || {}, o = m.onsite || m.sre;
     var tiers = [];
     if (modes.guided) tiers.push('<span class="badge done">✓ guided sim</span>');
     if (modes.independent) tiers.push('<span class="badge done">✓ independent sim' + (modes.independent.unaided ? ' · no hints' : '') + '</span>');
     return '<article class="card lab-card" data-mission="' + esc(m.id) + '">' +
       '<div class="card-head"><div class="card-main">' +
-        '<p class="card-title plain">' + esc(m.onsite.neutralTitle) + '</p>' +
-        '<p class="card-sum">' + esc(m.onsite.impact) + '</p>' +
+        '<p class="card-title plain">' + (m.sre ? esc(m.sre.scenarioId) + ' · ' : '') + esc(o.neutralTitle) + '</p>' +
+        '<p class="card-sum">' + esc(o.impact) + '</p>' +
         '<div class="card-meta"><span class="badge sim">simulation</span>' +
           '<span class="badge ' + esc(m.level) + '">' + esc(m.level) + '</span>' +
           '<span class="badge">~' + esc(m.mins) + ' min</span>' + tiers.join('') +
@@ -167,6 +176,16 @@
     var m = run.mission, esc = U().esc;
     if (!m.objectives.length) return;
     var just = [];
+    /* an unsafe shortcut (curriculum §8) is a failure state: it is announced
+       at once, recorded, and keeps the attempt from counting as a pass */
+    if (m.sre && m.sre.unsafe) {
+      m.sre.unsafe.forEach(function (u) {
+        if (run.critical.indexOf(u) !== -1) return;
+        var hit = false;
+        try { hit = !!u.test(ctx()); } catch (e) { hit = false; }
+        if (hit) { run.critical.push(u); print('⚠ critical check failed · ' + esc(u.label) + ' — ' + esc(u.why), 'term-out term-err'); }
+      });
+    }
     m.objectives.forEach(function (o) {
       if (run.met[o.id]) return;
       var pass = false;
@@ -230,12 +249,12 @@
   /* ── onsite labs: modes, labelled hints, honest scorecard ─────
      Only missions carrying an `onsite` block get any of this; every other
      mission behaves exactly as before. */
-  function isOnsite() { return !!(run && run.mission.onsite); }
+  function isOnsite() { return !!(run && (run.mission.onsite || run.mission.sre)); }
   function hidden(o) { return isOnsite() && run.mode === 'independent' && !run.met[o.id]; }
   function stageWord(o) {
     return { evidence: 'Evidence', fix: 'Remediation', verify: 'Verification' }[o.stage] || 'Objective';
   }
-  var MUTATING = /\bkubectl\b.*\b(delete|patch|set|scale|label|apply|create|annotate|cordon|uncordon|drain)\b|\bkubectl\b.*\brollout\s+(undo|restart)\b|\blab-registry\s+import\b|\bsed\s+-i\b/;
+  var MUTATING = /\bkubectl\b.*\b(delete|patch|set|scale|label|apply|create|annotate|cordon|uncordon|drain)\b|\bkubectl\b.*\brollout\s+(undo|restart)\b|\blab-registry\s+import\b|\bsed\s+-i\b|^\s*edit\s|\bterraform\s+(apply|import|force-unlock|destroy)\b|\bhelm\s+(upgrade|rollback|install|uninstall)\b|\bdocker\s+(run|rm|stop|start|restart|build)\b|\bgit\s+(commit|revert|merge|checkout|push)\b|\b(chmod|chown|systemctl\s+(start|restart|stop)|zonectl|dnscache\s+flush|flux\s+(suspend|resume)|beaconctl\s+(set|restart|restore|rotate)|aws\s+\S+\s+(create|put|delete|attach|detach|modify|update)|psql\b.*pg_(terminate|cancel)_backend|rm\s|truncate\s|>\s*\S)/;
   function revealOf(o) { return typeof o.reveal === 'function' ? o.reveal(ctx()) : (o.reveal || ''); }
 
   function nextUnmet() {
@@ -293,7 +312,8 @@
 
   /* ── Hints, reveals, and the /slash commands ──────────────── */
   function resetBox() {
-    run.w = LXShell.createWorld(run.mission.world);
+    run.w = LXShell.createWorld(worldOf(run.mission, run.seed));
+    run.critical = [];
     run.met = {}; run.metAt = {}; run.ran = []; run.out = []; run.code = []; run.last = null;
     $('#sbTerm').innerHTML = '';
     print('Box reset to its starting state.', 'term-out term-meta');
@@ -306,6 +326,7 @@
     run.hintLevel = run.hintLevel || {};
     var level = run.hintLevel[o.id] || 0;
 
+    if (isSre()) { sreHint(o, level); return; }
     if (isOnsite()) { onsiteHint(o, level); return; }
     print('working on: ' + U().esc(o.text), 'term-out term-meta');
     if (level === 0) {
@@ -344,6 +365,23 @@
     $('#sbHint').textContent = 'Hint ' + (run.hintLevel[o.id] + 1) + '/3';
   }
 
+  /* The SRE ladder has four rungs (curriculum §8): 1 diagnostic boundary,
+     2 evidence source, 3 discriminating command (prefilled), 4 root cause and
+     a worked fix. Rungs 3–4 keep learning credit but end independent
+     eligibility for this attempt; a later variant can restore it. */
+  function sreHint(o, level) {
+    var esc = U().esc, fmt = U().fmt;
+    run.hintsUsed++;
+    print('working on: ' + esc(hidden(o) ? stageWord(o) + ' (hidden objective)' : o.text), 'term-out term-meta');
+    if (level === 0) print('hint 1/4 · boundary · ' + esc(o.hint || 'Decide which layer or component could own this symptom, and which cannot.'), 'term-out term-hint');
+    else if (level === 1) print('hint 2/4 · evidence · ' + esc(o.hint2 || 'Which read-only source would show the evidence?'), 'term-out term-hint');
+    else if (level === 2) { run.revealed++; var cmd = revealOf(o); print('hint 3/4 · discriminating command · <span class="term-cmd">' + esc(cmd) + '</span><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(this ends independent credit for this attempt; /variant later restores it)', 'term-out term-hint'); $('#sbInput').value = cmd; $('#sbInput').focus(); }
+    else { run.revealed++; print('hint 4/4 · root cause and fix · ' + fmt(o.explain || blk().mechanism), 'term-out term-hint'); }
+    run.hintLevel[o.id] = Math.min(3, level + 1);
+    $('#sbHint').textContent = 'Hint ' + Math.min(4, run.hintLevel[o.id] + 1) + '/4';
+    run.hintLog = run.hintLog || []; run.hintLog.push({ objective: o.id, level: level + 1, at: run.ran.length });
+  }
+
   function revealOne() {
     var o = nextUnmet();
     if (!o) { U().toast('All objectives met'); return; }
@@ -377,8 +415,18 @@
       'term-out term-meta');
   }
 
+  /* a fresh independent variant: new seed, previous attempt kept */
+  function variantBox() {
+    if (!isSre()) { print('/variant is for the SRE scenarios; use /reset here.', 'term-out term-meta'); return; }
+    if (window.LXSre && metCount() > 0) window.LXSre.recordScenario(run, { outcome: 'abandoned-for-variant' });
+    var seed = window.LXSre ? window.LXSre.nextSeed(run.mission, run.seed) : run.seed;
+    open(run.mission.id, { mode: 'independent', seed: seed });
+    print('Fresh independent variant (seed ' + U().esc(seed) + '). The previous attempt is kept in your evidence.', 'term-out term-meta');
+  }
+
   var SLASH = {
     hint: showHint, h: showHint,
+    variant: variantBox, v: variantBox,
     reveal: revealOne, show: revealOne, r: revealOne,
     objectives: printObjectives, obj: printObjectives, o: printObjectives,
     reset: resetBox,
@@ -392,8 +440,10 @@
     $('#sbList').hidden = true; $('#sbIntro').hidden = true; $('#sbDone').hidden = true; $('#sbRun').hidden = true;
     $('#sbModePick').hidden = false;
     $('#sbModePick').dataset.mission = m.id;
-    $('#sbModeTitle').textContent = 'Incident lab ' + m.id.replace(/\D+/g, '').replace(/^0/, '');
-    $('#sbModeText').textContent = 'Guided shows the ticket as written and every objective. Independent shows a neutral ticket and hides the objectives, so the title cannot give the cause away.';
+    $('#sbModeTitle').textContent = m.sre ? m.sre.scenarioId + ' · ' + m.sre.neutralTitle : 'Incident lab ' + m.id.replace(/\D+/g, '').replace(/^0/, '');
+    $('#sbModeText').textContent = m.sre
+      ? 'Guided shows the ticket as written, every objective and a four-rung hint ladder. Independent shows a neutral ticket, hides the objectives and uses a seeded variant; hints 3–4 end independent credit for that attempt. About ' + m.mins + ' minutes.'
+      : 'Guided shows the ticket as written and every objective. Independent shows a neutral ticket and hides the objectives, so the title cannot give the cause away.';
     var hist = [];
     if (modes.guided) hist.push('guided simulation completed');
     if (modes.independent) hist.push('independent simulation completed' + (modes.independent.unaided ? ' without hints' : ' with hints'));
@@ -408,11 +458,12 @@
     if (!m) return;
     opts = opts || {};
     if (run && run.finishTimer) clearTimeout(run.finishTimer);
-    if (m.onsite && !opts.mode) { run = null; pickMode(m); return; }
+    if ((m.onsite || m.sre) && !opts.mode) { run = null; pickMode(m); return; }
     if ($('#sbModePick')) $('#sbModePick').hidden = true;
-    run = { mission: m, w: LXShell.createWorld(m.world), ran: [], out: [], code: [],
+    var seed = opts.seed || (m.sre && window.LXSre ? window.LXSre.firstSeed(m, opts.mode) : null);
+    run = { mission: m, seed: seed, w: LXShell.createWorld(worldOf(m, seed)), ran: [], out: [], code: [],
             last: null, met: {}, metAt: {}, revealed: 0, hintsUsed: 0, hist: [], histIdx: 0, hintLevel: {},
-            mode: m.onsite ? opts.mode : null };
+            mode: (m.onsite || m.sre) ? opts.mode : null, critical: [], startedAt: Date.now() };
     if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
 
     $('#sbList').hidden = true;
@@ -420,22 +471,24 @@
     $('#sbDone').hidden = true;
     $('#sbRun').hidden = false;
     var indep = run.mode === 'independent';
-    $('#sbTitle').textContent = indep ? m.onsite.neutralTitle : m.title;
-    $('#sbBrief').textContent = indep ? m.onsite.neutralBrief : m.brief;
+    var g = m.onsite || m.sre;
+    $('#sbTitle').textContent = indep ? g.neutralTitle : m.title;
+    $('#sbBrief').textContent = indep ? g.neutralBrief : (m.sre && typeof m.brief === 'function' ? m.brief(seed) : m.brief);
     if ($('#sbSimBanner')) {
-      $('#sbSimBanner').hidden = !m.onsite;
-      $('#sbSimWrap').hidden = !m.onsite;
-      if (m.onsite) {
-        $('#sbModeLabel').textContent = indep ? 'independent mode' : 'guided mode';
-        var spoil = (m.onsite.spoilers || []).map(function (x) { return x.toLowerCase(); });
-        var assume = (m.onsite.assumptions || []).filter(function (a) {
+      $('#sbSimBanner').hidden = !g;
+      $('#sbSimWrap').hidden = !g;
+      if (g) {
+        $('#sbModeLabel').textContent = (indep ? 'independent mode' : 'guided mode') + (m.sre ? ' · seed ' + seed : '');
+        var spoil = (g.spoilers || []).map(function (x) { return x.toLowerCase(); });
+        var assume = (g.assumptions || []).filter(function (a) {
           return !indep || !spoil.some(function (w) { return a.toLowerCase().indexOf(w) !== -1; });
         });
         $('#sbSim').innerHTML =
           (assume.length ? '<p class="section-label">Assumptions for this lab</p><ul class="bullets">' +
             assume.map(function (a) { return '<li>' + U().fmt(a) + '</li>'; }).join('') + '</ul>' : '') +
           '<p class="section-label">What the simulation simplifies</p><ul class="bullets">' +
-          (m.onsite.simplified || []).map(function (a) { return '<li>' + U().fmt(a) + '</li>'; }).join('') + '</ul>' +
+          (g.simplified || []).map(function (a) { return '<li>' + U().fmt(a) + '</li>'; }).join('') + '</ul>' +
+          (m.sre && g.grammar ? '<p class="section-label">Supported tools in this scenario</p><ul class="bullets">' + g.grammar.map(function (a) { return '<li>' + U().fmt(a) + '</li>'; }).join('') + '</ul>' : '') +
           '<p class="muted small">Completing this shows you can reason through the mechanism in a model. It is not evidence of production experience.</p>';
         $('#sbSimWrap').open = false;
       }
@@ -449,6 +502,8 @@
     $('#sbBar').style.width = '0%';
     if (m.onsite) print('SIMULATION — a modelled cluster (context ' + U().esc(run.w.k8sModel.context) + ', namespace ' +
       U().esc(run.w.k8sModel.ns) + '). Only the documented kubectl subset works; anything else says so. Each command advances the clock 10s.', 'term-out term-meta');
+    if (m.sre) print('SIMULATION ' + U().esc(m.sre.scenarioId) + ' — a bounded model' + (run.w.k8sModel ? ' (cluster context ' + U().esc(run.w.k8sModel.context) + ', namespace ' + U().esc(run.w.k8sModel.ns) + ')' : '') +
+      '. Supported tools: ' + U().esc((m.sre.tools || []).join(', ')) + '. Anything else says so honestly. Each command advances the clock 10s. An unsafe shortcut fails the attempt; /variant starts a fresh independent variant.', 'term-out term-meta');
     print('Connected to ' + U().esc(m.world.host || 'sandbox'), 'term-out term-meta');
     print('stuck? type <span class="term-cmd">/hint</span> — three levels, then ' +
       '<span class="term-cmd">/reveal</span> for the answer. <span class="term-cmd">/help</span> lists the rest.',
@@ -459,7 +514,7 @@
       '<span class="term-cmd">help</span>', 'term-out term-meta');
     paintObjectives();
 
-    $('#sbKeys').innerHTML = ((m.onsite && indep ? m.onsite.palette : m.keys) || []).map(function (k) {
+    $('#sbKeys').innerHTML = ((g && indep ? g.palette : m.keys) || []).map(function (k) {
       return '<button class="key" data-key="' + U().esc(k) + '">' + U().esc(k) + '</button>';
     }).join('');
     $('#sbInput').value = '';
@@ -473,17 +528,18 @@
     var clean = run.revealed === 0;
     var prev = store[m.id] || {};
     store[m.id] = { done: true, clean: prev.clean || clean, cmds: run.ran.length };
-    if (m.onsite) {
+    if (m.onsite || m.sre) {
       /* guided and independent are separate evidence tiers; "unaided" means
          no hints and no reveals at all, and it is never downgraded once earned */
       var modes = prev.modes || {}, mine = modes[run.mode] || {};
       modes[run.mode] = { done: true, at: Date.now(), runs: (mine.runs || 0) + 1,
                           unaided: mine.unaided || (run.revealed === 0 && run.hintsUsed === 0),
-                          risky: run.w.k8sModel ? run.w.k8sModel.risky.length : 0 };
+                          risky: riskyLog().length };
       store[m.id].modes = modes;
       store[m.id].clean = prev.clean || (run.revealed === 0 && run.hintsUsed === 0);
     }
     U().LS.set('lx.sandbox', store);
+    if (m.sre && window.LXSre) window.LXSre.recordScenario(run, { outcome: run.critical.length ? 'critical-failed' : 'passed' });
     if (window.LXReview) { window.LXReview.noteStudy(0, 0); window.LXReview.render(); }
   }
 
@@ -494,6 +550,7 @@
     var lab = m.labId ? (LX.labs || []).filter(function (l) { return l.id === m.labId; })[0] : null;
     var d = m.debrief || (lab && lab.debrief);
 
+    if (m.sre) { sreDebrief(); return; }
     if (m.onsite) { onsiteDebrief(); return; }
     $('#sbScore').textContent = 'Solved in ' + run.ran.length + ' commands' +
       (run.revealed ? ' · ' + run.revealed + ' revealed' : ' · nothing revealed');
@@ -529,7 +586,7 @@
     var ev = m.objectives.filter(function (o) { return o.stage === 'evidence'; });
     var before = ev.filter(function (o) { return run.metAt[o.id] && (firstChange < 0 || run.metAt[o.id] <= firstChange); }).length;
     var changes = run.ran.filter(function (c) { return MUTATING.test(c); }).length;
-    var risky = (run.w.k8sModel && run.w.k8sModel.risky) || [];
+    var risky = riskyLog();
     var fixes = m.objectives.filter(function (o) { return o.stage === 'fix'; });
     var lastFix = Math.max.apply(null, fixes.map(function (o) { return run.metAt[o.id] || 0; }));
     var verified = m.objectives.filter(function (o) { return o.stage === 'verify'; }).every(function (o) { return (run.metAt[o.id] || 0) >= lastFix; });
@@ -543,6 +600,35 @@
       { k: 'Verification', v: verified ? 'After the fix' : 'Incomplete',
         why: verified ? 'Verified with a check run after the state was repaired.' : 'A verification ran before the final repair.' }
     ];
+  }
+
+  /* risky actions come from whichever model logged them */
+  function riskyLog() {
+    var a = (run.w.k8sModel && run.w.k8sModel.risky) || [], b = (run.w.sre && run.w.sre.risky) || [];
+    return a.concat(b);
+  }
+
+  /* The SRE debrief is rendered by the course hub (five-part template,
+     rubric self-review, teach-back, links), so that the sandbox stays the
+     terminal and the course owns its evidence. */
+  function sreDebrief() {
+    var m = run.mission, esc = U().esc;
+    $('#sbScore').textContent = (run.critical.length ? 'Attempt failed a critical check' : (run.mode === 'independent' ? 'Independent' : 'Guided') + ' scenario complete') + ' · ' + m.sre.scenarioId;
+    $('#sbVerdict').textContent = run.critical.length
+      ? 'Every objective was met, but ' + run.critical.map(function (u) { return u.label; }).join('; ') + '. The attempt is recorded as failed. Reset and solve it without that shortcut.'
+      : (run.hintsUsed || run.revealed ? 'Completed with ' + run.hintsUsed + ' hint' + (run.hintsUsed === 1 ? '' : 's') + (run.revealed ? ' including ' + run.revealed + ' at rung 3–4' : '') + '. ' : 'Completed without hints. ') +
+        'This is simulation evidence: it shows you can reason through the mechanism in a bounded model, not that you have operated it in production.';
+    var html = '';
+    try { html = window.LXSre ? window.LXSre.scenarioDebrief(run, { scorecard: scorecard(), risky: riskyLog() }) : ''; }
+    catch (e) { html = '<p class="empty">Debrief could not render: ' + esc(e.message) + '</p>'; }
+    $('#sbDebrief').innerHTML = html +
+      '<p class="section-label">Your session</p>' +
+      '<div class="term term-static">' + run.ran.map(function (cmd) {
+        return '<div class="term-line"><span class="term-prompt">$ </span><span class="term-cmd">' + esc(cmd) + '</span></div>'; }).join('') + '</div>';
+    $('#sbRun').hidden = true;
+    $('#sbDone').hidden = false;
+    renderList('');
+    window.scrollTo(0, 0);
   }
 
   function onsiteDebrief() {
@@ -645,5 +731,5 @@
     else if (e.key === 'ArrowDown') { e.preventDefault(); historyStep(1); }
   });
 
-  window.LXSandbox = { renderList: renderList, open: open, exit: exit };
+  window.LXSandbox = { renderList: renderList, open: open, exit: exit, current: function () { return run; } };
 })();

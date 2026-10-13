@@ -136,6 +136,37 @@ LX.tracks = [
       delivery: 'Delivery & Disconnected', design: 'Design & Automation',
       behavior: 'Behavioral', lab: 'Incident Labs'
     }
+  },
+  {
+    id: 'sre', name: 'SRE & Cloud Deployment Foundations', short: 'SRE', ico: '⟳',
+    blurb: '48 learning weeks from Linux and networking through Python, Terraform, containers, Kubernetes, delivery, observability, data and secure deployment — local labs, simulated incidents, design workshops and evidence, at 3–4 hours a week.',
+    /* The course hub (assets/js/sre.js) is an engine and loads eagerly; these
+       are the content files plus the simulators the scenarios run on: the
+       reconciling cluster model for the Kubernetes incidents and sre-sim.js for
+       everything else (Terraform, DNS, TLS, Helm, databases, …). Order matters:
+       sre-quiz.js maps the question banks into LX.quiz/LX.drills last. */
+    files: [
+      'assets/js/k8s-model.js', 'assets/js/k8s-kubectl.js', 'assets/js/shell-containers.js',
+      'assets/js/sre-sim.js',
+      'assets/js/data/sre-track.js', 'assets/js/data/sre-modules.js',
+      'assets/js/data/sre-lessons-1.js', 'assets/js/data/sre-lessons-2.js',
+      'assets/js/data/sre-lessons-3.js', 'assets/js/data/sre-lessons-4.js',
+      'assets/js/data/sre-questions-1.js', 'assets/js/data/sre-questions-2.js',
+      'assets/js/data/sre-questions-3.js', 'assets/js/data/sre-questions-4.js',
+      'assets/js/data/sre-labs.js', 'assets/js/data/sre-designs.js',
+      'assets/js/data/sre-diagnostic.js', 'assets/js/data/sre-reviews.js',
+      'assets/js/data/sre-branches.js',
+      'assets/js/data/sre-scenarios-1.js', 'assets/js/data/sre-scenarios-2.js',
+      'assets/js/data/sre-scenarios-3.js', 'assets/js/data/sre-scenarios-4.js',
+      'assets/js/data/sre-quiz.js'
+    ],
+    cats: {
+      linux: 'Linux & Git', net: 'Networking', python: 'Python', cloud: 'Cloud & IAM',
+      iac: 'Terraform', containers: 'Containers', k8s: 'Kubernetes', delivery: 'Helm, CI/CD & GitOps',
+      obs: 'Observability & SLOs', data: 'Data & Distributed', security: 'Secure & Disconnected',
+      reliability: 'Reliability & Incidents', multicloud: 'Azure/GCP & API Support',
+      capstone: 'Capstone', scenario: 'Simulated Incidents'
+    }
   }
 ];
 
@@ -244,6 +275,7 @@ LX.trackCounts = {
   aws: 83,
   entra: 64,
   iac: 69,
-  onsite: 60
+  onsite: 60,
+  sre: 0
 };
 /* /generated */
