@@ -1,0 +1,24 @@
+{
+  "note": "EXAMPLE of the evidence schema for L01 — not a result. Real reports come from validate.py on your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L01",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2026-10-20T18:02:11Z",
+  "completedAt": "2026-10-20T18:41:50Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3" },
+  "checks": [
+    { "id": "vm-marker", "passed": true, "observed": "/etc/looped-vm=present arch=aarch64" },
+    { "id": "tool-inventory", "passed": true, "observed": "inventory lines: 7" },
+    { "id": "hypothesis-log", "passed": true, "observed": "sections present, hypotheses=3" },
+    { "id": "reproduced", "passed": true, "observed": "the exact FATAL line is quoted in the log" },
+    { "id": "fixed", "passed": true, "observed": "launcher started; /healthz 200" },
+    { "id": "minimal-fix", "passed": true, "observed": "config still at its original path" },
+    { "id": "no-unsafe", "passed": true, "observed": "no world-writable paths" }
+  ],
+  "explanation": "Observation: FATAL config: open config/beacon.yaml: no such file. The file existed at the absolute path, so the launcher's cd / made the relative path resolve under /. Changed cd / to cd /opt/beacon-l01; healthz returned ok.",
+  "cleanupStatus": "reported"
+}

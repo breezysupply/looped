@@ -211,7 +211,7 @@
   function editVerb() {
     return function (w, a) {
       if (a.length < 3 || a[0] === '--help') {
-        return ok('edit is a SIMULATION convenience, not a real tool.\nUsage: edit FILE KEY VALUE\n  YAML: dotted path (edit app.yaml server.port 8080)\n  INI/env/HCL: key name (edit beacon.env LISTEN_ADDR 0.0.0.0)\nsed -i and echo > FILE also work.');
+        return ok('edit is a SIMULATION convenience, not a real tool.\nUsage: edit FILE KEY VALUE\n  YAML: dotted path (edit app.yaml server.port 8080)\n  INI/env/HCL: key name (edit beacon.env LISTEN_ADDR 0.0.0.0)\n  directives: first word (edit /etc/resolv.conf nameserver 10.0.0.53)\nsed -i and echo > FILE also work.');
       }
       var file = a[0], key = a[1], value = a.slice(2).join(' ');
       var text = readFile(w, file);
@@ -221,6 +221,10 @@
       if (next == null) {
         var re = new RegExp('^(\\s*' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*=\\s*)(.*)$', 'm');
         if (re.test(text)) next = text.replace(re, '$1' + value);
+      }
+      if (next == null) {   /* space-separated directives: resolv.conf, sshd_config, nginx */
+        var re2 = new RegExp('^(\\s*' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+)([^;\\n]*)', 'm');
+        if (re2.test(text)) next = text.replace(re2, '$1' + value);
       }
       if (next == null) return err('edit: key "' + key + '" not found in ' + file + ' (dotted YAML path, or KEY for = files)');
       writeFile(w, file, next);
@@ -355,7 +359,10 @@
         var z = st.dns.zones[a[1]];
         if (!z) return err('zonectl: zone ' + a[1] + ' not served here');
         var lines = ['$ORIGIN ' + a[1] + '.', '@ IN SOA ns1.' + a[1] + '. hostmaster.' + a[1] + '. (2026101301 3600 600 86400 ' + (z.negTtl || 60) + ')'];
-        Object.keys(z.delegations || {}).forEach(function (d) { z.delegations[d].forEach(function (ns) { lines.push(d + '. IN NS ' + ns); }); });
+        var dels = Object.keys(z.delegations || {});
+        lines.push('; (zonectl) subzones delegated from this zone: ' + (dels.length ? dels.map(function (d) { return d + ' -> ' + z.delegations[d].join(' '); }).join(', ') : 'none'));
+        lines.push('@ IN NS ' + (z.ns || []).join(' '));
+        dels.forEach(function (d) { z.delegations[d].forEach(function (ns) { lines.push(d + '. IN NS ' + ns); }); });
         Object.keys(z.records || {}).forEach(function (n) { Object.keys(z.records[n]).forEach(function (t) { if (t === 'ttl') return; z.records[n][t].forEach(function (v) { lines.push(n + '. ' + (z.records[n].ttl || z.ttl || 300) + ' IN ' + t + ' ' + v); }); }); });
         return ok(lines.join('\n'));
       }
@@ -537,7 +544,7 @@
     }
     return function (w, a) {
       var sub = a[0];
-      if (!sub || sub === '--help') return ok('git (simulation): status, diff [--staged] [FILE], log [--oneline], add FILE, commit -m MSG, checkout -- FILE | checkout BRANCH, revert HEAD, merge BRANCH, merge --abort, push, branch, show HEAD:FILE');
+      if (!sub || sub === '--help') return ok('git (simulation): status, diff [--staged] [FILE], log [--oneline], add FILE, commit -m MSG, checkout -- FILE | checkout --ours|--theirs FILE | checkout BRANCH, revert HEAD, merge BRANCH, merge --abort, push, branch, show HEAD:FILE');
       var s = status(w);
       if (sub === 'status') {
         var lines = ['On branch ' + st.git.branch];
@@ -595,6 +602,12 @@
         return ok('[' + st.git.branch + ' ' + sha.slice(0, 7) + '] ' + msg);
       }
       if (sub === 'checkout') {
+        if ((a[1] === '--ours' || a[1] === '--theirs') && a[a.length - 1] && a[a.length - 1] !== a[1]) {
+          var fp = a[a.length - 1];
+          if (!st.git.merging || (st.git.conflicts || []).indexOf(fp) === -1) return err('error: path \'' + fp + '\' does not have ' + (a[1] === '--ours' ? 'our' : 'their') + ' version');
+          var side = a[1] === '--ours' ? st.git.files[fp] : ((st.git.branches || {})[st.git.merging] || {})[fp];
+          writeFile(w, fp, side); return ok('Updated 1 path from the index');
+        }
         if (a[1] === '--' && a[2]) { if (st.git.files[a[2]] == null) return err('error: pathspec \'' + a[2] + '\' did not match any file(s) known to git'); writeFile(w, a[2], st.git.files[a[2]]); return ok(''); }
         if (a[1] === '-b' && a[2]) { st.git.branch = a[2]; return ok('Switched to a new branch \'' + a[2] + '\''); }
         if (a[1] && (st.git.branches || {})[a[1]]) { st.git.branch = a[1]; return ok('Switched to branch \'' + a[1] + '\''); }
@@ -645,6 +658,40 @@
     });
     return out;
   }
+  /* ── evidence helpers for objective checks ──────────────────────
+     A command counts only where it starts a list/pipeline segment (split on
+     ; && || | outside quotes), so `echo "dig x"` or `# kubectl get` is not
+     evidence; output is matched against THAT command's own output. */
+  function segs(line) {
+    var out = [], cur = '', q = null, L = String(line);
+    for (var i = 0; i < L.length; i++) {
+      var ch = L.charAt(i);
+      if (q) { cur += ch; if (ch === '\\' && q === '"') { cur += L.charAt(++i); } else if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+      if (ch === ';' || ch === '|' || (ch === '&' && L.charAt(i + 1) === '&')) { out.push(cur.trim()); cur = ''; if (L.charAt(i + 1) === ch) i++; continue; }
+      cur += ch;
+    }
+    out.push(cur.trim());
+    return out.filter(Boolean);
+  }
+  function cmdIs(line, re) { return segs(line).some(function (x) { var m = re.exec(x); return !!m && m.index === 0; }); }
+  function ranCmd(c, re) { return c.ran.some(function (x) { return cmdIs(x, re); }); }
+  function saw(c, re, outRe) { return c.ran.some(function (x, i) { return cmdIs(x, re) && outRe.test(c.out[i] || ''); }); }
+  function lastIs(c, cmdRe, outRe) {
+    var i = c.ran.length - 1;
+    if (i < 0 || !cmdIs(c.ran[i], cmdRe)) return false;
+    return !outRe || outRe.test(c.out[i] || '');
+  }
+  function lastCode(c) { return c.code[c.ran.length - 1] || 0; }
+
+  /* probes are evaluated against the code only: the "# sim:" lines carry the
+     patterns themselves and must never satisfy them */
+  function stripSim(text) { return String(text).split('\n').filter(function (l) { return !/^#\s*sim:/.test(l); }).join('\n'); }
+  function probeState(text) {
+    var pr = probes(text), body = stripSim(text), out = {};
+    Object.keys(pr).forEach(function (k) { out[k] = pr[k].test(body); });
+    return out;
+  }
   function pythonVerb(st) {
     return function (w, a, stdin) {
       var f = flags(a, ['m', 'c']);
@@ -660,8 +707,7 @@
       if (!impl) return err('python3: can\'t open file \'' + script + '\': [Errno 2] No such file or directory (this simulation runs only: ' + Object.keys((st.py && st.py.scripts) || {}).join(', ') + ')', 2);
       var text = readFile(w, key);
       if (text == null) return err('python3: can\'t open file \'' + script + '\': [Errno 2] No such file or directory', 2);
-      var pr = probes(text), state = {};
-      Object.keys(pr).forEach(function (k) { state[k] = pr[k].test(text); });
+      var state = probeState(text);
       if (/^\s*def \w+\([^)]*\)\s*:\s*$/m.test(text) === false && !/import/.test(text)) return err('  File "' + key + '", line 1\nSyntaxError: invalid syntax', 1);
       return impl(w, { args: f.pos.slice(1), flags: f.f, probes: state, text: text, stdin: stdin });
     };
@@ -690,7 +736,8 @@
     ok: ok, err: err, unsupported: unsupported, flags: flags, pad: pad, table: table, stamp: stamp, hms: hms,
     wrap: wrap, bind: bind, risky: risky,
     yamlCheck: yamlCheck, yamlGet: yamlGet, yamlSet: yamlSet, kvGet: kvGet, kvSet: kvSet,
-    readFile: readFile, writeFile: writeFile, fileOf: fileOf, probes: probes,
+    readFile: readFile, writeFile: writeFile, fileOf: fileOf, probes: probes, probeState: probeState, stripSim: stripSim,
+    segs: segs, cmdIs: cmdIs, ran: ranCmd, saw: saw, lastIs: lastIs, lastCode: lastCode,
     verbs: { edit: editVerb, dig: digVerb, dnscache: dnsCacheVerb, zonectl: zoneVerb, curl: curlVerb, openssl: opensslVerb, git: gitVerb, python3: pythonVerb },
     dns: { authoritative: dnsAuthoritative, recurse: dnsRecurse },
     net: { listenerFor: listenerFor, resolveHost: resolveHost, respond: appRespond, tlsCheck: tlsCheck },

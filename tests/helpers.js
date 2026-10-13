@@ -52,6 +52,8 @@ function loadContent(extra) {
     fs.readdirSync(repoFile('assets/js')).forEach(function (f) {
       if (/^shell-.*\.js$/.test(f)) require(repoFile('assets/js', f));
     });
+    /* the SRE scenarios' simulators (DNS, HTTP/TLS, git, fixture scripts) */
+    require(repoFile('assets/js/sre-sim.js'));
   }
   const dir = repoFile('assets/js/data');
   order().forEach(function (f) {

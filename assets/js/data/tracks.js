@@ -276,6 +276,6 @@ LX.trackCounts = {
   entra: 64,
   iac: 69,
   onsite: 60,
-  sre: 0
+  sre: 15
 };
 /* /generated */

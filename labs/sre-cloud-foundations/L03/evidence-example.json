@@ -1,0 +1,25 @@
+{
+  "note": "EXAMPLE of the evidence schema for L03 — not a result. Real reports come from validate.py inside your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L03",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "guided",
+  "seed": "variant-b",
+  "startedAt": "2026-11-03T19:10:00Z",
+  "completedAt": "2026-11-03T20:05:31Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "unit": "beacon.service" },
+  "checks": [
+    { "id": "unit-active", "passed": true, "observed": "is-active: active" },
+    { "id": "runs-as-beacon", "passed": true, "observed": "MainPID=1842 user=beacon User=beacon restarts=0" },
+    { "id": "socket-owned", "passed": true, "observed": "listeners on 8080: [{'local': '0.0.0.0:8080', 'process': 'users:((\"python3\",pid=1842,fd=3))'}]" },
+    { "id": "user-path", "passed": true, "observed": "/healthz=200 /version=200" },
+    { "id": "config-not-open", "passed": true, "observed": "config {'mode': '0o640', 'owner': 'root', 'group': 'beacon', 'size': 611}" },
+    { "id": "no-world-writable", "passed": true, "observed": "clean" },
+    { "id": "journal-clean", "passed": true, "observed": "last lines: [...]" },
+    { "id": "diagnosis-notes", "passed": true, "observed": "directives explained: 5/5, chars=1180" }
+  ],
+  "explanation": "Journal said permission denied opening /etc/beacon/beacon.yaml; namei showed root:root 600. The service runs as beacon, so group read via root:beacon 640 was the narrowest fix. Restart only; no daemon-reload because the unit did not change.",
+  "cleanupStatus": "reported"
+}

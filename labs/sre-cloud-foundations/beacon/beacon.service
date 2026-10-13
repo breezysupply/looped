@@ -1,0 +1,28 @@
+# Beacon API as a systemd service (Linux VM, L03). Install:
+#   sudo cp beacon.service /etc/systemd/system/beacon.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now beacon
+# Every directive below is explained in les-m02-03.
+[Unit]
+Description=Beacon API (course starter service)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=beacon
+Group=beacon
+WorkingDirectory=/opt/beacon
+Environment=PYTHONUNBUFFERED=1
+Environment=BEACON_CONFIG=/etc/beacon/beacon.yaml
+ExecStart=/usr/bin/python3 -m beacon api
+Restart=on-failure
+RestartSec=2
+# hardening that costs nothing for a Python service
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/beacon
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
