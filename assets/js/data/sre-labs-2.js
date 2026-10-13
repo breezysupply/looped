@@ -11,7 +11,7 @@ LX.sreLabs = LX.sreLabs || [];
 
   lab({
     id: 'L09', moduleId: 'M05', title: 'Beacon on AWS across two AZs: inventory, request path and failure domains',
-    objectiveIds: ['obj-m05-01', 'obj-m05-03', 'obj-m05-05'], executionMode: 'local', estimatedMinutes: 90, environmentProfile: 'workstation', prerequisites: ['L01'],
+    objectiveIds: ['obj-m05-01', 'obj-m05-03', 'obj-m05-05'], executionMode: 'local', estimatedMinutes: 90, environmentProfile: 'workstation', prerequisites: ['L05'],
     learnerBrief: 'A colleague left a draft AWS layout for Beacon across us-west-2a and us-west-2b: load balancer, API and worker tasks, managed PostgreSQL, VPC endpoints and NAT. Using the customer needs supplied, make the machine-readable inventory correct, prove what happens when one zone is unavailable, and write down the single points of failure, the cost and the recovery plan you would defend.\n\nFixtures only: no AWS account and no cost. A small checker (`assets/archcheck.py`) models routes, gateways, endpoints and failure domains; it is a teaching model, not AWS, and says what it ignores. One change was made to the draft at setup; finding it is part of the work.',
     checkpoints: [
       { id: 'c1', title: 'Network paths and the fault', resumeInstructions: '`bash ' + DIR + 'L09/setup.sh` is idempotent and keeps work/inventory.json. Re-run `python3 ' + DIR + 'L09/assets/archcheck.py ' + DIR + 'L09/work/inventory.json` to see where you are.' },
@@ -85,7 +85,7 @@ LX.sreLabs = LX.sreLabs || [];
 
   lab({
     id: 'L11', moduleId: 'M06', title: 'Terraform generates Beacon\'s config: inputs, plan, state and the file on disk',
-    objectiveIds: ['obj-m06-01', 'obj-m06-02', 'obj-m06-03'], executionMode: 'local', estimatedMinutes: 120, environmentProfile: 'workstation', prerequisites: ['L01'],
+    objectiveIds: ['obj-m06-01', 'obj-m06-02', 'obj-m06-03'], executionMode: 'local', estimatedMinutes: 120, environmentProfile: 'workstation', prerequisites: ['L02'],
     learnerBrief: 'A small Terraform configuration generates Beacon\'s per-environment config: hashicorp/local writes the files and hashicorp/random gives each environment a stable deployment id. A teammate touched the dev workspace and nobody has planned since. Read the plan before applying, return to a no-change plan without losing dev\'s deployment id, and close an input-validation gap with a validation rule and a `terraform test` case.\n\nLocal providers only, pinned by a committed lockfile; state is a local file inside the lab workspace. Explain configuration versus state versus the real file.',
     checkpoints: [
       { id: 'c1', title: 'Read before you apply', resumeInstructions: '`bash ' + DIR + 'L11/setup.sh` reuses work/ if it exists. `terraform -chdir=' + DIR + 'L11/work plan` shows where you are; notes are in evidence/L11-notes.md.' },
