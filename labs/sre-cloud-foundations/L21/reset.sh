@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L21_PROJECT"
 l21_guard
 V="$(l21_variant)"
 [ -n "${LOOPED_VARIANT:-}" ] && V="$LOOPED_VARIANT"

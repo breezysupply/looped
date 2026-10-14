@@ -8,6 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L21_PROJECT"
 l21_guard
 l21_require_profile
 [ -d "$WORK/app" ] || die "run setup.sh first"

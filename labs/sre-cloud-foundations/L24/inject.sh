@@ -10,6 +10,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L24_PROJECT"
 l24_guard
 [ -f "$WORK/.l24-state.json" ] || die "run setup.sh first"
 V="$(l24_variant)"

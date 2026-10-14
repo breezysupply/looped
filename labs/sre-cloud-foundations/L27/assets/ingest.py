@@ -241,6 +241,7 @@ class Server(ThreadingHTTPServer):
 
 
 def main():
+    threading.stack_size(512 * 1024)  # one thread per open connection; keep each small
     srv = Server(("0.0.0.0", 8080), Handler)
     sys.stdout.write(json.dumps({"msg": "beacon-ingest listening", "server": SERVER, "limits": CFG}) + "\n")
     sys.stdout.flush()

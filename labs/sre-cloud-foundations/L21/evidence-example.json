@@ -1,0 +1,103 @@
+{
+  "note": "EXAMPLE of the evidence schema for L21 \u2014 not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L21",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-03-08T17:00:00Z",
+  "completedAt": "2027-03-08T19:20:41Z",
+  "environment": {
+    "profile": "observability",
+    "arch": "arm64",
+    "os": "Darwin",
+    "python": "3.12.7",
+    "docker": "Docker version 28.x",
+    "variant_file": "variant-a",
+    "p95_ms": 257.0,
+    "requests_series": 3
+  },
+  "checks": [
+    {
+      "id": "profile-up",
+      "passed": true,
+      "observed": "Prometheus 200, Jaeger 200"
+    },
+    {
+      "id": "targets-up",
+      "passed": true,
+      "observed": "beacon-l21-api=up, beacon-l21-worker=up, beacon-l21-registry=up"
+    },
+    {
+      "id": "bounded-labels",
+      "passed": true,
+      "observed": "3 series of beacon_l21_requests_total after 60 users; labels ['method', 'route', 'status_class']"
+    },
+    {
+      "id": "labels-useful",
+      "passed": true,
+      "observed": "status_class ['2xx']; routes ['/healthz', '/jobs', '/sensors/{id}']"
+    },
+    {
+      "id": "prometheus-series",
+      "passed": true,
+      "observed": "Prometheus currently holds 3 live series of beacon_l21_requests_total"
+    },
+    {
+      "id": "log-correlation",
+      "passed": true,
+      "observed": "POST /jobs 202; API log line: route=/jobs status=202 trace_id=58a698a35fde\u2026"
+    },
+    {
+      "id": "trace-propagation",
+      "passed": true,
+      "observed": "worker logged job 4386f1b2\u2026 with trace_id 58a698a35fde\u2026"
+    },
+    {
+      "id": "trace-stored",
+      "passed": true,
+      "observed": "trace 58a698a35fde\u2026 in Jaeger: 3 spans from ['beacon-l21-api', 'beacon-l21-worker']; worker span child of an API span: True"
+    },
+    {
+      "id": "metric-exemplar",
+      "passed": true,
+      "observed": "exemplar trace_id=58a698a35fde\u2026 stored on beacon_l21_request_duration_seconds_bucket"
+    },
+    {
+      "id": "dashboard-expected",
+      "passed": true,
+      "observed": "all five panels give the expected values on the supplied fixture"
+    },
+    {
+      "id": "dashboard-live",
+      "passed": true,
+      "observed": "Request rate: 3 series; Error ratio: 1 series; p95 latency /sensors: 1 series; Dependency p95: 1 series; API CPU: 1 series"
+    },
+    {
+      "id": "dashboard-loads",
+      "passed": true,
+      "observed": "dashboard loaded: http://127.0.0.1:13000/d/looped-l21-beacon/\u2026"
+    },
+    {
+      "id": "latency-diagnosis",
+      "passed": true,
+      "observed": "claimed dependency; trace a61f6978c25a: slow span registry GET /registry/{id} 467 ms"
+    },
+    {
+      "id": "latency-fixed",
+      "passed": true,
+      "observed": "p95 of 30 GET /sensors/{id} = 257 ms; registry_timeout_ms=250, registry fixture delay 450 ms (as injected: True)"
+    },
+    {
+      "id": "notes",
+      "passed": false,
+      "observed": "5/5 sections, 640 chars"
+    }
+  ],
+  "explanation": "The sensor page waited on the registry: its client span and the registry's server span both took ~465 ms while API CPU stayed near zero. Bounded our exposure with a 250 ms timeout and handed the trace to the registry team; removed user_id from the request counter; the worker now continues the job's trace.",
+  "cleanupStatus": "pending",
+  "notes": [],
+  "evidenceRefs": []
+}

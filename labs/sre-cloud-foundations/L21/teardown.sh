@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L21_PROJECT"
 l21_guard
 l21_dc down --remove-orphans >/dev/null 2>&1 || warn "compose down reported an error"
 left="$(docker ps -a --format '{{.Names}}' | grep -E '^looped-l21-' || true)"

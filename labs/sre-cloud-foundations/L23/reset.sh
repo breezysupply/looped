@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L23_PROJECT"
 l23_guard
 V="$(l23_variant)"
 l23_dc --profile fault rm -sf fixtures pool >/dev/null 2>&1 || true

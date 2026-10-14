@@ -51,6 +51,7 @@ services:
     env_file: [limits.env]
     environment:
       <<: *pyenv
+      MALLOC_ARENA_MAX: "2"
       DB_DSN: "host=db port=5432 user=beacon password=lab-l27-db-not-a-real-secret dbname=beacon sslmode=disable"
     volumes:
       - ../assets/ingest.py:/lab/ingest.py:ro

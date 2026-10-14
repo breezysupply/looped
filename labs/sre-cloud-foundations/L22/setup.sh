@@ -8,6 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_workstation docker python3
 l22_guard
 mkdir -p "$WORK/rules" "$WORK/tests"
 EV="$(evidence_dir "$HERE")"

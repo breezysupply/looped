@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_compose_project "$L23_PROJECT"
 l23_guard
 l23_dc --profile fault down -v --remove-orphans >/dev/null 2>&1 || warn "compose down reported an error"
 left="$(docker ps -a --format '{{.Names}}' | grep -E '^looped-l23-' || true; docker volume ls --format '{{.Name}}' | grep -E '^looped-l23-' || true)"

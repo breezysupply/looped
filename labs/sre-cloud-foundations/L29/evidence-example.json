@@ -1,0 +1,27 @@
+{
+  "note": "EXAMPLE of the evidence schema for L29 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L29",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-02-02T18:00:00Z",
+  "completedAt": "2027-02-02T19:24:31Z",
+  "environment": { "profile": "workstation", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "variant_file": "variant-a" },
+  "checks": [
+    { "id": "fixtures-intact", "passed": true, "observed": "shipped checker and reference data unchanged" },
+    { "id": "worksheet-parses", "passed": true, "observed": "schema looped.xlate/v1" },
+    { "id": "rows", "passed": true, "observed": "22 rows (11 concepts x Azure, GCP) with targets, differences and L09 references" },
+    { "id": "scopes", "passed": true, "observed": "network, subnet, NAT and resource-scope facts stated correctly" },
+    { "id": "diagrams", "passed": true, "observed": "Azure and GCP diagrams with every required part" },
+    { "id": "matrix", "passed": true, "observed": "8 concerns x 3 providers with provider and operator ownership" },
+    { "id": "claims", "passed": true, "observed": "13 curated claims judged, each with the deciding difference and a register source" },
+    { "id": "phrasing", "passed": true, "observed": "no known wrong-equivalence phrasing in rows or matrix" },
+    { "id": "honesty", "passed": true, "observed": "limits stated; no claim of live cloud proficiency" },
+    { "id": "notes", "passed": true, "observed": "sections ['Fault found', 'Identity scopes', 'Network', 'Managed Kubernetes'], chars added 1197" }
+  ],
+  "explanation": "The draft equated managed identities and service accounts with task roles and subscriptions/projects with accounts. Fixed rows and judgements: identities live in the tenant/organisation, access is granted by role assignments/allow policies at a scope, no key file is needed.",
+  "cleanupStatus": "not-applicable"
+}

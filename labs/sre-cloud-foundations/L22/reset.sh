@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/looped.sh"
 . "$HERE/assets/common.sh"
+require_workstation docker python3
 l22_guard
 V="$(l22_variant)"
 [ -f "$WORK/rules/beacon-slo.rules.yml" ] && cp "$WORK/rules/beacon-slo.rules.yml" "$WORK/rules/beacon-slo.rules.yml.bak"
