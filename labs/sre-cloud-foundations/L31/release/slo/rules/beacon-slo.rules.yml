@@ -1,0 +1,67 @@
+# Beacon availability and latency SLOs (L22 worked solution).
+# SLO: 99.5% of eligible requests succeed over 30 days -> error budget 0.5% (0.005).
+# Eligible: every request except /healthz and /metrics, and except 4xx (the caller's
+# error, not ours). Bad: 5xx. Latency SLI: share of eligible requests faster than 300 ms.
+groups:
+  - name: beacon-slo-sli
+    rules:
+      - record: beacon:sli_eligible:rate5m
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code!~"4.."}[5m]))
+      - record: beacon:sli_eligible:rate30m
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code!~"4.."}[30m]))
+      - record: beacon:sli_eligible:rate1h
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code!~"4.."}[1h]))
+      - record: beacon:sli_eligible:rate6h
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code!~"4.."}[6h]))
+      # 0 (not "no data") when there is eligible traffic but no 5xx series at all
+      - record: beacon:sli_errors:rate5m
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code=~"5.."}[5m])) or 0 * beacon:sli_eligible:rate5m
+      - record: beacon:sli_errors:rate30m
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code=~"5.."}[30m])) or 0 * beacon:sli_eligible:rate30m
+      - record: beacon:sli_errors:rate1h
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code=~"5.."}[1h])) or 0 * beacon:sli_eligible:rate1h
+      - record: beacon:sli_errors:rate6h
+        expr: sum(rate(beacon_requests_total{job="beacon", route!~"/healthz|/metrics", code=~"5.."}[6h])) or 0 * beacon:sli_eligible:rate6h
+      # zero eligible traffic gives 0/0 = NaN: "no evidence", which never compares > threshold
+      - record: beacon:sli_error_ratio:rate5m
+        expr: beacon:sli_errors:rate5m / beacon:sli_eligible:rate5m
+      - record: beacon:sli_error_ratio:rate30m
+        expr: beacon:sli_errors:rate30m / beacon:sli_eligible:rate30m
+      - record: beacon:sli_error_ratio:rate1h
+        expr: beacon:sli_errors:rate1h / beacon:sli_eligible:rate1h
+      - record: beacon:sli_error_ratio:rate6h
+        expr: beacon:sli_errors:rate6h / beacon:sli_eligible:rate6h
+      - record: beacon:sli_latency_good_ratio:rate5m
+        expr: |
+          sum(rate(beacon_request_duration_seconds_bucket{job="beacon", route!~"/healthz|/metrics", le="0.25"}[5m]))
+          /
+          sum(rate(beacon_request_duration_seconds_count{job="beacon", route!~"/healthz|/metrics"}[5m]))
+
+  - name: beacon-slo-alerts
+    rules:
+      # multi-window, multi-burn-rate: page when the last hour burned 14.4x budget AND it is still burning
+      - alert: BeaconErrorBudgetBurnFast
+        expr: beacon:sli_error_ratio:rate1h > (14.4 * 0.005) and beacon:sli_error_ratio:rate5m > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: beacon-availability
+        annotations:
+          summary: Beacon is burning its 30-day error budget at more than 14.4x
+      - alert: BeaconErrorBudgetBurnSlow
+        expr: beacon:sli_error_ratio:rate6h > (6 * 0.005) and beacon:sli_error_ratio:rate30m > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: beacon-availability
+        annotations:
+          summary: Beacon is burning its 30-day error budget at more than 6x
+      # no data is not healthy: the SLI cannot be computed if the counter is gone
+      - alert: BeaconSLINoData
+        expr: absent(beacon_requests_total{job="beacon"})
+        for: 10m
+        labels:
+          severity: ticket
+          slo: beacon-availability
+        annotations:
+          summary: No Beacon request metrics for 10 minutes; the SLO cannot be evaluated

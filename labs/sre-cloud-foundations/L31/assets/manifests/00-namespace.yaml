@@ -1,0 +1,10 @@
+# L31: the fresh namespace the rebuild creates. __NAMESPACE__ is replaced by rebuild.sh
+# from release/rebuild.env; nothing else in the cluster is touched.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: __NAMESPACE__
+  labels:
+    looped.lab/id: L31
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.33

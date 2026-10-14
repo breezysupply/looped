@@ -173,7 +173,7 @@ def main():
 
     multi = [d for d in runs if len(d.get("servers") or {}) >= 2]
     single = [d for d in runs if len(d.get("servers") or {}) == 1]
-    rep_text = section(notes, "Replicas")
+    rep_text = section(notes, "Replicas").replace(section(read(os.path.join(HERE, "assets", "notes-template.md")) or "", "Replicas"), "")
     if multi:
         m = max(multi, key=lambda d: len(d["servers"]))
         best1 = max((s["goodput_rps"] for d in single for s in d["steps"]), default=0)
@@ -234,7 +234,8 @@ def main():
     r.check("ledger-consistent", len(parts) == 2 and parts[0] == parts[1], f"running total {parts[0] if parts else '?'} vs records {parts[1] if len(parts) > 1 else '?'}" + ("" if c == 0 else f" ({err[:100]})"))
 
     secs = ["Saturation point", "Bottleneck", "Replicas", "Limits and retries", "What would raise capacity"]
-    have = [s for s in secs if len(section(notes, s)) >= 120]
+    tmpl = read(os.path.join(HERE, "assets", "notes-template.md")) or ""
+    have = [s for s in secs if section(notes, s) != section(tmpl, s) and len(section(notes, s).replace(section(tmpl, s), "")) >= 120]
     r.check("notes", len(have) == len(secs), f"{len(have)}/{len(secs)} sections with substance", critical=False)
 
     return r.finish(args.out, args.explanation, {"variant_file": variant, "compose_project": PROJECT, "api_replicas": len(ids)})

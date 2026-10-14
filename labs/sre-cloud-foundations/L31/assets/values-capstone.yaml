@@ -1,0 +1,10 @@
+# L31 values layered on top of the L19 chart's environment file (values-<ENVIRONMENT>.yaml).
+# __IMAGE_REPO__ / __IMAGE_TAG__ are filled from release/rebuild.env by rebuild.sh.
+# commonLabels put app=beacon-api on the API pods so L18's NetworkPolicies select them.
+image:
+  repository: __IMAGE_REPO__
+  tag: "__IMAGE_TAG__"
+  pullPolicy: IfNotPresent
+commonLabels:
+  looped.lab/id: L31
+  app: beacon-api

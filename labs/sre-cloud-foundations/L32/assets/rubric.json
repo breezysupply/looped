@@ -1,0 +1,216 @@
+{
+ "note": "L32 domain rubric. Completion needs every domain at 3/4 or better plus all critical practical checks. Scores are self- or mentor-assessed; each met criterion must point at evidence.",
+ "domains": [
+  {
+   "id": "linux",
+   "criteria": [
+    {
+     "id": "linux-1",
+     "text": "Reads process, service, journal and resource evidence before changing anything"
+    },
+    {
+     "id": "linux-2",
+     "text": "Distinguishes a resource bottleneck from a configuration or permission fault"
+    },
+    {
+     "id": "linux-3",
+     "text": "Restores service with the smallest change and proves the correct user/process"
+    },
+    {
+     "id": "linux-4",
+     "text": "Leaves no unrelated process or host change behind"
+    }
+   ]
+  },
+  {
+   "id": "networking",
+   "criteria": [
+    {
+     "id": "networking-1",
+     "text": "Traces a request hop by hop (DNS, route, port, TLS)"
+    },
+    {
+     "id": "networking-2",
+     "text": "Separates name resolution, connectivity and certificate failures with evidence"
+    },
+    {
+     "id": "networking-3",
+     "text": "Fixes the failing hop without disabling verification or opening extra paths"
+    },
+    {
+     "id": "networking-4",
+     "text": "Explains which direction (ingress/egress) a rule or policy affects"
+    }
+   ]
+  },
+  {
+   "id": "scripting",
+   "criteria": [
+    {
+     "id": "scripting-1",
+     "text": "Writes a small, tested Python change with useful exit codes"
+    },
+    {
+     "id": "scripting-2",
+     "text": "Handles timeouts, retries and malformed input explicitly"
+    },
+    {
+     "id": "scripting-3",
+     "text": "Keeps secrets and customer data out of output and logs"
+    },
+    {
+     "id": "scripting-4",
+     "text": "Explains complexity and memory bounds of the code"
+    }
+   ]
+  },
+  {
+   "id": "iac",
+   "criteria": [
+    {
+     "id": "iac-1",
+     "text": "Reads a plan before applying and names each forcing attribute"
+    },
+    {
+     "id": "iac-2",
+     "text": "Separates configuration, state and the real object"
+    },
+    {
+     "id": "iac-3",
+     "text": "Avoids replacing stateful resources unintentionally"
+    },
+    {
+     "id": "iac-4",
+     "text": "Keeps state local/scoped and versions pinned"
+    }
+   ]
+  },
+  {
+   "id": "containers",
+   "criteria": [
+    {
+     "id": "containers-1",
+     "text": "Builds a pinned, unprivileged image with a documented entry point"
+    },
+    {
+     "id": "containers-2",
+     "text": "Identifies image identity (ID/digest) and architecture"
+    },
+    {
+     "id": "containers-3",
+     "text": "Proves dependency readiness instead of assuming start order"
+    },
+    {
+     "id": "containers-4",
+     "text": "Removes only labelled lab containers, images and volumes"
+    }
+   ]
+  },
+  {
+   "id": "kubernetes",
+   "criteria": [
+    {
+     "id": "kubernetes-1",
+     "text": "Uses Deployment/ReplicaSet/Pod/Service/EndpointSlice evidence correctly"
+    },
+    {
+     "id": "kubernetes-2",
+     "text": "Distinguishes scheduling, probe, crash and selector failures"
+    },
+    {
+     "id": "kubernetes-3",
+     "text": "Keeps least privilege: auth can-i matrix, no extra bindings, no tokens"
+    },
+    {
+     "id": "kubernetes-4",
+     "text": "Scopes every command to the lab context and namespace"
+    }
+   ]
+  },
+  {
+   "id": "delivery",
+   "criteria": [
+    {
+     "id": "delivery-1",
+     "text": "Promotes or deploys an immutable, recorded artifact"
+    },
+    {
+     "id": "delivery-2",
+     "text": "Uses release history to say which build serves and why"
+    },
+    {
+     "id": "delivery-3",
+     "text": "Performs and verifies a compatible rollback"
+    },
+    {
+     "id": "delivery-4",
+     "text": "Knows what a rollback does not undo (data, schema)"
+    }
+   ]
+  },
+  {
+   "id": "observability",
+   "criteria": [
+    {
+     "id": "observability-1",
+     "text": "Uses metrics, logs and request/trace ids together"
+    },
+    {
+     "id": "observability-2",
+     "text": "States SLI numerator, denominator and exclusions"
+    },
+    {
+     "id": "observability-3",
+     "text": "Alert/SLO rules are tested, not assumed"
+    },
+    {
+     "id": "observability-4",
+     "text": "Keeps label cardinality bounded and dashboards tied to real metric names"
+    }
+   ]
+  },
+  {
+   "id": "recovery",
+   "criteria": [
+    {
+     "id": "recovery-1",
+     "text": "Takes and restores a backup into a separate target"
+    },
+    {
+     "id": "recovery-2",
+     "text": "Verifies counts AND selected values/checksums"
+    },
+    {
+     "id": "recovery-3",
+     "text": "Chooses a recovery point that protects newer data, and says what was lost"
+    },
+    {
+     "id": "recovery-4",
+     "text": "Measures the actual recovery interval"
+    }
+   ]
+  },
+  {
+   "id": "communication",
+   "criteria": [
+    {
+     "id": "communication-1",
+     "text": "Gives a time-stamped, scoped three-minute update"
+    },
+    {
+     "id": "communication-2",
+     "text": "Separates observation, hypothesis and action"
+    },
+    {
+     "id": "communication-3",
+     "text": "Writes a blameless report with owned follow-ups"
+    },
+    {
+     "id": "communication-4",
+     "text": "Defends decisions with rejected alternatives and names remaining gaps"
+    }
+   ]
+  }
+ ],
+ "pass_per_domain": 3
+}

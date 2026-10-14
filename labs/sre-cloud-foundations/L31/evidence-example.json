@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L31 — not a result. Real reports come from validate.py on your machine with a running cluster.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L31",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-02-16T18:00:00Z",
+  "completedAt": "2027-02-16T18:04:12Z",
+  "environment": { "profile": "kind-basic", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "variant_file": "variant-a", "namespace": "beacon-capstone", "cluster": "looped-foundations", "environment_values": "staging" },
+  "checks": [
+    { "id": "dry-check", "passed": true, "observed": "no unknown L31_* variables; rebuild.env: namespace beacon-capstone, cluster looped-foundations, environment staging; image built from L13 sources" },
+    { "id": "fresh-checkout", "passed": true, "observed": "676 non-ignored files copied; rebuild.sh check with an empty environment exited 0" },
+    { "id": "refuses-unknown", "passed": true, "observed": "with L31_SKIP_BUILD=1 set: exit 1, refused" },
+    { "id": "runbook", "passed": true, "observed": "sections missing/thin: none; names namespace and rebuild.sh: True" },
+    { "id": "slo-tests", "passed": true, "observed": "promtool check rules exit 0; test rules exit 0: SUCCESS" },
+    { "id": "cluster", "passed": true, "observed": "kind-looped-foundations: nodes ['looped-foundations-control-plane', 'looped-foundations-worker', 'looped-foundations-worker2']" },
+    { "id": "health", "passed": true, "observed": "workloads ready; /ready 200; /version reports 1.4.0; write+read through the API ok" },
+    { "id": "least-privilege", "passed": true, "observed": "deployer may ['patch deployments.apps', 'get pods/log', 'list pods']; must not, but may: none; pods with an API token: none; cluster-wide bindings: 0" },
+    { "id": "seeded-data", "passed": true, "observed": "seed rows/fingerprint 240 2281018160bb2c736124981dbf0919d1 (expected 240 2281018160bb2c736124981dbf0919d1)" },
+    { "id": "restore-proof", "passed": true, "observed": "verify_restore.py report: ok=True tables ['public.records:match'] differences 0" },
+    { "id": "rebuild-proof", "passed": false, "observed": "runs recorded (latest 6): [('all', True)]; need a successful all, then down, then all" }
+  ],
+  "explanation": "Draft relied on L19's image already loaded in the nodes. Built from L13 sources instead; adapted L22 rules and L21 dashboard to the build's metric names (beacon_requests_total, 0.25 s bucket).",
+  "cleanupStatus": "pending"
+}

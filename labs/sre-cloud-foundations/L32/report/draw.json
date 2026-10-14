@@ -1,0 +1,57 @@
+{
+  "seed": "authoring-0001",
+  "drawn_at": "2026-10-14T12:32:47Z",
+  "catalogue_sha256": "8635d43635b522b23e313b3198b9d10148ca00c201dbe8814987ee65d3a109b4",
+  "excluded": [
+    "L21:variant-a",
+    "L22:variant-b",
+    "L23:variant-b",
+    "L24:variant-b",
+    "L25:variant-b",
+    "L27:variant-b",
+    "L28:variant-a",
+    "L29:variant-a",
+    "L29:variant-b",
+    "L29:variant-c",
+    "L30:variant-b",
+    "L30:variant-c",
+    "L30:variant-d",
+    "L30:variant-e",
+    "L31:variant-a"
+  ],
+  "singles": [
+    "F-L05-b",
+    "F-L04-a"
+  ],
+  "incident": "C1",
+  "single_details": [
+    {
+      "id": "F-L05-b",
+      "lab": "L05",
+      "variant": "variant-b",
+      "domain": "networking",
+      "profile": "linux-arm64",
+      "area": "names that do not resolve as expected",
+      "start": [
+        "bash labs/sre-cloud-foundations/L05/setup.sh   # once, if the lab was torn down",
+        "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L05/reset.sh"
+      ],
+      "validate": "python3 labs/sre-cloud-foundations/L05/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L05-b.json",
+      "teardown": "bash labs/sre-cloud-foundations/L05/teardown.sh"
+    },
+    {
+      "id": "F-L04-a",
+      "lab": "L04",
+      "variant": "variant-a",
+      "domain": "linux",
+      "profile": "linux-arm64",
+      "area": "a host resource bottleneck",
+      "start": [
+        "bash labs/sre-cloud-foundations/L04/setup.sh   # once, if the lab was torn down",
+        "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L04/reset.sh"
+      ],
+      "validate": "python3 labs/sre-cloud-foundations/L04/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L04-a.json",
+      "teardown": "bash labs/sre-cloud-foundations/L04/teardown.sh"
+    }
+  ]
+}

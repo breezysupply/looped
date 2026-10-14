@@ -1,0 +1,120 @@
+# Your promtool tests for work/rules/beacon-slo.rules.yml.
+#   docker run --rm --network none -v "$PWD/labs/sre-cloud-foundations/L22/work:/w:ro" \
+#     --entrypoint promtool prom/prometheus:v3.5.0 test rules /w/tests/beacon-slo.test.yml
+#
+# One example group is given. Add at least four more, one per scenario, and put the scenario
+# word in each `name:` — missing, spike, burn, zero — so the validator can find them:
+#   missing  the request counter disappears: no-data alert fires, burn alerts do not
+#   spike    a few minutes of errors after hours of health: nothing pages
+#   burn     a sustained error rate: the page fires within the hour and clears after recovery
+#   zero     only health checks and 4xx: the SLI has no eligible events, nothing fires
+# Tip: test alert STATE with `count(ALERTS{alertname="...",alertstate="firing"}) or vector(0)`
+# in promql_expr_test, or use alert_rule_test with exp_labels and exp_annotations.
+rule_files:
+  - ../rules/beacon-slo.rules.yml
+evaluation_interval: 1m
+
+tests:
+  - name: example healthy traffic, no errors, no alerts
+    interval: 1m
+    input_series:
+      - series: 'beacon_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+100x60'
+    promql_expr_test:
+      - expr: sum(beacon:sli_error_ratio:rate5m)
+        eval_time: 30m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertstate="firing"}) or vector(0)
+        eval_time: 30m
+        exp_samples:
+          - value: 0
+
+  # ── worked solution: one group per scenario ───────────────────────
+  - name: missing counter fires the no-data alert, never a healthy zero
+    interval: 1m
+    input_series:
+      - series: 'up{job="beacon",instance="api:8080"}'
+        values: '1x30'
+    promql_expr_test:
+      - expr: count(beacon:sli_error_ratio:rate5m) or vector(0)
+        eval_time: 20m
+        exp_samples:
+          - value: 0
+    alert_rule_test:
+      - alertname: BeaconSLINoData
+        eval_time: 9m
+        exp_alerts: []
+      - alertname: BeaconSLINoData
+        eval_time: 20m
+        exp_alerts:
+          - exp_labels:
+              severity: ticket
+              slo: beacon-availability
+              job: beacon
+            exp_annotations:
+              summary: No Beacon request metrics for 10 minutes; the SLO cannot be evaluated
+      - alertname: BeaconErrorBudgetBurnFast
+        eval_time: 20m
+        exp_alerts: []
+
+  - name: short spike of errors after six healthy hours pages nobody
+    interval: 1m
+    input_series:
+      - series: 'beacon_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+300x400'
+      - series: 'beacon_requests_total{job="beacon",route="/status",code="500"}'
+        values: '0x360 300+300x3 1200x36'
+    promql_expr_test:
+      # the 5-minute window alone is far above 14.4x budget: a single-window alert would page
+      - expr: count(beacon:sli_error_ratio:rate5m > 0.072)
+        eval_time: 364m
+        exp_samples:
+          - value: 1
+    alert_rule_test:
+      - alertname: BeaconErrorBudgetBurnFast
+        eval_time: 366m
+        exp_alerts: []
+      - alertname: BeaconErrorBudgetBurnSlow
+        eval_time: 390m
+        exp_alerts: []
+
+  - name: sustained burn pages within the hour and clears after recovery
+    interval: 1m
+    input_series:
+      - series: 'beacon_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+270x480'
+      - series: 'beacon_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0x360 30+30x59 1800x60'
+    alert_rule_test:
+      - alertname: BeaconErrorBudgetBurnFast
+        eval_time: 380m
+        exp_alerts: []
+      - alertname: BeaconErrorBudgetBurnFast
+        eval_time: 412m
+        exp_alerts:
+          - exp_labels:
+              severity: page
+              slo: beacon-availability
+            exp_annotations:
+              summary: Beacon is burning its 30-day error budget at more than 14.4x
+      - alertname: BeaconErrorBudgetBurnFast
+        eval_time: 440m
+        exp_alerts: []
+
+  - name: zero eligible traffic (health checks and 4xx only) fires nothing
+    interval: 1m
+    input_series:
+      - series: 'beacon_requests_total{job="beacon",route="/healthz",code="200"}'
+        values: '0+30x60'
+      - series: 'beacon_requests_total{job="beacon",route="/jobs",code="429"}'
+        values: '0+100x60'
+    promql_expr_test:
+      - expr: count(beacon:sli_error_ratio:rate5m > 0) or vector(0)
+        eval_time: 45m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertstate="firing"}) or vector(0)
+        eval_time: 45m
+        exp_samples:
+          - value: 0
