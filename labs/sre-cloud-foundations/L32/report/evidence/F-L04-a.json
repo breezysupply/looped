@@ -1,1 +1,0 @@
-{"note": "AUTHORING TEST FIXTURE: synthetic evidence used only to exercise the L32 validator; not a real run", "activityId": "L04", "trackId": "sre-cloud-foundations", "seed": "variant-b", "assistance": "independent", "completedAt": "2026-01-01T00:00:00Z", "checks": [{"id": "a", "passed": true, "observed": "x"}, {"id": "b", "passed": true, "observed": "y"}]}
