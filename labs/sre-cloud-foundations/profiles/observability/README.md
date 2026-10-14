@@ -38,8 +38,9 @@ container name through `prometheus/targets/*.json` (L21's three targets ship in
 
 ## Resources
 
-Measured in the authoring environment (Linux amd64, idle): about 400–500 MiB of memory for the
-four containers together and negligible CPU. Budget 1 GiB and one core while a lab sends traffic.
+Measured with `docker stats` in the authoring environment (Linux amd64) while L21 ran: about
+190–200 MiB of memory for the four containers together (Grafana ~90, Prometheus ~40, collector
+~40, Jaeger ~25 MiB). Budget 1 GiB and one core to leave headroom while a lab sends traffic.
 
 ## What it proves and what it does not
 
@@ -55,4 +56,4 @@ traces in memory: a restart loses them.
 In the authoring environment (Linux amd64, Docker Engine with Compose v2): `setup.sh` → all six
 checks PASS (including a span through the collector into Jaeger), used by L21's full cycle, then
 `teardown.sh` removed every `looped-obs-*` container and the network. Not run on macOS / Apple
-Silicon; all four images publish arm64 builds.
+Silicon, and arm64 image availability was not checked from here.

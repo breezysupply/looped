@@ -192,8 +192,13 @@ def main():
     routes = {s.get("route") for s in series}
     useful = {"route", "method", "status_class"} <= names and all(re.fullmatch(r"[1-5]xx", x or "") for x in sc) and routes <= ROUTES
     r.check("labels-useful", useful, f"status_class {sorted(x for x in sc if x)}; routes {sorted(x for x in routes if x)}")
-    pc = prom("/api/v1/query", query="count(beacon_l21_requests_total)")
-    n_prom = int(float(pc["data"]["result"][0]["value"][1])) if pc and pc["data"]["result"] else None
+    n_prom, deadline = None, time.time() + 15  # wait for a scrape: series that left the target are marked stale then
+    while time.time() < deadline:
+        pc = prom("/api/v1/query", query="count(beacon_l21_requests_total)")
+        n_prom = int(float(pc["data"]["result"][0]["value"][1])) if pc and pc["data"]["result"] else None
+        if n_prom is not None and n_prom <= 30:
+            break
+        time.sleep(3)
     r.check("prometheus-series", n_prom is not None and n_prom <= 30, f"Prometheus currently holds {n_prom} live series of beacon_l21_requests_total (stale series drop out after the next scrape)", critical=False)
 
     # ── one request across the signals ──────────────────────────────
