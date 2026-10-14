@@ -8,7 +8,7 @@ name: looped-l26-recv
 
 services:
   db:
-    image: ${IMG_POSTGRES:?run bundle.py load first: no internal reference for postgres}
+    image: "${IMG_POSTGRES:?run bundle.py load first - no internal reference for postgres}"
     container_name: looped-l26-recv-db
     environment:
       POSTGRES_USER: beacon
@@ -25,7 +25,7 @@ services:
       looped.lab/id: L26
 
   api:
-    image: ${IMG_BEACON_API:?run bundle.py load first: no internal reference for beacon-api}
+    image: "${IMG_BEACON_API:?run bundle.py load first - no internal reference for beacon-api}"
     container_name: looped-l26-recv-api
     read_only: true
     env_file: [../config/api.env]

@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-912e3a9c';
+var CACHE = 'looped-f439a83b';
 var ASSETS = [
   './',
   './index.html',

@@ -198,7 +198,8 @@ class Connection:
                 else:
                     raise PgConnectionError(f"unsupported authentication request {code}")
             elif kind == b"S":
-                k, v = body.rstrip(b"\x00").split(b"\x00", 1)
+                # key\0value\0 — the value may be empty (application_name), so split, don't rstrip
+                k, v = body.split(b"\x00")[:2]
                 self.server[k.decode()] = v.decode()
             elif kind == b"K":
                 self.pid = struct.unpack("!i", body[:4])[0]

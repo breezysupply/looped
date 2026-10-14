@@ -131,7 +131,7 @@ LX.sreLabs = LX.sreLabs || [];
 
   lab({
     id: 'L32', moduleId: 'M16', title: 'Final assessment: unseen faults, a combined incident and your design defence',
-    objectiveIds: ['obj-m16-02', 'obj-m16-03'], executionMode: 'local', estimatedMinutes: 240, environmentProfile: 'kind-basic', prerequisites: ['L24', 'L31'],
+    objectiveIds: ['obj-m16-02', 'obj-m16-03'], executionMode: 'local', estimatedMinutes: 240, environmentProfile: 'kind-basic', prerequisites: ['L28', 'L31'],
     learnerBrief: 'A seeded draw gives you two single faults from passed modules, in variants you have not run (every lab/variant in your evidence is excluded), and one bounded two-fault incident on your L31 rebuild with data at stake. Diagnose each from evidence — the single faults are started and judged by their own labs\' scripts and validators — restore service and data with an explicit recovery-point decision, keep least privilege, and clean up exactly what you created.\n\nThen deliver a sanitised incident report, a three-minute update, a ten-minute defence of five design decisions, a small fresh Python change with tests, a Terraform replacement plan you can read, and a rubric self-assessment with evidence for ten domains. Describe all of it as lab experience.',
     checkpoints: [
       { id: 'c1', title: 'Two unseen single faults', resumeInstructions: 'The draw is fixed in report/draw.json; `bash ' + DIR + 'L32/setup.sh` reprints each fault\'s start, validate and teardown commands. Evidence goes to report/evidence/<fault>.json.' },

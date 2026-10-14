@@ -48,9 +48,13 @@ LX.missions = LX.missions || [];
   }
   function J(x) { return JSON.stringify(x, null, 2); }
   /* deterministic hex for ids and digests */
+  /* self-contained (FNV-1a + xorshift) so constants computed while this file
+     loads do not depend on sre-sim.js being present (tools/build.js and the
+     content validators evaluate data files on their own) */
   function hex(seed, n) {
-    var r = SIM().rng('hex:' + seed), s = '';
-    while (s.length < n) s += '0123456789abcdef'.charAt(Math.floor(r.next() * 16));
+    var h = 0x811c9dc5, str = 'hex:' + seed, s = '', i;
+    for (i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    while (s.length < n) { h ^= h << 13; h >>>= 0; h ^= h >>> 17; h ^= h << 5; h >>>= 0; s += '0123456789abcdef'.charAt(h & 15); }
     return s;
   }
   function guid(seed) { var h = hex(seed, 32); return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-a' + h.slice(17, 20) + '-' + h.slice(20, 32); }
