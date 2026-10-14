@@ -1,0 +1,46 @@
+{
+ "reviewer": "self",
+ "reviewer_note": "self | mentor (name a mentor only if one actually reviewed this)",
+ "domains": {
+  "linux": {
+   "met": [],
+   "evidence": []
+  },
+  "networking": {
+   "met": [],
+   "evidence": []
+  },
+  "scripting": {
+   "met": [],
+   "evidence": []
+  },
+  "iac": {
+   "met": [],
+   "evidence": []
+  },
+  "containers": {
+   "met": [],
+   "evidence": []
+  },
+  "kubernetes": {
+   "met": [],
+   "evidence": []
+  },
+  "delivery": {
+   "met": [],
+   "evidence": []
+  },
+  "observability": {
+   "met": [],
+   "evidence": []
+  },
+  "recovery": {
+   "met": [],
+   "evidence": []
+  },
+  "communication": {
+   "met": [],
+   "evidence": []
+  }
+ }
+}

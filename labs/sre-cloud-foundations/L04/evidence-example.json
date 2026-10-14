@@ -1,0 +1,25 @@
+{
+  "note": "EXAMPLE of the evidence schema for L04 — not a result. Real reports come from validate.py on your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L04",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-11-03T18:00:00Z",
+  "completedAt": "2026-11-03T19:22:10Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "lab_fs_kib": 20200 },
+  "checks": [
+    { "id": "lab-fs", "passed": true, "observed": "/opt/beacon-l04/mnt: source=/dev/loop0 backing=/opt/beacon-l04/labfs.img type=ext4 blocks=5050 inodes=1024 (setup: 5050/1024)" },
+    { "id": "headroom", "passed": true, "observed": "free blocks 97% (19552 KiB), free inodes 97% (992) — target ≥20% of each" },
+    { "id": "writes-restored", "passed": true, "observed": "GET /ready -> 200; POST /status -> 201; POST /jobs -> 202" },
+    { "id": "live-data-intact", "passed": true, "observed": "seeded sensors readable: 10/10; seeded pending jobs intact: 12/12" },
+    { "id": "batch-stopped", "passed": true, "observed": "no CPU fixture recorded for this variant" },
+    { "id": "bystanders-alive", "passed": true, "observed": "reporter PID 20486 alive; Beacon running" },
+    { "id": "bottleneck-evidence", "passed": true, "observed": "triage notes quote df -h and df -i output for the lab mount, with the exhausted one at 100%" },
+    { "id": "notes", "passed": true, "observed": "evidence/L04-triage.md: 1180 chars outside comments" }
+  ],
+  "explanation": "df -h showed 21% used while df -i showed IUse% 100%. File counts per directory put 992 files in tmp/sessions, all 12 days old. Removed only those; database, queue and the reporter untouched.",
+  "cleanupStatus": "reported"
+}

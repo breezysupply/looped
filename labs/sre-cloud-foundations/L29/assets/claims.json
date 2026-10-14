@@ -1,0 +1,410 @@
+{
+ "note": "Curated claims for L29. expect_sha and must_mention are salted hashes so answers are not read by accident; this is learning integrity, not secrecy (see SOLUTION.md for the plain key). hash = sha256('looped-l29:' + text)[:16]; verdict text is '<id>:<verdict>'.",
+ "claims": [
+  {
+   "id": "TR-01",
+   "topic": "identity",
+   "claim": "An AWS IAM role, an Azure managed identity and a Google Cloud service account are the same kind of object and are granted permissions the same way.",
+   "sources": [
+    "T18",
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "ba403e27f0afbacc",
+   "must_mention": [
+    [
+     "80d55af68743c3ca",
+     "25a139ebfc14c820",
+     "1122d8f2df18d347"
+    ],
+    [
+     "796b791718510c0f",
+     "03bf85f566e4028a",
+     "253ada26efa0d2df",
+     "a3d3117da93b57e7",
+     "862d4f6c5ea7a03d"
+    ],
+    [
+     "2038b9dd77a7b95c",
+     "a18565d138b614f6",
+     "85ff2fc2bb2a11fa",
+     "0aeaea437e4bd094",
+     "a50289bf8790a84b",
+     "b5e34045ae6ae727",
+     "17aba4240193238d"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "iam role",
+     "task role"
+    ],
+    "b": [
+     "managed identity",
+     "service account"
+    ]
+   },
+   "flags": []
+  },
+  {
+   "id": "TR-02",
+   "topic": "identity",
+   "claim": "An AWS account, an Azure subscription and a Google Cloud project are the same boundary: identities live inside them and access granted in one stays inside it.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "639210763ede186b",
+   "must_mention": [
+    [
+     "4e9ffe64292e798c",
+     "b4634b74c1a90d06"
+    ],
+    [
+     "2342ba1116eb0d1d",
+     "14b91bfafaafa3da",
+     "690e3bf6ab46851e",
+     "baea38a03aa02cdb",
+     "1fc369de8f9b626d",
+     "e52f05d264bc20ab",
+     "17c6905427dad791"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "aws account",
+     "an account"
+    ],
+    "b": [
+     "subscription",
+     "project"
+    ]
+   },
+   "flags": []
+  },
+  {
+   "id": "TR-03",
+   "topic": "network",
+   "claim": "A virtual network (VPC or VNet) is a regional object in all three providers.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "390bfbea71f27992",
+   "must_mention": [
+    [
+     "76d264abd818e2c6"
+    ]
+   ],
+   "equivalence": {},
+   "flags": [
+    "\\b(vpcs?|vnets?|virtual networks?|networks?) (is|are) (a )?regional (object |resource )?(in|across) (all|every)",
+    "\\bvpcs? (is|are) regional in all three"
+   ]
+  },
+  {
+   "id": "TR-04",
+   "topic": "network",
+   "claim": "Subnets are zonal in all three providers, so the two-AZ subnet layout copies across one-to-one.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "18136e6771b4f219",
+   "must_mention": [
+    [
+     "e2411d5759b4cfe6"
+    ],
+    [
+     "f24d562b2858f3b4",
+     "f0f8b11949914391"
+    ]
+   ],
+   "equivalence": {},
+   "flags": [
+    "\\bsubnets? (is|are) zonal in all three",
+    "\\bsubnet layout copies"
+   ]
+  },
+  {
+   "id": "TR-05",
+   "topic": "network",
+   "claim": "An AWS security group is the same as an Azure network security group and a Google Cloud firewall rule.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "0c1e58623b03232d",
+   "must_mention": [
+    [
+     "fa24d8b74e0e9dbf",
+     "cf56cdc864078460"
+    ],
+    [
+     "d569b799e43a8037",
+     "3d3488383137260e",
+     "ace622314d8e40fd",
+     "718aa104e28b945c",
+     "06071680a25c7a75"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "security group"
+    ],
+    "b": [
+     "nsg",
+     "network security group",
+     "firewall rule"
+    ]
+   },
+   "flags": []
+  },
+  {
+   "id": "TR-06",
+   "topic": "network",
+   "claim": "An S3 gateway endpoint, an Azure private endpoint and Google Private Google Access are the same mechanism.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "c4c145c78153c695",
+   "must_mention": [
+    [
+     "0eec0c50ae35731a",
+     "491fcd1255febba0",
+     "a990557b041f7d45",
+     "ee250fd0596a6be4"
+    ],
+    [
+     "399f394ab12a5872",
+     "0ceb0bda8c760222",
+     "24fe60e0c9237397",
+     "29ae92176fe4aa9a"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "gateway endpoint"
+    ],
+    "b": [
+     "private endpoint",
+     "private google access"
+    ]
+   },
+   "flags": []
+  },
+  {
+   "id": "TR-07",
+   "topic": "network",
+   "claim": "A NAT gateway is a per-zone appliance in all three providers, so the design needs one NAT per zone everywhere.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "2e69acf5a5527c1d",
+   "must_mention": [
+    [
+     "fcc847fde798010b",
+     "e2411d5759b4cfe6"
+    ]
+   ],
+   "equivalence": {},
+   "flags": [
+    "\\bone nat (gateway )?per (zone|az) everywhere",
+    "\\bnat[^.]{0,40}per-zone appliance in all three"
+   ]
+  },
+  {
+   "id": "TR-08",
+   "topic": "managed-kubernetes",
+   "claim": "EKS, AKS and GKE split responsibility the same way: the provider runs the control plane and patches the nodes; the operator only deploys workloads.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "01ce780090899341",
+   "must_mention": [
+    [
+     "82716ad2c943bcac",
+     "5789ae4c34dbe716",
+     "3feb7fdc1f8618eb",
+     "49e3305099ea5f30",
+     "92d8ef02bf19d14d",
+     "1acf4ad5c7398247",
+     "e5e19be8029d86a1",
+     "d27f126101ca1bba"
+    ],
+    [
+     "1122d8f2df18d347",
+     "8eddcde78f792eae",
+     "4053aa9701d58862",
+     "0e12dca9ef53e3cf",
+     "f883dbe42b44fe21",
+     "f55866bbaaa853cf"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "eks"
+    ],
+    "b": [
+     "aks",
+     "gke"
+    ]
+   },
+   "flags": [
+    "\\bprovider (patches|upgrades|manages|owns) (the |all )?nodes in all three",
+    "\\boperator only (deploys|runs|owns) (the )?workloads"
+   ]
+  },
+  {
+   "id": "TR-09",
+   "topic": "availability",
+   "claim": "Every region in every provider offers at least two availability zones, and a zone name means the same physical location for every customer.",
+   "sources": [
+    "T08",
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "bce8a76496dd519b",
+   "must_mention": [
+    [
+     "e202c01f6a527fb0",
+     "5aa579edffd8428e",
+     "78889a5e637eaf6f",
+     "d124f090651bdf37",
+     "34a98adb58b6db81",
+     "7807143362f6ee06",
+     "c9125bb4055b6d7b",
+     "977ae2b67b3535d9"
+    ],
+    [
+     "d77753f89dfd48e8",
+     "3e7e3d769f4e93ac",
+     "6f9021657142b58d",
+     "83e1e48ad669d60d",
+     "00cb9667a2b86e73",
+     "85b2c278c639eb8b",
+     "687a08140e688040"
+    ]
+   ],
+   "equivalence": {},
+   "flags": [
+    "\\bevery region (in every provider )?(offers|has) (at least )?(two|2|three|3)"
+   ]
+  },
+  {
+   "id": "TR-10",
+   "topic": "availability",
+   "claim": "The public load balancer is a regional resource in all three providers.",
+   "sources": [
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "96a0d7e08d34e945",
+   "must_mention": [
+    [
+     "76d264abd818e2c6"
+    ]
+   ],
+   "equivalence": {},
+   "flags": [
+    "\\bload balancers? (is|are) (a )?regional (resource )?in all three"
+   ]
+  },
+  {
+   "id": "TR-11",
+   "topic": "availability",
+   "claim": "All three offer managed PostgreSQL with a standby in another zone and automatic failover (RDS Multi-AZ, Azure Database for PostgreSQL flexible server with zone-redundant high availability, Cloud SQL for PostgreSQL high availability).",
+   "sources": [
+    "T08",
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "3f82f2440cef5b6b",
+   "must_mention": [
+    [
+     "ec2611a7c3ff9289",
+     "041209f98a828302"
+    ],
+    [
+     "14e95b354092ae92",
+     "8eccc3c2ef668177",
+     "c9e4ae2d41a5b789",
+     "ec00ec836fd8f88d",
+     "88b507ffc5f87afb",
+     "dfa3c66595c80b58"
+    ]
+   ],
+   "equivalence": {},
+   "flags": []
+  },
+  {
+   "id": "TR-12",
+   "topic": "identity",
+   "claim": "In all three, a workload can get short-lived credentials without a stored long-lived key (ECS task role, managed identity, attached service account or GKE Workload Identity Federation).",
+   "sources": [
+    "T18",
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "c5ab2070e7e91c02",
+   "must_mention": [
+    [
+     "3bc76788e6fdb84d",
+     "4e1f4cd7ed419e8f",
+     "b0d1f8e296ffe78e",
+     "7dbb0f574f3cd60c"
+    ],
+    [
+     "577e4e2b5d31fc33",
+     "e03ebfd4beca37e3",
+     "df5344fc9759e1e8",
+     "aae26c4d5b9e82b3",
+     "57703223c15880a3"
+    ]
+   ],
+   "equivalence": {},
+   "flags": []
+  },
+  {
+   "id": "TR-13",
+   "topic": "identity",
+   "claim": "Key access is authorised the same way everywhere: an AWS KMS key policy, Azure Key Vault and Cloud KMS each rely on a policy document attached to the key.",
+   "sources": [
+    "T18",
+    "T19",
+    "T20"
+   ],
+   "expect_sha": "f0b3048f30ad6f4c",
+   "must_mention": [
+    [
+     "f93b2e1550c843ec"
+    ],
+    [
+     "1122d8f2df18d347",
+     "34889a41b98cde54",
+     "19057a97800f7d07"
+    ],
+    [
+     "e2689090c470e2ca",
+     "2038b9dd77a7b95c",
+     "a18565d138b614f6",
+     "85ff2fc2bb2a11fa",
+     "0aeaea437e4bd094"
+    ]
+   ],
+   "equivalence": {
+    "a": [
+     "key policy"
+    ],
+    "b": [
+     "key vault",
+     "cloud kms"
+    ]
+   },
+   "flags": []
+  }
+ ]
+}

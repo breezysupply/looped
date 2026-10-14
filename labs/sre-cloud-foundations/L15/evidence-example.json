@@ -1,0 +1,26 @@
+{
+  "note": "EXAMPLE of the evidence schema for L15 — not a result. Real reports come from validate.py against your kind cluster.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L15",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-11-16T18:30:12Z",
+  "completedAt": "2026-11-16T18:31:05Z",
+  "environment": { "profile": "kind-basic", "arch": "arm64", "os": "Darwin", "python": "3.9.6", "kind": "kind v0.29.0 go1.24.2 darwin/arm64", "kubectl": "v1.33.1", "cluster": "looped-foundations", "context": "kind-looped-foundations", "namespace": "beacon", "kubelet": "v1.33.1", "variant_file": "variant-b" },
+  "checks": [
+    { "id": "cluster-context", "passed": true, "observed": "nodes: looped-foundations-control-plane, looped-foundations-worker, looped-foundations-worker2" },
+    { "id": "manifest-valid", "passed": true, "observed": "deployment.apps/beacon configured (server dry run)" },
+    { "id": "change-request", "passed": true, "observed": "work/: tier=api env=kind-lab-l15 selector={'app.kubernetes.io/name': 'beacon'}; live selector=…; pods with CR-1042 3/3" },
+    { "id": "in-sync", "passed": true, "observed": "kubectl diff: no difference" },
+    { "id": "replicas", "passed": true, "observed": "manifest replicas=3; live spec.replicas=3; ready pods=3" },
+    { "id": "rollout-complete", "passed": true, "observed": "paused=False observedGeneration=3/3 updated=3 available=3 replicas=3 Progressing=NewReplicaSetAvailable" },
+    { "id": "ownership-chain", "passed": true, "observed": "deploy/beacon -> rs/beacon-6f8c9d7b5 (hash 6f8c9d7b5, 2 ReplicaSet(s) in history) -> 3 pod(s)" },
+    { "id": "self-healing", "passed": true, "observed": "deleted beacon-6f8c9d7b5-2xk9q; replaced by beacon-6f8c9d7b5-tq4mz in 6s, 3 ready" },
+    { "id": "notes", "passed": true, "observed": "notes filled in, including the ReplicaSet chain" }
+  ],
+  "explanation": "apply was rejected: spec.selector is immutable and the working copy had added tier: api to matchLabels. Moved the label to the template only and set the environment; the Deployment controller created a new ReplicaSet and rolled 3 pods with maxSurge 1.",
+  "cleanupStatus": "reported"
+}

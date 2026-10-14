@@ -1,0 +1,30 @@
+{
+  "note": "EXAMPLE of the evidence schema for L12 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L12",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-c",
+  "startedAt": "2027-01-18T17:00:00Z",
+  "completedAt": "2027-01-18T19:02:10Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "terraform": "1.13.3", "docker": "Docker version 28.x", "variant_file": "variant-c", "docker_host": "unix:///Users/example/.docker/run/docker.sock" },
+  "checks": [
+    { "id": "scope", "passed": true, "observed": "4 labelled L12 objects, all looped-l12-*" },
+    { "id": "states-separate", "passed": true, "observed": "two local states with different lineage" },
+    { "id": "lockfile-pinned", "passed": true, "observed": "dev: docker 4.6.0, staging: docker 4.6.0" },
+    { "id": "module-extracted", "passed": true, "observed": "module declares container/volume/network: True; roots call it; state uses module addresses" },
+    { "id": "data-protected", "passed": true, "observed": "module's docker_volume has prevent_destroy = true" },
+    { "id": "no-change-dev", "passed": true, "observed": "No changes" },
+    { "id": "no-change-staging", "passed": true, "observed": "No changes" },
+    { "id": "no-orphans", "passed": true, "observed": "every looped-l12-* container is running and in a state" },
+    { "id": "user-path", "passed": true, "observed": "dev: 127.0.0.1:18422 /healthz 200; staging: 127.0.0.1:18413 /healthz 200" },
+    { "id": "data-preserved", "passed": true, "observed": "GET /status/l12-seed 200: seed 1eebb3a29701 present" },
+    { "id": "volume-kept", "passed": true, "observed": "looped-l12-dev-data created 2027-01-18T17:04:31Z (baseline 2027-01-18T17:04:31Z)" },
+    { "id": "variant-outcome", "passed": true, "observed": "dev API published on 18422 (change request: 18422)" },
+    { "id": "plan-notes", "passed": false, "observed": "sections present, chars=420 mentions replacement=True" }
+  ],
+  "explanation": "CHG-2207: port change replaces only the container; the label change would replace the data volume (labels force replacement), so it was declined and prevent_destroy added in the module.",
+  "cleanupStatus": "pending"
+}

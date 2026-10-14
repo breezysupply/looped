@@ -1,0 +1,12 @@
+apiVersion: v2
+name: beacon
+description: Beacon status API (LOOPED SRE course chart for a fictional service)
+type: application
+# chart version: bump on ANY chart change (templates, defaults, schema)
+version: 0.4.0
+# default application version; environments pin image.tag explicitly
+appVersion: "1.4.0"
+kubeVersion: ">=1.29.0-0"
+keywords: [beacon, looped, course]
+maintainers:
+  - name: looped-course

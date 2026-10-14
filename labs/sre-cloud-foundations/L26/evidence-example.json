@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L26 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L26",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-c",
+  "startedAt": "2027-03-09T17:00:00Z",
+  "completedAt": "2027-03-09T19:12:30Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "docker": "Docker version 28.x", "variant_file": "variant-c", "compose_project": "looped-l26-recv", "registry": "127.0.0.1:15026" },
+  "checks": [
+    { "id": "trust-store", "passed": true, "observed": "1 key file(s) trusted: beacon-release.pub.pem (52e7f3741b165177…); release key 52e7f3741b165177…" },
+    { "id": "fault-rejected", "passed": true, "observed": "verify log: 3 entries, 1 REJECT with 'untrusted-signer', 2 ACCEPT" },
+    { "id": "bundle-verifies", "passed": true, "observed": "ACCEPT: signed by 52e7f3741b165177…, 4 artifacts" },
+    { "id": "negative-tests", "passed": true, "observed": "altered file: rejected ['checksum-mismatch']; missing image archive: rejected ['missing-file']; unknown signing key: rejected ['untrusted-signer']" },
+    { "id": "registry-has-artifacts", "passed": true, "observed": "internal registry 127.0.0.1:15026: serves ['beacon-api', 'postgres']" },
+    { "id": "deployed-from-internal", "passed": true, "observed": "2 running container(s) in looped-l26-recv; all internal, digest-pinned" },
+    { "id": "deployed-matches-bundle", "passed": true, "observed": "looped-l26-recv-api <- looped-l26/beacon-api@sha256:31d7… (= beacon-api); looped-l26-recv-db <- looped-l26/postgres@sha256:9a70… (= postgres)" },
+    { "id": "egress-blocked", "passed": true, "observed": "looped-l26-recv internal=True; no container has a way out" },
+    { "id": "user-path", "passed": true, "observed": "/ready and test write inside looped-l26-recv-api: 200 201" },
+    { "id": "trust-bootstrap-doc", "passed": false, "observed": "release fingerprint stated; thin sections: ['Residual risks']" },
+    { "id": "no-private-key-shipped", "passed": true, "observed": "no private key in outbox, inbox or evidence" }
+  ],
+  "explanation": "Bundle was signed with the build-laptop key and carried its own public key; rejected it, re-signed with the release key at the sender, re-transferred, loaded via the internal registry.",
+  "cleanupStatus": "pending"
+}

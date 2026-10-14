@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-39566475';
+var CACHE = 'looped-f439a83b';
 var ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,7 @@ var ASSETS = [
   './assets/js/playbook.js',
   './assets/js/review.js',
   './assets/js/onsite.js',
+  './assets/js/sre.js',
   './assets/js/app.js',
   './assets/js/shell-containers.js',
   './assets/js/data/containers-docker.js',
@@ -90,7 +91,37 @@ var ASSETS = [
   './assets/js/data/onsite-system.js',
   './assets/js/data/onsite-stories.js',
   './assets/js/data/onsite-path.js',
-  './assets/js/data/onsite-mock.js'
+  './assets/js/data/onsite-mock.js',
+  './assets/js/sre-sim.js',
+  './assets/js/data/sre-track.js',
+  './assets/js/data/sre-modules.js',
+  './assets/js/data/sre-lessons-1.js',
+  './assets/js/data/sre-lessons-2.js',
+  './assets/js/data/sre-lessons-3.js',
+  './assets/js/data/sre-lessons-4.js',
+  './assets/js/data/sre-questions-1.js',
+  './assets/js/data/sre-questions-2.js',
+  './assets/js/data/sre-questions-3.js',
+  './assets/js/data/sre-questions-4.js',
+  './assets/js/data/sre-labs.js',
+  './assets/js/data/sre-labs-2.js',
+  './assets/js/data/sre-labs-3.js',
+  './assets/js/data/sre-labs-4.js',
+  './assets/js/data/sre-labs-5.js',
+  './assets/js/data/sre-labs-6.js',
+  './assets/js/data/sre-labs-7.js',
+  './assets/js/data/sre-designs.js',
+  './assets/js/data/sre-diagnostic.js',
+  './assets/js/data/sre-reviews.js',
+  './assets/js/data/sre-branches.js',
+  './assets/js/data/sre-scenarios-1.js',
+  './assets/js/data/sre-scenarios-2.js',
+  './assets/js/data/sre-scenarios-3.js',
+  './assets/js/data/sre-scenarios-4.js',
+  './assets/js/data/sre-scenarios-5.js',
+  './assets/js/data/sre-scenarios-6.js',
+  './assets/js/data/sre-scenarios-7.js',
+  './assets/js/data/sre-quiz.js'
 ];
 
 self.addEventListener('install', function (e) {

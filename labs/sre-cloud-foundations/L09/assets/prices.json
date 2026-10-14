@@ -1,0 +1,8 @@
+{
+  "note": "Illustrative fixture prices for the lab cost model, close to published us-west-2 on-demand list prices when this lab was written. NOT a quote: check the AWS pricing pages before any real decision. Data processing, LCUs, transfer, compute, storage and database are excluded on purpose.",
+  "currency": "USD",
+  "hours_per_month": 730,
+  "nat_gateway_hour": 0.045,
+  "interface_endpoint_az_hour": 0.01,
+  "load_balancer_hour": 0.0225
+}

@@ -1,0 +1,15 @@
+# prod: three replicas, a disruption budget, more headroom. Admin endpoints stay off
+# (the schema enforces adminEnabled=false and replicaCount>=2 when environment is prod).
+replicaCount: 3
+config:
+  environment: prod
+  adminEnabled: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 96Mi
+  limits:
+    memory: 192Mi
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

@@ -1,0 +1,917 @@
+{
+ "note": "L32 fault catalogue. Single faults are earlier labs' own variants, injected and validated by those labs' scripts; combined incidents are injected into the L31 rebuild by L32/inject.sh and always include a data/recovery decision. 'area' describes the symptom area only.",
+ "version": "1.0",
+ "singles": [
+  {
+   "id": "F-L03-a",
+   "lab": "L03",
+   "module": "M02",
+   "domain": "linux",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "a systemd service that will not stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L03/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L03/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L03/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L03-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L03/teardown.sh"
+  },
+  {
+   "id": "F-L03-b",
+   "lab": "L03",
+   "module": "M02",
+   "domain": "linux",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "a systemd service that will not stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L03/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L03/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L03/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L03-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L03/teardown.sh"
+  },
+  {
+   "id": "F-L04-a",
+   "lab": "L04",
+   "module": "M02",
+   "domain": "linux",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "a host resource bottleneck",
+   "start": [
+    "bash labs/sre-cloud-foundations/L04/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L04/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L04/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L04-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L04/teardown.sh"
+  },
+  {
+   "id": "F-L04-b",
+   "lab": "L04",
+   "module": "M02",
+   "domain": "linux",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "a host resource bottleneck",
+   "start": [
+    "bash labs/sre-cloud-foundations/L04/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L04/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L04/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L04-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L04/teardown.sh"
+  },
+  {
+   "id": "F-L04-c",
+   "lab": "L04",
+   "module": "M02",
+   "domain": "linux",
+   "profile": "linux-arm64",
+   "variant": "variant-c",
+   "area": "a host resource bottleneck",
+   "start": [
+    "bash labs/sre-cloud-foundations/L04/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L04/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L04/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L04-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L04/teardown.sh"
+  },
+  {
+   "id": "F-L05-a",
+   "lab": "L05",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "names that do not resolve as expected",
+   "start": [
+    "bash labs/sre-cloud-foundations/L05/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L05/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L05/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L05-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L05/teardown.sh"
+  },
+  {
+   "id": "F-L05-b",
+   "lab": "L05",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "names that do not resolve as expected",
+   "start": [
+    "bash labs/sre-cloud-foundations/L05/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L05/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L05/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L05-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L05/teardown.sh"
+  },
+  {
+   "id": "F-L05-c",
+   "lab": "L05",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-c",
+   "area": "names that do not resolve as expected",
+   "start": [
+    "bash labs/sre-cloud-foundations/L05/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L05/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L05/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L05-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L05/teardown.sh"
+  },
+  {
+   "id": "F-L06-a",
+   "lab": "L06",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "a TLS front door that fails",
+   "start": [
+    "bash labs/sre-cloud-foundations/L06/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L06/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L06/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L06-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L06/teardown.sh"
+  },
+  {
+   "id": "F-L06-b",
+   "lab": "L06",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "a TLS front door that fails",
+   "start": [
+    "bash labs/sre-cloud-foundations/L06/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L06/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L06/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L06-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L06/teardown.sh"
+  },
+  {
+   "id": "F-L06-c",
+   "lab": "L06",
+   "module": "M03",
+   "domain": "networking",
+   "profile": "linux-arm64",
+   "variant": "variant-c",
+   "area": "a TLS front door that fails",
+   "start": [
+    "bash labs/sre-cloud-foundations/L06/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L06/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L06/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L06-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L06/teardown.sh"
+  },
+  {
+   "id": "F-L07-a",
+   "lab": "L07",
+   "module": "M04",
+   "domain": "scripting",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "a log summariser with wrong results",
+   "start": [
+    "bash labs/sre-cloud-foundations/L07/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L07/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L07/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L07-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L07/teardown.sh"
+  },
+  {
+   "id": "F-L07-b",
+   "lab": "L07",
+   "module": "M04",
+   "domain": "scripting",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "a log summariser with wrong results",
+   "start": [
+    "bash labs/sre-cloud-foundations/L07/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L07/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L07/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L07-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L07/teardown.sh"
+  },
+  {
+   "id": "F-L08-a",
+   "lab": "L08",
+   "module": "M04",
+   "domain": "scripting",
+   "profile": "linux-arm64",
+   "variant": "variant-a",
+   "area": "an API client against a misbehaving server",
+   "start": [
+    "bash labs/sre-cloud-foundations/L08/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L08/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L08/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L08-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L08/teardown.sh"
+  },
+  {
+   "id": "F-L08-b",
+   "lab": "L08",
+   "module": "M04",
+   "domain": "scripting",
+   "profile": "linux-arm64",
+   "variant": "variant-b",
+   "area": "an API client against a misbehaving server",
+   "start": [
+    "bash labs/sre-cloud-foundations/L08/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L08/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L08/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L08-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L08/teardown.sh"
+  },
+  {
+   "id": "F-L10-a",
+   "lab": "L10",
+   "module": "M05",
+   "domain": "cloud",
+   "profile": "workstation",
+   "variant": "variant-a",
+   "area": "an access request that is denied",
+   "start": [
+    "bash labs/sre-cloud-foundations/L10/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L10/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L10/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L10-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L10/teardown.sh"
+  },
+  {
+   "id": "F-L10-b",
+   "lab": "L10",
+   "module": "M05",
+   "domain": "cloud",
+   "profile": "workstation",
+   "variant": "variant-b",
+   "area": "an access request that is denied",
+   "start": [
+    "bash labs/sre-cloud-foundations/L10/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L10/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L10/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L10-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L10/teardown.sh"
+  },
+  {
+   "id": "F-L10-c",
+   "lab": "L10",
+   "module": "M05",
+   "domain": "cloud",
+   "profile": "workstation",
+   "variant": "variant-c",
+   "area": "an access request that is denied",
+   "start": [
+    "bash labs/sre-cloud-foundations/L10/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L10/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L10/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L10-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L10/teardown.sh"
+  },
+  {
+   "id": "F-L11-a",
+   "lab": "L11",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "workstation",
+   "variant": "variant-a",
+   "area": "a Terraform workspace with an unexpected plan",
+   "start": [
+    "bash labs/sre-cloud-foundations/L11/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L11/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L11/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L11-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L11/teardown.sh"
+  },
+  {
+   "id": "F-L11-b",
+   "lab": "L11",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "workstation",
+   "variant": "variant-b",
+   "area": "a Terraform workspace with an unexpected plan",
+   "start": [
+    "bash labs/sre-cloud-foundations/L11/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L11/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L11/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L11-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L11/teardown.sh"
+  },
+  {
+   "id": "F-L11-c",
+   "lab": "L11",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "workstation",
+   "variant": "variant-c",
+   "area": "a Terraform workspace with an unexpected plan",
+   "start": [
+    "bash labs/sre-cloud-foundations/L11/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L11/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L11/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L11-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L11/teardown.sh"
+  },
+  {
+   "id": "F-L12-a",
+   "lab": "L12",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "Terraform-managed containers out of step",
+   "start": [
+    "bash labs/sre-cloud-foundations/L12/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L12/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L12/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L12-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L12/teardown.sh"
+  },
+  {
+   "id": "F-L12-b",
+   "lab": "L12",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "Terraform-managed containers out of step",
+   "start": [
+    "bash labs/sre-cloud-foundations/L12/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L12/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L12/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L12-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L12/teardown.sh"
+  },
+  {
+   "id": "F-L12-c",
+   "lab": "L12",
+   "module": "M06",
+   "domain": "iac",
+   "profile": "compose",
+   "variant": "variant-c",
+   "area": "Terraform-managed containers out of step",
+   "start": [
+    "bash labs/sre-cloud-foundations/L12/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L12/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L12/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L12-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L12/teardown.sh"
+  },
+  {
+   "id": "F-L13-a",
+   "lab": "L13",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "a container that is up but not answering",
+   "start": [
+    "bash labs/sre-cloud-foundations/L13/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L13/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L13/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L13-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L13/teardown.sh"
+  },
+  {
+   "id": "F-L13-b",
+   "lab": "L13",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "a container that is up but not answering",
+   "start": [
+    "bash labs/sre-cloud-foundations/L13/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L13/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L13/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L13-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L13/teardown.sh"
+  },
+  {
+   "id": "F-L13-c",
+   "lab": "L13",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-c",
+   "area": "a container that is up but not answering",
+   "start": [
+    "bash labs/sre-cloud-foundations/L13/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L13/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L13/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L13-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L13/teardown.sh"
+  },
+  {
+   "id": "F-L14-a",
+   "lab": "L14",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "a Compose stack with a dependency problem",
+   "start": [
+    "bash labs/sre-cloud-foundations/L14/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L14/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L14/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L14-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L14/teardown.sh"
+  },
+  {
+   "id": "F-L14-b",
+   "lab": "L14",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "a Compose stack with a dependency problem",
+   "start": [
+    "bash labs/sre-cloud-foundations/L14/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L14/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L14/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L14-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L14/teardown.sh"
+  },
+  {
+   "id": "F-L14-c",
+   "lab": "L14",
+   "module": "M07",
+   "domain": "containers",
+   "profile": "compose",
+   "variant": "variant-c",
+   "area": "a Compose stack with a dependency problem",
+   "start": [
+    "bash labs/sre-cloud-foundations/L14/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L14/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L14/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L14-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L14/teardown.sh"
+  },
+  {
+   "id": "F-L15-a",
+   "lab": "L15",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-a",
+   "area": "desired state that does not converge",
+   "start": [
+    "bash labs/sre-cloud-foundations/L15/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L15/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L15/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L15-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L15/teardown.sh"
+  },
+  {
+   "id": "F-L15-b",
+   "lab": "L15",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-b",
+   "area": "desired state that does not converge",
+   "start": [
+    "bash labs/sre-cloud-foundations/L15/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L15/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L15/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L15-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L15/teardown.sh"
+  },
+  {
+   "id": "F-L15-c",
+   "lab": "L15",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-c",
+   "area": "desired state that does not converge",
+   "start": [
+    "bash labs/sre-cloud-foundations/L15/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L15/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L15/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L15-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L15/teardown.sh"
+  },
+  {
+   "id": "F-L16-a",
+   "lab": "L16",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-a",
+   "area": "a Service that does not reach its pods",
+   "start": [
+    "bash labs/sre-cloud-foundations/L16/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L16/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L16/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L16-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L16/teardown.sh"
+  },
+  {
+   "id": "F-L16-b",
+   "lab": "L16",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-b",
+   "area": "a Service that does not reach its pods",
+   "start": [
+    "bash labs/sre-cloud-foundations/L16/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L16/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L16/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L16-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L16/teardown.sh"
+  },
+  {
+   "id": "F-L16-c",
+   "lab": "L16",
+   "module": "M08",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-c",
+   "area": "a Service that does not reach its pods",
+   "start": [
+    "bash labs/sre-cloud-foundations/L16/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L16/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L16/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L16-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L16/teardown.sh"
+  },
+  {
+   "id": "F-L17-a",
+   "lab": "L17",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-a",
+   "area": "workloads that will not schedule or stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L17/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L17/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L17/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L17-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L17/teardown.sh"
+  },
+  {
+   "id": "F-L17-b",
+   "lab": "L17",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-b",
+   "area": "workloads that will not schedule or stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L17/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L17/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L17/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L17-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L17/teardown.sh"
+  },
+  {
+   "id": "F-L17-c",
+   "lab": "L17",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-c",
+   "area": "workloads that will not schedule or stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L17/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L17/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L17/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L17-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L17/teardown.sh"
+  },
+  {
+   "id": "F-L17-d",
+   "lab": "L17",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-basic",
+   "variant": "variant-d",
+   "area": "workloads that will not schedule or stay up",
+   "start": [
+    "bash labs/sre-cloud-foundations/L17/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-d bash labs/sre-cloud-foundations/L17/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L17/validate.py --variant variant-d --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L17-d.json",
+   "teardown": "bash labs/sre-cloud-foundations/L17/teardown.sh"
+  },
+  {
+   "id": "F-L18-a",
+   "lab": "L18",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-policy",
+   "variant": "variant-a",
+   "area": "access or traffic that is refused",
+   "start": [
+    "bash labs/sre-cloud-foundations/L18/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L18/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L18/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L18-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L18/teardown.sh"
+  },
+  {
+   "id": "F-L18-b",
+   "lab": "L18",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-policy",
+   "variant": "variant-b",
+   "area": "access or traffic that is refused",
+   "start": [
+    "bash labs/sre-cloud-foundations/L18/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L18/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L18/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L18-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L18/teardown.sh"
+  },
+  {
+   "id": "F-L18-c",
+   "lab": "L18",
+   "module": "M09",
+   "domain": "kubernetes",
+   "profile": "kind-policy",
+   "variant": "variant-c",
+   "area": "access or traffic that is refused",
+   "start": [
+    "bash labs/sre-cloud-foundations/L18/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L18/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L18/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L18-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L18/teardown.sh"
+  },
+  {
+   "id": "F-L19-a",
+   "lab": "L19",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-a",
+   "area": "a chart release that misbehaves",
+   "start": [
+    "bash labs/sre-cloud-foundations/L19/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L19/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L19/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L19-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L19/teardown.sh"
+  },
+  {
+   "id": "F-L19-b",
+   "lab": "L19",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-b",
+   "area": "a chart release that misbehaves",
+   "start": [
+    "bash labs/sre-cloud-foundations/L19/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L19/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L19/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L19-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L19/teardown.sh"
+  },
+  {
+   "id": "F-L19-c",
+   "lab": "L19",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-c",
+   "area": "a chart release that misbehaves",
+   "start": [
+    "bash labs/sre-cloud-foundations/L19/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L19/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L19/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L19-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L19/teardown.sh"
+  },
+  {
+   "id": "F-L20-a",
+   "lab": "L20",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-a",
+   "area": "a pipeline or reconciler that does the wrong thing",
+   "start": [
+    "bash labs/sre-cloud-foundations/L20/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L20/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L20/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L20-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L20/teardown.sh"
+  },
+  {
+   "id": "F-L20-b",
+   "lab": "L20",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-b",
+   "area": "a pipeline or reconciler that does the wrong thing",
+   "start": [
+    "bash labs/sre-cloud-foundations/L20/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L20/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L20/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L20-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L20/teardown.sh"
+  },
+  {
+   "id": "F-L20-c",
+   "lab": "L20",
+   "module": "M10",
+   "domain": "delivery",
+   "profile": "kind-basic",
+   "variant": "variant-c",
+   "area": "a pipeline or reconciler that does the wrong thing",
+   "start": [
+    "bash labs/sre-cloud-foundations/L20/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-c bash labs/sre-cloud-foundations/L20/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L20/validate.py --variant variant-c --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L20-c.json",
+   "teardown": "bash labs/sre-cloud-foundations/L20/teardown.sh"
+  },
+  {
+   "id": "F-L21-a",
+   "lab": "L21",
+   "module": "M11",
+   "domain": "observability",
+   "profile": "observability",
+   "variant": "variant-a",
+   "area": "latency with unclear origin",
+   "start": [
+    "bash labs/sre-cloud-foundations/L21/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L21/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L21/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L21-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L21/teardown.sh"
+  },
+  {
+   "id": "F-L21-b",
+   "lab": "L21",
+   "module": "M11",
+   "domain": "observability",
+   "profile": "observability",
+   "variant": "variant-b",
+   "area": "latency with unclear origin",
+   "start": [
+    "bash labs/sre-cloud-foundations/L21/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L21/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L21/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L21-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L21/teardown.sh"
+  },
+  {
+   "id": "F-L22-a",
+   "lab": "L22",
+   "module": "M11",
+   "domain": "observability",
+   "profile": "workstation",
+   "variant": "variant-a",
+   "area": "SLO alerts that cannot be trusted",
+   "start": [
+    "bash labs/sre-cloud-foundations/L22/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L22/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L22/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L22-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L22/teardown.sh"
+  },
+  {
+   "id": "F-L22-b",
+   "lab": "L22",
+   "module": "M11",
+   "domain": "observability",
+   "profile": "workstation",
+   "variant": "variant-b",
+   "area": "SLO alerts that cannot be trusted",
+   "start": [
+    "bash labs/sre-cloud-foundations/L22/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L22/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L22/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L22-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L22/teardown.sh"
+  },
+  {
+   "id": "F-L23-a",
+   "lab": "L23",
+   "module": "M12",
+   "domain": "recovery",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "a slow or stuck database",
+   "start": [
+    "bash labs/sre-cloud-foundations/L23/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L23/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L23/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L23-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L23/teardown.sh"
+  },
+  {
+   "id": "F-L23-b",
+   "lab": "L23",
+   "module": "M12",
+   "domain": "recovery",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "a slow or stuck database",
+   "start": [
+    "bash labs/sre-cloud-foundations/L23/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L23/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L23/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L23-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L23/teardown.sh"
+  },
+  {
+   "id": "F-L24-a",
+   "lab": "L24",
+   "module": "M12",
+   "domain": "recovery",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "a backup or queue that cannot be trusted",
+   "start": [
+    "bash labs/sre-cloud-foundations/L24/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L24/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L24/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L24-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L24/teardown.sh"
+  },
+  {
+   "id": "F-L24-b",
+   "lab": "L24",
+   "module": "M12",
+   "domain": "recovery",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "a backup or queue that cannot be trusted",
+   "start": [
+    "bash labs/sre-cloud-foundations/L24/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L24/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L24/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L24-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L24/teardown.sh"
+  },
+  {
+   "id": "F-L25-a",
+   "lab": "L25",
+   "module": "M13",
+   "domain": "security",
+   "profile": "compose",
+   "variant": "variant-a",
+   "area": "a credential or patch problem",
+   "start": [
+    "bash labs/sre-cloud-foundations/L25/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-a bash labs/sre-cloud-foundations/L25/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L25/validate.py --variant variant-a --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L25-a.json",
+   "teardown": "bash labs/sre-cloud-foundations/L25/teardown.sh"
+  },
+  {
+   "id": "F-L25-b",
+   "lab": "L25",
+   "module": "M13",
+   "domain": "security",
+   "profile": "compose",
+   "variant": "variant-b",
+   "area": "a credential or patch problem",
+   "start": [
+    "bash labs/sre-cloud-foundations/L25/setup.sh   # once, if the lab was torn down",
+    "LOOPED_VARIANT=variant-b bash labs/sre-cloud-foundations/L25/reset.sh"
+   ],
+   "validate": "python3 labs/sre-cloud-foundations/L25/validate.py --variant variant-b --assistance independent --out labs/sre-cloud-foundations/L32/report/evidence/F-L25-b.json",
+   "teardown": "bash labs/sre-cloud-foundations/L25/teardown.sh"
+  }
+ ],
+ "combined": [
+  {
+   "id": "C1",
+   "faults": [
+    "data-loss",
+    "bad-release"
+   ],
+   "area": "errors for some users, and some sensors' history is missing"
+  },
+  {
+   "id": "C2",
+   "faults": [
+    "data-loss",
+    "secret-drift"
+   ],
+   "area": "the API stops accepting records, and some sensors' history is missing"
+  },
+  {
+   "id": "C3",
+   "faults": [
+    "data-loss",
+    "rbac-broaden"
+   ],
+   "area": "some sensors' history is missing during a change freeze"
+  }
+ ]
+}

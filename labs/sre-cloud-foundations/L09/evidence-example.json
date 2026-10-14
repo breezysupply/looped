@@ -1,0 +1,26 @@
+{
+  "note": "EXAMPLE of the evidence schema for L09 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L09",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2026-12-28T17:05:00Z",
+  "completedAt": "2026-12-28T18:31:12Z",
+  "environment": { "profile": "workstation", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "variant_file": "variant-a", "network_fixed_model_usd": 155.12 },
+  "checks": [
+    { "id": "fixtures-intact", "passed": true, "observed": "shipped fixtures unchanged" },
+    { "id": "inventory-parses", "passed": true, "observed": "8 subnets, 4 components, 6 endpoints" },
+    { "id": "all-scenarios", "passed": true, "observed": "every component serves in baseline, az-down:us-west-2a, az-down:us-west-2b" },
+    { "id": "hygiene", "passed": true, "observed": "no exposure or identity findings" },
+    { "id": "constraints", "passed": true, "observed": "C-1, C-2 and public-exposure constraints hold" },
+    { "id": "spof-stated", "passed": true, "observed": "computed ['region', 'partner-hooks']; stated ['partner-hooks', 'region']" },
+    { "id": "cost", "passed": true, "observed": "model 155.12 USD/month, stated 155.0" },
+    { "id": "recovery", "passed": true, "observed": "RPO 5 min, RTO 45 min, PITR on" },
+    { "id": "explanation", "passed": true, "observed": "sections present, chars=1464" }
+  ],
+  "explanation": "az-down:us-west-2a took the API down because every interface endpoint had ENIs only in api-a and worker-b used nat-a. Added nat-b and endpoint ENIs in api-b; fixed network cost rises to about 155 USD/month.",
+  "cleanupStatus": "not-applicable"
+}

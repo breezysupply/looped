@@ -11,7 +11,7 @@
 (function () {
   'use strict';
 
-  var SCHEMA = 2;
+  var SCHEMA = 3;
 
   function get(k, d) {
     try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }
@@ -42,7 +42,13 @@
 
   var KEYS = ['lx.cards', 'lx.saved', 'lx.stats', 'lx.streak', 'lx.topic', 'lx.weak',
               'lx.labs', 'lx.sandbox', 'lx.playbooks', 'lx.view', 'lx.groupview',
-              'lx.theme', 'lx.track', 'lx.pbmode', 'lx.schema', 'lx.onsite'];
+              'lx.theme', 'lx.track', 'lx.pbmode', 'lx.schema', 'lx.onsite',
+              /* the SRE & Cloud Deployment Foundations track: learner attempts,
+                 evidence, reviews — never content */
+              'lx.sre',
+              /* a snapshot of every key taken before a schema migration, so a bad
+                 upgrade can be rolled back with LXStore.rollback() */
+              'lx.backup'];
 
   /* ── migrations ─────────────────────────────────────────────────────
      Each takes localStorage from version n-1 to n. They must be safe to run
@@ -73,8 +79,42 @@
       if (Object.prototype.toString.call(saved) === '[object Array]') {
         set('lx.saved', saved.map(function (s) { return map[s] || s; }));
       }
+    },
+    /* 2 -> 3: the SRE track adds lx.sre. Nothing existing changes shape, but
+       this is the first migration that runs on installs with real progress in
+       them, so it also takes the snapshot rollback() restores. The snapshot is
+       taken once (a second run must not overwrite it with post-migration
+       state) and lx.sre is only created when absent. */
+    3: function () {
+      if (localStorage.getItem('lx.backup') == null) set('lx.backup', snapshot(2));
+      if (localStorage.getItem('lx.sre') == null) set('lx.sre', { v: 1 });
     }
   };
+
+  /* every owned key except the backup itself, as stored strings */
+  function snapshot(fromSchema) {
+    var out = { schema: fromSchema, at: new Date().toISOString(), data: {} };
+    KEYS.forEach(function (k) {
+      if (k === 'lx.backup') return;
+      var v = localStorage.getItem(k);
+      if (v != null) out.data[k] = v;
+    });
+    return out;
+  }
+  /* Restore the pre-migration snapshot. Keys that did not exist before the
+     migration are removed, so the store is exactly what it was. The backup is
+     kept, so rollback can be repeated; migrate() will run again on next load. */
+  function rollback() {
+    var b = get('lx.backup', null);
+    if (!b || !b.data) return { ok: false, err: 'No backup to roll back to.' };
+    KEYS.forEach(function (k) {
+      if (k === 'lx.backup') return;
+      if (b.data[k] != null) { try { localStorage.setItem(k, b.data[k]); } catch (e) {} }
+      else del(k);
+    });
+    set('lx.schema', b.schema);
+    return { ok: true, schema: b.schema, keys: Object.keys(b.data).length };
+  }
 
   function migrate() {
     var from = get('lx.schema', null);
@@ -127,7 +167,8 @@
   window.LXStore = {
     SCHEMA: SCHEMA, KEYS: KEYS,
     slug: slug, hash: hash, idFor: idFor,
-    migrate: migrate, exportAll: exportAll, importAll: importAll, reset: reset
+    migrate: migrate, exportAll: exportAll, importAll: importAll, reset: reset,
+    snapshot: snapshot, rollback: rollback
   };
 
   /* run before anything reads storage */

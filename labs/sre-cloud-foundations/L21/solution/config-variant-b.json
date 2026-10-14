@@ -1,0 +1,6 @@
+{
+  "registry_url": "http://looped-l21-registry:8081",
+  "registry_timeout_ms": 5000,
+  "checksum_rounds": 2000,
+  "queue_dir": "/queue"
+}

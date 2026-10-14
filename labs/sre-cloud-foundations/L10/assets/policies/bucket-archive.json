@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AuditorReadsAudit",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:role/beacon-auditor"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::beacon-archive-lab/audit/*"
+    },
+    {
+      "Sid": "NoDeleteBeforeRetention",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:DeleteObject",
+      "Resource": "arn:aws:s3:::beacon-archive-lab/*",
+      "Condition": {
+        "DateLessThan": {
+          "aws:CurrentTime": "2027-01-01T00:00:00Z"
+        }
+      }
+    }
+  ]
+}

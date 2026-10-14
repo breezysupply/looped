@@ -1,0 +1,54 @@
+# Segmentation for namespace beacon (networking.k8s.io/v1). Default: nothing in, nothing out.
+# Then exactly: every pod may resolve names via CoreDNS; beacon-api may reach beacon-db:5432;
+# beacon-db accepts 5432 only from beacon-api. Enforced only because the kind-policy profile
+# runs Calico — prove it with assets/netcheck.sh, do not assume it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: beacon, labels: {looped.lab/id: L18}}
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns-egress, namespace: beacon, labels: {looped.lab/id: L18}}
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: api-egress-to-db, namespace: beacon, labels: {looped.lab/id: L18}}
+spec:
+  podSelector:
+    matchLabels: {app: beacon-api}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: {app: beacon-db}
+      ports:
+        - {protocol: TCP, port: 5432}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: db-ingress-from-api, namespace: beacon, labels: {looped.lab/id: L18}}
+spec:
+  podSelector:
+    matchLabels: {app: beacon-db}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app: beacon-api}
+      ports:
+        - {protocol: TCP, port: 5432}

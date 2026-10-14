@@ -938,11 +938,17 @@
       if (spec.replicas != null) { if (spec.replicas === 0) K.risky(m, raw, 'Scaling to zero removes all serving capacity.'); obj.replicas = spec.replicas; }
       if (spec.template) {
         var tp = spec.template;
-        var ch = changeTemplate(m, obj, function (tpl) {
+        var applyTp = function (tpl) {
           if (tp.metadata && tp.metadata.labels) merge(tpl.labels = tpl.labels || {}, tp.metadata.labels, true);
           if (tp.metadata && tp.metadata.annotations) merge(tpl.annotations = tpl.annotations || {}, tp.metadata.annotations, true);
           if (tp.spec) merge(tpl, podSpecIn(tp.spec), strategic);
-        }, raw);
+        };
+        /* validate on a copy first, as the API server would: a merge patch that
+           replaces the containers list can drop a container's image */
+        var trial = K.clone(obj.template); applyTp(trial);
+        var noImage = (trial.containers || []).map(function (c, i) { return c && !c.image ? i : -1; }).filter(function (i) { return i !== -1; });
+        if (!(trial.containers || []).length || noImage.length) return fail('The Deployment "' + obj.name + '" is invalid: spec.template.spec.containers' + (noImage.length ? '[' + noImage[0] + '].image: Required value' : ': Required value'));
+        var ch = changeTemplate(m, obj, applyTp, raw);
         if (!K.matches(obj.selector, obj.template.labels)) {
           return fail('The Deployment "' + obj.name + '" is invalid: spec.template.metadata.labels: Invalid value: ' + JSON.stringify(obj.template.labels) + ': `selector` does not match template `labels`');
         }
@@ -1087,7 +1093,7 @@
      maps, block lists, scalars and quoted strings. It says so when it meets
      anything else rather than guessing. */
   function parseYaml(text) {
-    var lines = String(text).split('\n').map(function (l) { return l.replace(/\s+#.*$/, '').replace(/\s+$/, ''); })
+    var lines = String(text).split('\n').map(function (l) { return /^\s*#/.test(l) ? '' : l.replace(/\s+#.*$/, '').replace(/\s+$/, ''); })
       .filter(function (l) { return l.trim() && l.trim() !== '---'; });
     var i = 0;
     function indentOf(l) { return l.match(/^ */)[0].length; }

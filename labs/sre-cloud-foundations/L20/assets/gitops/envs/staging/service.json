@@ -1,0 +1,26 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "beacon-staging",
+    "namespace": "beacon",
+    "labels": {
+      "app": "beacon",
+      "env": "staging",
+      "looped.lab/id": "L20"
+    }
+  },
+  "spec": {
+    "selector": {
+      "app": "beacon",
+      "env": "staging"
+    },
+    "ports": [
+      {
+        "name": "http",
+        "port": 8080,
+        "targetPort": "http"
+      }
+    ]
+  }
+}

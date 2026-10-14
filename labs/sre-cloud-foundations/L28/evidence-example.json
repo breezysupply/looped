@@ -1,0 +1,24 @@
+{
+  "note": "EXAMPLE of the evidence schema for L28 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L28",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2027-03-30T18:10:00Z",
+  "completedAt": "2027-03-30T18:44:21Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "docker": "Docker version 28.x", "variant_file": "variant-b", "compose_project": "looped-l28", "api_db_host": "restore" },
+  "checks": [
+    { "id": "service-restored", "passed": true, "observed": "/ready 200 (db_host=restore); test write 201" },
+    { "id": "recovery-point", "passed": true, "observed": "'restore' holds 3120 records of 3280 (newest 12:55, 160 lost); identical to beacon-20250311T1300Z.dump" },
+    { "id": "primary-preserved", "passed": true, "observed": "looped-l28-primary still exists for the postmortem" },
+    { "id": "update-log", "passed": true, "observed": "4 updates, 17:42Z, 17:55Z, 18:14Z, 18:31Z; structure, timing and next-update promises OK" },
+    { "id": "recovery-decision", "passed": true, "observed": "recovery point stated: names beacon-20250311T1300Z.dump; data loss 81 chars; validation 120 chars" },
+    { "id": "followups", "passed": false, "observed": "1 follow-ups with owner and due date: Alert on standby replication lag (platform on-call)" },
+    { "id": "recovery-interval", "passed": true, "observed": "incident start 17:40:12Z to resolved update 18:31Z: 51 min" }
+  ],
+  "explanation": "Primary lost pg_control; the 13:30 backup came from a lagging standby (newest 10:35), so restored the 13:00 primary backup into a new server and lost 13:00-13:40.",
+  "cleanupStatus": "pending"
+}

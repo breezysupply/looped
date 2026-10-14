@@ -118,6 +118,8 @@
     for (i = 0; i < line.length; i++) {
       var ch = line[i];
       if (quote) {
+        /* in "…" a backslash escapes only $ ` " and \ (bash), everything else stays literal */
+        if (quote === '"' && ch === '\\' && i + 1 < line.length && '$`"\\'.indexOf(line[i + 1]) !== -1) { i++; cur += line[i] === '$' ? '\u0011' : line[i]; continue; }
         if (ch === quote) { quote = null; cur += '\u0001Q'; }
         else if (quote === "'") {
           /* single quotes are literal: hide $, * and ? from expansion */
@@ -284,7 +286,7 @@
         });
         chunks.push((listing ? 'total ' + (f.h ? human(total) : Math.ceil(total / 1024)) + '\n' : '') + body.join('\n'));
       } else {
-        chunks.push(list.map(function (x) { return showPath ? x : basename(x); }).join('  '));
+        chunks.push(list.map(function (x) { return showPath ? x : basename(x); }).join(w.piped || f['1'] ? '\n' : '  '));
       }
     });
     return ok(chunks.join('\n') + '\n');
@@ -373,7 +375,9 @@
     var pat = rest.shift();
     if (pat == null) return err('usage: grep [OPTION]... PATTERN [FILE]...');
     var rx;
-    try { rx = new RegExp(pat, f.i ? 'i' : ''); } catch (e) { return err('grep: invalid pattern'); }
+    /* basic regex unless -E/-P (so `a\\|b` alternates and `(` is literal), fixed with -F */
+    var src = f.F ? pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : (f.E || f.P) ? pat : breToJs(pat);
+    try { rx = new RegExp(src, f.i ? 'i' : ''); } catch (e) { return err('grep: invalid pattern'); }
 
     var files = [];
     if (!rest.length) files.push({ name: null, text: stdin || '' });
@@ -568,49 +572,149 @@
     return ok(out.join('\n') + (out.length ? '\n' : ''));
   };
 
-  /* sed subset: s/a/b/[g], -n 'N,Mp', '/re/d', -i */
+  /* sed subset: [addr[,addr]] s/a/b/[gip] | d | p with addr = N | $ | /re/,
+     several commands joined by ';' or repeated -e, -n, -i[SUFFIX]. Anything
+     else is refused by name rather than silently passed through. */
+  /* basic regular expressions: ( ) { } + ? | are literal unless escaped */
+  function breToJs(re) {
+    var out = '';
+    for (var k = 0; k < re.length; k++) {
+      var ch = re.charAt(k);
+      if (ch === '\\' && k + 1 < re.length) {
+        var nx = re.charAt(k + 1);
+        out += '(){}+?|'.indexOf(nx) !== -1 ? nx : ch + nx; k++;
+      } else out += '(){}+?|'.indexOf(ch) !== -1 ? '\\' + ch : ch;
+    }
+    return out;
+  }
+  /* replacement text: & is the match, \1-\9 groups, \n a newline, \\ a backslash */
+  function sedRep(rep) {
+    return function (m) {
+      var g = arguments, out = '';
+      for (var k = 0; k < rep.length; k++) {
+        var ch = rep.charAt(k);
+        if (ch === '\\' && k + 1 < rep.length) { var nx = rep.charAt(++k); out += nx === 'n' ? '\n' : nx === 't' ? '\t' : /[1-9]/.test(nx) ? (typeof g[+nx] === 'string' ? g[+nx] : '') : nx; }
+        else if (ch === '&') out += m;
+        else out += ch;
+      }
+      return out;
+    };
+  }
+  function sedParse(script, ere) {
+    var cmds = [], i = 0, n = script.length;
+    var RX = function (src, fl) { return new RegExp(ere ? src : breToJs(src), fl); };
+    function until(d) {
+      var s = '';
+      while (i < n && script.charAt(i) !== d) { if (script.charAt(i) === '\\' && script.charAt(i + 1) === d) { s += d === '/' ? '\\/' : d; i += 2; continue; } s += script.charAt(i++); }
+      if (i >= n) return null;
+      i++; return s;
+    }
+    function addr1() {
+      var ch = script.charAt(i);
+      if (ch === '/') { i++; var r = until('/'); if (r === null) return { error: 'unterminated address regex' }; return { re: RX(r, '') }; }
+      var m = /^(\d+|\$)/.exec(script.slice(i));
+      if (m) { i += m[0].length; return { line: m[1] }; }
+      return null;
+    }
+    while (i < n) {
+      while (i < n && /[\s;]/.test(script.charAt(i))) i++;
+      if (i >= n) break;
+      var a1 = addr1(), a2 = null;
+      if (a1 && a1.error) return a1;
+      if (a1 && script.charAt(i) === ',') { i++; a2 = addr1(); if (!a2 || a2.error) return a2 || { error: 'bad range end' }; }
+      while (i < n && script.charAt(i) === ' ') i++;
+      var c = script.charAt(i), addr = a1 ? { a: a1, b: a2, on: false } : null;
+      if (c === 's' && !/[A-Za-z0-9\s]/.test(script.charAt(i + 1) || 'a')) {
+        var d = script.charAt(i + 1); i += 2;
+        var re = until(d), rep = re === null ? null : until(d);
+        if (rep === null) return { error: 'unterminated s command' };
+        var fl = ''; while (i < n && /[gip]/.test(script.charAt(i))) fl += script.charAt(i++);
+        cmds.push({ op: 's', addr: addr, re: RX(re, (fl.indexOf('g') !== -1 ? 'g' : '') + (fl.indexOf('i') !== -1 ? 'i' : '')), rep: sedRep(rep), p: fl.indexOf('p') !== -1 });
+        continue;
+      }
+      i++;
+      if (c !== 'd' && c !== 'p') return { error: 'unsupported command "' + script.slice(i - 1).split(';')[0] + '" (supported: [addr[,addr]] s///, d, p)' };
+      cmds.push({ op: c, addr: addr });
+    }
+    return { cmds: cmds };
+  }
   CMD.sed = function (w, a, stdin) {
-    var inPlace = false, quiet = false, script = null, files = [], suffix = '';
+    var inPlace = false, quiet = false, scripts = [], files = [], suffix = '', ere = false;
     for (var i = 0; i < a.length; i++) {
       var t = a[i];
       if (/^-i/.test(t)) { inPlace = true; suffix = t.slice(2); }
       else if (t === '-n') quiet = true;
-      else if (t === '-e' && a[i + 1]) script = a[++i];
-      else if (t === '-E' || t === '-r') continue;
-      else if (script === null) script = t;
+      else if (t === '-e' && a[i + 1]) scripts.push(a[++i]);
+      else if (t === '-E' || t === '-r') { ere = true; continue; }
+      else if (!scripts.length) scripts.push(t);
       else files.push(t);
     }
-    if (!script) return err('usage: sed [-n] [-i] script [file]');
+    if (!scripts.length) return err('usage: sed [-n] [-i] script [file]');
+    /* -i edits each file on its own, as GNU sed does */
+    if (inPlace && files.length > 1) {
+      var head = a.slice(0, a.length - files.length);
+      for (var fi = 0; fi < files.length; fi++) { var r1 = CMD.sed(w, head.concat([files[fi]]), stdin); if (r1.code) return r1; }
+      return ok('');
+    }
+    var parsed = sedParse(scripts.join(';'), ere);
+    if (parsed.error) return err('sed (simulation): ' + parsed.error);
     var src = files.length ? fileOrStdin(w, files, stdin) : { text: stdin || '' };
     if (src.missing) return err('sed: can\'t read ' + src.missing + ': No such file or directory');
-    var input = lines(src.text), out = [];
-
-    var sub = script.match(/^s(.)(.*?)\1(.*?)\1([gi]*)$/);
-    var rangeP = script.match(/^(\d+),(\d+)p$/);
-    var reDel = script.match(/^\/(.*)\/d$/);
-    var reP = script.match(/^\/(.*)\/p$/);
-
+    var input = lines(src.text), out = [], last = input.length;
+    function num(x) { return x === '$' ? last : +x; }
+    function one(x, idx, line) { return x.re ? x.re.test(line) : idx + 1 === num(x.line); }
+    function hit(addr, idx, line) {
+      if (!addr) return true;
+      if (!addr.b) return one(addr.a, idx, line);
+      if (addr.on) {
+        var end = addr.b.re ? addr.b.re.test(line) : idx + 1 >= num(addr.b.line);
+        if (end) addr.on = false;
+        return true;
+      }
+      if (one(addr.a, idx, line)) { addr.on = !(addr.b.line != null && idx + 1 >= num(addr.b.line)); return true; }
+      return false;
+    }
     input.forEach(function (line, idx) {
-      if (sub) {
-        var rx = new RegExp(sub[2], sub[4].indexOf('g') !== -1 ? 'g' : '');
-        out.push(line.replace(rx, sub[3]));
-      } else if (rangeP) {
-        if (idx + 1 >= +rangeP[1] && idx + 1 <= +rangeP[2]) out.push(line);
-      } else if (reDel) {
-        if (!new RegExp(reDel[1]).test(line)) out.push(line);
-      } else if (reP) {
-        if (new RegExp(reP[1]).test(line)) out.push(line);
-      } else out.push(line);
+      var deleted = false;
+      for (var k = 0; k < parsed.cmds.length && !deleted; k++) {
+        var c = parsed.cmds[k];
+        if (c.op === 's') { if (!hit(c.addr, idx, line)) continue; var before = line; line = line.replace(c.re, c.rep); if (c.p && line !== before) out.push(line); }
+        else if (c.op === 'd') { if (hit(c.addr, idx, line)) deleted = true; }
+        else if (c.op === 'p') { if (hit(c.addr, idx, line)) out.push(line); }
+      }
+      if (!deleted && !quiet) out.push(line);
     });
     var text = out.join('\n') + (out.length ? '\n' : '');
     if (inPlace && files.length) {
       var abs = resolve(w, files[0]);
+      /* -i rewrites the file with the full (non-quiet) result */
+      if (quiet) text = out.join('\n') + (out.length ? '\n' : '');
       if (suffix) mkfile(w, abs + suffix, w.fs[abs].content, { mode: w.fs[abs].mode, owner: w.fs[abs].owner });
       w.fs[abs].content = text;
       w.fs[abs].size = null;
       return ok('');
     }
-    return ok(quiet && !rangeP && !reP ? '' : text);
+    return ok(text);
+  };
+
+  /* printf FORMAT [ARG...]: %s %d %i %f %% and \n \t \\ escapes; the format
+     is reused while arguments remain, as bash does */
+  CMD.printf = function (w, a) {
+    if (!a.length) return err('printf: usage: printf format [arguments]', 2);
+    var fmt = a[0], args = a.slice(1), out = '', guard = 0;
+    function esc(t) { return t.replace(/\\(n|t|\\|"|')/g, function (m, c) { return c === 'n' ? '\n' : c === 't' ? '\t' : c; }); }
+    do {
+      var used = 0;
+      out += esc(fmt).replace(/%(-?\d*)(\.\d+)?([sdif%])/g, function (m, wd, prec, c) {
+        if (c === '%') return '%';
+        var v = args.length ? args.shift() : ''; used++;
+        if (c === 'd' || c === 'i') v = String(parseInt(v, 10) || 0);
+        else if (c === 'f') v = (parseFloat(v) || 0).toFixed(prec ? +prec.slice(1) : 6);
+        var n = Math.abs(+wd || 0); while (v.length < n) v = wd.charAt(0) === '-' ? v + ' ' : ' ' + v;
+        return v;
+      });
+    } while (args.length && used && ++guard < 100);
+    return { out: out, code: 0 };
   };
 
   CMD.tr = function (w, a, stdin) {
@@ -932,6 +1036,18 @@
       });
     });
     return ok('');
+  };
+
+  CMD.chgrp = function (w, a) {
+    var p = flags(a), grp = p.rest[0], targets = p.rest.slice(1);
+    if (!grp || !targets.length) return err('chgrp: missing operand');
+    if (w.user !== 'root' && !w.sudo) return err('chgrp: changing group: Operation not permitted');
+    var missing = null;
+    targets.forEach(function (t) {
+      if (!w.fs[resolve(w, t)]) { missing = t; return; }
+      (p.f.R ? walk(w, t) : [resolve(w, t)]).forEach(function (abs) { if (w.fs[abs]) w.fs[abs].group = grp; });
+    });
+    return missing ? err('chgrp: cannot access \'' + missing + '\': No such file or directory') : ok('');
   };
 
   /* ── Process / system commands ──────────────────────────────── */
@@ -1385,6 +1501,9 @@
     args.forEach(function (t) { expanded = expanded.concat(expand(w, t)); });
 
     var cmd = expanded[0], rest = expanded.slice(1);
+    /* `sudo -u USER CMD` is a different question (can USER do this?) that a
+       track simulator may answer; plain sudo just elevates */
+    if (cmd === 'sudo' && rest[0] === '-u' && w.extra && typeof w.extra.sudo === 'function') return w.extra.sudo(w, rest, stdin);
     if (cmd === 'sudo') {
       w.sudo = true;
       var r0 = runSimple(w, rest.concat(outFile ? ['>', outFile] : []), stdin);
@@ -1447,7 +1566,9 @@
 
     var stdin = '', res = ok('');
     for (var i = 0; i < parts.length; i++) {
+      w.piped = i < parts.length - 1;   /* ls prints one name per line into a pipe, as the real one does */
       res = runSimple(w, parts[i], stdin);
+      w.piped = false;
       if (res.clear) return res;
       stdin = res.out || '';
       if (res.err) return { out: (res.out || ''), err: res.err, code: res.code };
@@ -1525,7 +1646,11 @@
     var segs = [], cur = '', quote = null, op = null, ops = [];
     for (var i = 0; i < line.length; i++) {
       var ch = line[i];
-      if (quote) { cur += ch; if (ch === quote) quote = null; continue; }
+      if (quote) {
+        /* inside "…" a backslash escapes the next character, so \" does not end the quote */
+        if (quote === '"' && ch === '\\' && i + 1 < line.length) { cur += ch + line[i + 1]; i++; continue; }
+        cur += ch; if (ch === quote) quote = null; continue;
+      }
       if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue; }
       if (ch === ';') { segs.push(cur); ops.push(';'); cur = ''; continue; }
       if (ch === '&' && line[i + 1] === '&') { segs.push(cur); ops.push('&&'); cur = ''; i++; continue; }
@@ -1594,7 +1719,10 @@
       cores: seed.cores || 4, ip: seed.ip,
       /* the onsite track's reconciling cluster model: built fresh from the
          seed on every createWorld, which is what makes /reset exact */
-      k8sModel: seed.k8sModel && global.LXK8s ? global.LXK8s.create(seed.k8sModel) : null
+      k8sModel: seed.k8sModel && global.LXK8s ? global.LXK8s.create(seed.k8sModel) : null,
+      /* the SRE track's scenario state (sre-sim.js): built by the mission's
+         world function per seed, so it is already fresh on every createWorld */
+      sre: seed.sre || null
     };
     w.env = { HOME: '/home/' + w.user, USER: w.user, PWD: w.cwd, SHELL: '/bin/bash',
               PATH: '/usr/local/bin:/usr/bin:/bin' };
@@ -1625,9 +1753,18 @@
     return w;
   }
 
+  /* a simulator that keeps state beside the filesystem (w.sre) re-derives it
+     from the files before and after every command, built-in or not, so `rm`
+     or `chmod` changes what the next probe sees without a sim verb running */
+  function tick(w) {
+    var s = w.sre;
+    if (s && s.hooks) s.hooks.forEach(function (h) { try { h(s, w); } catch (e) {} });
+  }
   function run(w, line) {
     w.history.push(line);
-    var r = exec(w, line);
+    tick(w);
+    var r = /^\s*#/.test(line || '') ? ok('') : exec(w, line);
+    tick(w);
     return r;
   }
 
@@ -1645,6 +1782,9 @@
                 return api;
               },
               registered: function (name) { return Object.prototype.hasOwnProperty.call(CMD, name); },
+              /* the built-in/registered implementation, for a world verb that wraps it
+                 (e.g. a scenario's kubectl that adds NetworkPolicy and delegates the rest) */
+              builtin: function (name) { return Object.prototype.hasOwnProperty.call(CMD, name) ? CMD[name] : null; },
               /* what a registered command needs to look native */
               util: { ok: ok, err: err, flags: flags, pad: pad, lines: lines,
                       basename: basename, dirname: dirname, mountOf: mountOf,

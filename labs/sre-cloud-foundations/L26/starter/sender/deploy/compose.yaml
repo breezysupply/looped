@@ -1,0 +1,42 @@
+# Beacon deployment for the RECEIVER environment (ships inside the bundle).
+# Every image comes from the receiver's internal registry by digest: the
+# IMG_* values are written by `bundle.py load` into work/receiver/deployed-refs.env.
+#   docker compose -p looped-l26-recv -f <bundle>/deploy/compose.yaml \
+#     --env-file work/receiver/deployed-refs.env up -d
+# The network is created by setup.sh as an INTERNAL network: no route out.
+name: looped-l26-recv
+
+services:
+  db:
+    image: "${IMG_POSTGRES:?run bundle.py load first - no internal reference for postgres}"
+    container_name: looped-l26-recv-db
+    environment:
+      POSTGRES_USER: beacon
+      POSTGRES_PASSWORD: lab-l26-db-not-a-real-secret
+      POSTGRES_DB: beacon
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "beacon", "-d", "beacon"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
+    networks: [recv]
+    labels:
+      looped.lab/id: L26
+
+  api:
+    image: "${IMG_BEACON_API:?run bundle.py load first - no internal reference for beacon-api}"
+    container_name: looped-l26-recv-api
+    read_only: true
+    env_file: [../config/api.env]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [recv]
+    labels:
+      looped.lab/id: L26
+
+networks:
+  recv:
+    name: looped-l26-recv
+    external: true

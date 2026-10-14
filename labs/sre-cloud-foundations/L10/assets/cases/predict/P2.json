@@ -1,0 +1,18 @@
+{
+  "id": "P2",
+  "description": "worker writes the same object, but the request arrives through a different VPC endpoint",
+  "request": {
+    "principal": "beacon-worker",
+    "action": "s3:PutObject",
+    "resource": "arn:aws:s3:::beacon-archive-lab/processed/2026/10/13/r-001.json",
+    "context": {
+      "aws:CurrentTime": "2026-10-13T15:00:00Z",
+      "aws:SourceVpce": "vpce-0ffee000000000001"
+    },
+    "session": {
+      "role": "beacon-worker",
+      "issued": "2026-10-13T14:30:00Z",
+      "expires": "2026-10-13T15:30:00Z"
+    }
+  }
+}

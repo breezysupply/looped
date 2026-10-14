@@ -1,0 +1,5 @@
+Beacon {{ .Values.image.tag }} ({{ .Values.config.environment }}) — release {{ .Release.Name }}, revision {{ .Release.Revision }}, namespace {{ .Release.Namespace }}.
+
+Smoke test:   helm test {{ .Release.Name }} -n {{ .Release.Namespace }} --logs
+History:      helm history {{ .Release.Name }} -n {{ .Release.Namespace }}
+Which build:  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "beacon.fullname" . }} -- python3 -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8080/version').read().decode())"

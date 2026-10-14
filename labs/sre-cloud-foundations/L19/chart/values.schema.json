@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Beacon chart values",
+  "description": "Rejects wrong types, unknown keys, moving image tags and unit-less memory before anything reaches the cluster.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["replicaCount", "image", "service", "config", "resources", "probes", "rollout"],
+  "definitions": {
+    "cpu": {"type": "string", "pattern": "^([0-9]+m|[0-9]+(\\.[0-9]+)?)$", "description": "CPU quantity as a string, e.g. 50m or 0.5"},
+    "memory": {"type": "string", "pattern": "^[0-9]+(Mi|Gi)$", "description": "Memory with a binary unit, e.g. 128Mi (a bare number would mean bytes)"},
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "periodSeconds", "failureThreshold"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^/"},
+        "periodSeconds": {"type": "integer", "minimum": 1, "maximum": 60},
+        "failureThreshold": {"type": "integer", "minimum": 1, "maximum": 60}
+      }
+    },
+    "intOrPercent": {"oneOf": [{"type": "integer", "minimum": 0}, {"type": "string", "pattern": "^[0-9]+%$"}]}
+  },
+  "properties": {
+    "replicaCount": {"type": "integer", "minimum": 1, "maximum": 10},
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "tag", "pullPolicy"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9._/:-]*[a-z0-9]$"},
+        "tag": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "description": "pinned MAJOR.MINOR.PATCH; moving tags are refused"},
+        "digest": {"type": "string", "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "pullPolicy": {"type": "string", "enum": ["IfNotPresent", "Always", "Never"]}
+      }
+    },
+    "commonLabels": {"type": "object", "additionalProperties": {"type": "string"}},
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "port"],
+      "properties": {
+        "type": {"type": "string", "enum": ["ClusterIP", "NodePort"]},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535}
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "adminEnabled"],
+      "properties": {
+        "environment": {"type": "string", "enum": ["dev", "staging", "prod"]},
+        "adminEnabled": {"type": "boolean"},
+        "inject": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "delayMs": {"type": "integer", "minimum": 0, "maximum": 5000},
+            "failRate": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests", "limits"],
+      "properties": {
+        "requests": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cpu", "memory"],
+          "properties": {"cpu": {"$ref": "#/definitions/cpu"}, "memory": {"$ref": "#/definitions/memory"}}
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["memory"],
+          "properties": {"cpu": {"$ref": "#/definitions/cpu"}, "memory": {"$ref": "#/definitions/memory"}}
+        }
+      }
+    },
+    "probes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startup", "readiness", "liveness"],
+      "properties": {
+        "startup": {"$ref": "#/definitions/probe"},
+        "readiness": {"$ref": "#/definitions/probe"},
+        "liveness": {"$ref": "#/definitions/probe"}
+      }
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "minAvailable": {"type": "integer", "minimum": 0}
+      }
+    },
+    "rollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxUnavailable", "maxSurge"],
+      "properties": {
+        "maxUnavailable": {"$ref": "#/definitions/intOrPercent"},
+        "maxSurge": {"$ref": "#/definitions/intOrPercent"}
+      }
+    },
+    "nodeSelector": {"type": "object", "additionalProperties": {"type": "string"}},
+    "tolerations": {"type": "array"}
+  },
+  "if": {"properties": {"config": {"properties": {"environment": {"const": "prod"}}}}},
+  "then": {
+    "properties": {
+      "replicaCount": {"minimum": 2},
+      "config": {"properties": {"adminEnabled": {"const": false}}}
+    }
+  }
+}

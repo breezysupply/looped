@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L19 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L19",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2027-02-15T17:00:00Z",
+  "completedAt": "2027-02-15T18:41:12Z",
+  "environment": { "profile": "kind-basic", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "helm": "v3.18.6+gb76a950", "kubectl": "v1.33.1", "kind": "kind v0.29.0", "release": "beacon", "variant_file": "variant-b" },
+  "checks": [
+    { "id": "cluster", "passed": true, "observed": "https://127.0.0.1:52811" },
+    { "id": "chart-lint", "passed": true, "observed": "staging: exit 0 1 chart(s) linted, 0 chart(s) failed; prod: exit 0 1 chart(s) linted, 0 chart(s) failed" },
+    { "id": "render-assertions", "passed": true, "observed": "62/62 assertions passed" },
+    { "id": "change-corrected", "passed": true, "observed": "renders=True staging-contract=True image=looped-l19-beacon:1.5.0" },
+    { "id": "release-deployed", "passed": true, "observed": "status=deployed chart=beacon-0.4.0 revision=6" },
+    { "id": "rollback-in-history", "passed": true, "observed": "6 revisions, 2 rollback(s): 2:superseded:Upgrade \"beacon\" failed: c, 3:superseded:Rollback to 1, 4:superseded:Upgrade complete, 5:superseded:Rollback to 1, 6:deployed:Upgrade complete" },
+    { "id": "current-values", "passed": true, "observed": "image=looped-l19-beacon:1.5.0 environment=staging replicaCount=2" },
+    { "id": "rollout", "passed": true, "observed": "replicas=2 ready=2 updated=2 pod images=['looped-l19-beacon:1.5.0'] waiting=none" },
+    { "id": "smoke", "passed": true, "observed": "{\"ready\": 200, \"version\": \"1.5.0\", \"environment\": \"staging\"}" },
+    { "id": "notes", "passed": false, "observed": "sections={'Render': True, 'Change': True, 'Rollback': False} words=96" },
+    { "id": "chart-version", "passed": true, "observed": "work/chart matches reference; version 0.4.0 (reference 0.4.0)" }
+  ],
+  "explanation": "1.5.1 was never built; the new pod sat in ImagePullBackOff while the two 1.4.0 pods kept serving (maxUnavailable 0). Rolled back to revision 1, corrected the tag to 1.5.0, upgraded, then ran the rollback drill.",
+  "cleanupStatus": "pending"
+}

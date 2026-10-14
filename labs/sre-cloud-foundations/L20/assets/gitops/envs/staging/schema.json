@@ -1,0 +1,17 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "beacon-staging-schema",
+    "namespace": "beacon",
+    "labels": {
+      "app": "beacon",
+      "env": "staging",
+      "looped.lab/id": "L20"
+    }
+  },
+  "data": {
+    "current": "0",
+    "applied": ""
+  }
+}

@@ -1,0 +1,17 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- if ge (int .Values.podDisruptionBudget.minAvailable) (int .Values.replicaCount) }}
+{{- fail (printf "podDisruptionBudget.minAvailable (%v) must be lower than replicaCount (%v), or no voluntary disruption (drain, upgrade of a node) can ever proceed" .Values.podDisruptionBudget.minAvailable .Values.replicaCount) }}
+{{- end }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "beacon.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "beacon.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "beacon.selectorLabels" . | nindent 6 }}
+{{- end }}

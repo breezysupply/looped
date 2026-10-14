@@ -1,0 +1,18 @@
+{
+  "uid": "looped-obs-health",
+  "title": "LOOPED observability profile — health",
+  "schemaVersion": 39,
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "10s",
+  "panels": [
+    { "id": 1, "type": "stat", "title": "Scrape targets up", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "looped-prom" },
+      "targets": [ { "refId": "A", "expr": "sum(up)" } ] },
+    { "id": 2, "type": "table", "title": "Targets by job", "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "looped-prom" },
+      "targets": [ { "refId": "A", "expr": "up", "instant": true, "format": "table" } ] },
+    { "id": 3, "type": "timeseries", "title": "Spans accepted by the collector (per second)", "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "looped-prom" },
+      "targets": [ { "refId": "A", "expr": "sum(rate(otelcol_receiver_accepted_spans_total[1m]))" } ] }
+  ]
+}

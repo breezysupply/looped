@@ -1,0 +1,78 @@
+{
+  "note": "EXAMPLE of the evidence schema for L22 \u2014 not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L22",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2027-03-08T17:00:00Z",
+  "completedAt": "2027-03-08T19:20:41Z",
+  "environment": {
+    "profile": "workstation",
+    "arch": "arm64",
+    "os": "Darwin",
+    "python": "3.12.7",
+    "docker": "Docker version 28.x",
+    "variant_file": "variant-b",
+    "promtool_image": "prom/prometheus:v3.5.0",
+    "promtool": "promtool, version 3.5.0"
+  },
+  "checks": [
+    {
+      "id": "promtool",
+      "passed": true,
+      "observed": "promtool, version 3.5.0 (branch: HEAD, revision: 8be3a956\u2026)"
+    },
+    {
+      "id": "rules-check",
+      "passed": true,
+      "observed": "Checking /w/rules/beacon-slo.rules.yml   SUCCESS: 16 rules found"
+    },
+    {
+      "id": "rule-names",
+      "passed": true,
+      "observed": "all 13 recording rules and 3 alerts present"
+    },
+    {
+      "id": "acceptance",
+      "passed": true,
+      "observed": "SUCCESS: numerator/denominator, no-data, spike, fast and slow burn, zero traffic"
+    },
+    {
+      "id": "own-tests-pass",
+      "passed": true,
+      "observed": "1 file(s): SUCCESS"
+    },
+    {
+      "id": "own-tests-cover",
+      "passed": true,
+      "observed": "5 named groups (5 total); scenarios missing=yes, spike=yes, burn=yes, zero=yes; alert-state checks: True"
+    },
+    {
+      "id": "own-tests-catch",
+      "passed": true,
+      "observed": "your tests fail against the original draft (they catch it)"
+    },
+    {
+      "id": "budget",
+      "passed": true,
+      "observed": "eligible 13903015, bad 79745, consumed 114.72%; matches the month fixture"
+    },
+    {
+      "id": "sli-definition",
+      "passed": true,
+      "observed": "numerator/denominator written: True; exclusions name health checks: True, 4xx: True"
+    },
+    {
+      "id": "decision",
+      "passed": true,
+      "observed": "184 chars"
+    }
+  ],
+  "explanation": "The draft paged on a single 5-minute window and turned missing data into a healthy zero with `or vector(0)`. Fast burn now needs 1h and 5m above 14.4x for 2m; no-data is absent() on the raw counter; zero eligible traffic gives NaN and fires nothing.",
+  "cleanupStatus": "not-applicable",
+  "notes": [],
+  "evidenceRefs": []
+}

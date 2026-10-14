@@ -1,0 +1,41 @@
+{
+  "note": "Deliberately broken variants of solution/invclient.py. validate.py applies each patch (exact text, must match once) to the reference and runs YOUR unit tests against it: a good suite fails on every one. Names describe the bug.",
+  "base": "solution/invclient.py",
+  "mutants": [
+    {
+      "id": "ignores-retry-after",
+      "find": "        ra = headers.get(\"retry-after\")",
+      "replace": "        ra = None"
+    },
+    {
+      "id": "retries-post-without-key",
+      "find": "        retry_allowed = method in (\"GET\", \"HEAD\") or idempotency_key is not None",
+      "replace": "        retry_allowed = True"
+    },
+    {
+      "id": "no-loop-detection",
+      "find": "            if nxt in seen:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "no-timeout",
+      "find": "                status, rh, raw = self.transport(method, url, headers, data, self.timeout)",
+      "replace": "                status, rh, raw = self.transport(method, url, headers, data, None)"
+    },
+    {
+      "id": "retries-client-errors",
+      "find": "                elif status in RETRYABLE_STATUS:",
+      "replace": "                elif status >= 400:"
+    },
+    {
+      "id": "token-in-error",
+      "find": "        raise ApiError(f\"{method} {path}: {last}; gave up after {attempts} attempts\")",
+      "replace": "        raise ApiError(f\"{method} {path} {headers}: {last}; gave up after {attempts} attempts\")"
+    },
+    {
+      "id": "malformed-json-not-retried",
+      "find": "                        last = f\"HTTP {status} with a body that is not valid JSON\"\n                        delay = self._delay(attempt, {})",
+      "replace": "                        raise ApiError(f\"{method} {path}: HTTP {status} with a body that is not valid JSON\")"
+    }
+  ]
+}

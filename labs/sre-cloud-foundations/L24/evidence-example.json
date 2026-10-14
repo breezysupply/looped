@@ -1,0 +1,83 @@
+{
+  "note": "EXAMPLE of the evidence schema for L24 \u2014 not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L24",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2027-03-08T17:00:00Z",
+  "completedAt": "2027-03-08T19:20:41Z",
+  "environment": {
+    "profile": "compose",
+    "arch": "arm64",
+    "os": "Darwin",
+    "python": "3.12.7",
+    "docker": "Docker version 28.x",
+    "variant_file": "variant-b",
+    "recovery_interval_s": 252.4,
+    "worker_restarts": 0
+  },
+  "checks": [
+    {
+      "id": "source-intact",
+      "passed": true,
+      "observed": "source 58000 records md5 90cdc6588a9b (setup: 58000 / 90cdc6588a9b)"
+    },
+    {
+      "id": "damaged-flagged",
+      "passed": true,
+      "observed": "restored from beacon-drill.dump: not the damaged backup; pg_restore --list readable"
+    },
+    {
+      "id": "restore-fresh",
+      "passed": true,
+      "observed": "looped-l24-restore running, created 18:04:10Z, clock started 18:03:51Z"
+    },
+    {
+      "id": "restore-matches",
+      "passed": true,
+      "observed": "audit_log 440->440 match; records 58000->58000 match; sensors 400->400 match"
+    },
+    {
+      "id": "recovery-measured",
+      "passed": true,
+      "observed": "measured 252.4 s from start to verified (4.2 min); report ok=True target=beacon@127.0.0.1:15425/beacon sslmode=prefer"
+    },
+    {
+      "id": "worker-running",
+      "passed": true,
+      "observed": "looped-l24-worker running, restarts 0"
+    },
+    {
+      "id": "unique-key",
+      "passed": true,
+      "observed": "unique index/constraint on ledger.deliveries(idempotency_key): ledger.deliveries_idempotency_key_key"
+    },
+    {
+      "id": "no-duplicates",
+      "passed": true,
+      "observed": "no key delivered more than once"
+    },
+    {
+      "id": "all-delivered",
+      "passed": true,
+      "observed": "20 distinct messages, 20 delivered exactly once, 0 job(s) stuck"
+    },
+    {
+      "id": "replay-test",
+      "passed": true,
+      "observed": "deliveries per key (a=1, b=1, c=1, d=1); crashes fired before/after effect: True/True; jobs left 0"
+    },
+    {
+      "id": "notes",
+      "passed": true,
+      "observed": "5/5 sections, 2510 chars, RPO/RTO with numbers: True"
+    }
+  ],
+  "explanation": "This morning's dump failed to restore (could not uncompress data); took a fresh dump, restored into an empty target and verified counts, checksums, samples and sequences in 4.2 min. Duplicates came from a crash between delivery and ack and from producer retries; a UNIQUE constraint plus ON CONFLICT DO NOTHING makes the second delivery impossible.",
+  "cleanupStatus": "pending",
+  "notes": [],
+  "evidenceRefs": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "P3",
+  "description": "API reads an export file it believes it is allowed to read",
+  "request": {
+    "principal": "beacon-api",
+    "action": "s3:GetObject",
+    "resource": "arn:aws:s3:::beacon-archive-lab/exports/2026/10/13/daily.csv",
+    "context": {
+      "aws:CurrentTime": "2026-10-13T15:00:00Z",
+      "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+    },
+    "session": {
+      "role": "beacon-api",
+      "issued": "2026-10-13T14:30:00Z",
+      "expires": "2026-10-13T15:30:00Z"
+    }
+  }
+}

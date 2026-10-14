@@ -1,0 +1,119 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "beacon-prod",
+    "namespace": "beacon",
+    "labels": {
+      "app": "beacon",
+      "env": "prod",
+      "looped.lab/id": "L20"
+    },
+    "annotations": {
+      "looped.lab/digest": "",
+      "looped.lab/commit": "",
+      "looped.lab/version": ""
+    }
+  },
+  "spec": {
+    "replicas": 3,
+    "selector": {
+      "matchLabels": {
+        "app": "beacon",
+        "env": "prod"
+      }
+    },
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": 0,
+        "maxSurge": 1
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "beacon",
+          "env": "prod",
+          "looped.lab/id": "L20"
+        },
+        "annotations": {
+          "looped.lab/digest": ""
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "api",
+            "image": "looped-l20-beacon:unpromoted",
+            "imagePullPolicy": "IfNotPresent",
+            "args": [
+              "api"
+            ],
+            "env": [
+              {
+                "name": "BEACON_APP_ENVIRONMENT",
+                "value": "prod"
+              },
+              {
+                "name": "BEACON_DB_PASSWORD",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "beacon-prod-db",
+                    "key": "password"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "name": "http",
+                "containerPort": 8080
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/ready",
+                "port": "http"
+              },
+              "periodSeconds": 5
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/healthz",
+                "port": "http"
+              },
+              "periodSeconds": 10
+            },
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "64Mi"
+              },
+              "limits": {
+                "memory": "128Mi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

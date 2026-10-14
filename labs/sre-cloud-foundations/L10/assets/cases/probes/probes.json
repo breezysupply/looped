@@ -1,0 +1,231 @@
+[
+  {
+    "id": "N01",
+    "description": "exporter must not read processed records",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:GetObject",
+      "resource": "arn:aws:s3:::beacon-archive-lab/processed/2026/10/13/r-001.json",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N02",
+    "description": "exporter must not write exports",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:PutObject",
+      "resource": "arn:aws:s3:::beacon-archive-lab/exports/2026/10/13/export.csv",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N03",
+    "description": "exporter must not delete exports",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:DeleteObject",
+      "resource": "arn:aws:s3:::beacon-archive-lab/exports/2026/10/13/export.csv",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N04",
+    "description": "exporter must not read another bucket's exports/ prefix",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:GetObject",
+      "resource": "arn:aws:s3:::beacon-backups-lab/exports/2026/10/13/export.csv",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N05",
+    "description": "exporter must not list the processed/ prefix",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:ListBucket",
+      "resource": "arn:aws:s3:::beacon-archive-lab",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718",
+        "s3:prefix": "processed/"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N06",
+    "description": "exporter must not list the whole bucket",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:ListBucket",
+      "resource": "arn:aws:s3:::beacon-archive-lab",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N07",
+    "description": "exporter must not encrypt with the archive key",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "kms:Encrypt",
+      "resource": "arn:aws:kms:us-west-2:111122223333:key/7f3c2a10-5b4e-4d6f-9a8b-1c2d3e4f5a6b",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N08",
+    "description": "exporter must not decrypt with the database key",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "kms:Decrypt",
+      "resource": "arn:aws:kms:us-west-2:111122223333:key/0b1e2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N09",
+    "description": "exporter must not read exports from outside the endpoint",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:GetObject",
+      "resource": "arn:aws:s3:::beacon-archive-lab/exports/2026/10/13/export.csv",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0ffee000000000001"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "ExplicitDeny"
+  },
+  {
+    "id": "N10",
+    "description": "exporter must not read the database secret",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "secretsmanager:GetSecretValue",
+      "resource": "arn:aws:secretsmanager:us-west-2:111122223333:secret:beacon/db-AbCdEf",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N11",
+    "description": "exporter must not pass roles",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "iam:PassRole",
+      "resource": "arn:aws:iam::111122223333:role/beacon-worker",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  },
+  {
+    "id": "N12",
+    "description": "exporter must not read the audit prefix",
+    "request": {
+      "principal": "beacon-exporter",
+      "action": "s3:GetObject",
+      "resource": "arn:aws:s3:::beacon-archive-lab/audit/2026-10.json",
+      "context": {
+        "aws:CurrentTime": "2026-10-13T15:00:00Z",
+        "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+      },
+      "session": {
+        "role": "beacon-exporter",
+        "issued": "2026-10-13T14:30:00Z",
+        "expires": "2026-10-13T15:30:00Z"
+      }
+    },
+    "expect": "deny"
+  }
+]

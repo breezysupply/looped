@@ -1,0 +1,8 @@
+; beacon.corp.lab — child zone, served by ns1.beacon.corp.lab (10.55.2.54)
+$ORIGIN beacon.corp.lab.
+$TTL 300
+@       3600 IN SOA ns1.beacon.corp.lab. hostmaster.corp.lab. 2026091002 3600 600 86400 3600
+@       IN NS  ns1.beacon.corp.lab.
+ns1     IN A   10.55.2.54
+api     IN A   10.55.2.80
+status  IN TXT "beacon lab zone"

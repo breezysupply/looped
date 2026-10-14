@@ -1,0 +1,26 @@
+{
+  "note": "EXAMPLE of the evidence schema for L10 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L10",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2027-01-04T17:00:00Z",
+  "completedAt": "2027-01-04T18:22:41Z",
+  "environment": { "profile": "workstation", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "variant_file": "variant-b", "evaluator": "iameval (incomplete IAM model)" },
+  "checks": [
+    { "id": "fixtures-intact", "passed": true, "observed": "shipped fixtures unchanged" },
+    { "id": "predictions", "passed": true, "observed": "7/7 predictions match the evaluator" },
+    { "id": "policy-supported", "passed": true, "observed": "3 statement(s), all modelled" },
+    { "id": "ticket-policy", "passed": true, "observed": "T1–T3 allowed by the policy" },
+    { "id": "ticket-session", "passed": true, "observed": "session 2026-10-13T14:30:00Z..2026-10-13T15:30:00Z (3600s, max 3600); T1–T3 allowed with it" },
+    { "id": "probes-denied", "passed": true, "observed": "12/12 probes denied" },
+    { "id": "no-broadening", "passed": true, "observed": "every Allow names exact actions and scoped resources" },
+    { "id": "own-tests", "passed": true, "observed": "7 cases (3 allow, 4 deny); all pass" },
+    { "id": "notes", "passed": false, "observed": "120 chars of your own notes" }
+  ],
+  "explanation": "T1 ImplicitDeny: the Allow named export/* (singular). T3 ImplicitDeny: Decrypt named the database key. Corrected both ARNs; probes confirm nothing else is allowed.",
+  "cleanupStatus": "not-applicable"
+}

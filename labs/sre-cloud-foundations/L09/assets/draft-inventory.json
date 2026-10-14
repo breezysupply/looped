@@ -1,0 +1,408 @@
+{
+  "schema": "looped.archinv/v1",
+  "service": "beacon",
+  "note": "Draft inventory from a colleague. Fictional account and names; nothing here exists in AWS.",
+  "account": "111122223333",
+  "region": "us-west-2",
+  "azs": [
+    "us-west-2a",
+    "us-west-2b"
+  ],
+  "vpc": {
+    "id": "vpc-beacon-lab",
+    "cidr": "10.40.0.0/16"
+  },
+  "subnets": [
+    {
+      "id": "pub-a",
+      "az": "us-west-2a",
+      "cidr": "10.40.0.0/24",
+      "tier": "public",
+      "route_table": "rt-public"
+    },
+    {
+      "id": "pub-b",
+      "az": "us-west-2b",
+      "cidr": "10.40.1.0/24",
+      "tier": "public",
+      "route_table": "rt-public"
+    },
+    {
+      "id": "api-a",
+      "az": "us-west-2a",
+      "cidr": "10.40.10.0/24",
+      "tier": "app",
+      "route_table": "rt-api-a"
+    },
+    {
+      "id": "api-b",
+      "az": "us-west-2b",
+      "cidr": "10.40.11.0/24",
+      "tier": "app",
+      "route_table": "rt-api-b"
+    },
+    {
+      "id": "worker-a",
+      "az": "us-west-2a",
+      "cidr": "10.40.20.0/24",
+      "tier": "app",
+      "route_table": "rt-worker-a"
+    },
+    {
+      "id": "worker-b",
+      "az": "us-west-2b",
+      "cidr": "10.40.21.0/24",
+      "tier": "app",
+      "route_table": "rt-worker-b"
+    },
+    {
+      "id": "data-a",
+      "az": "us-west-2a",
+      "cidr": "10.40.30.0/24",
+      "tier": "data",
+      "route_table": "rt-data"
+    },
+    {
+      "id": "data-b",
+      "az": "us-west-2b",
+      "cidr": "10.40.31.0/24",
+      "tier": "data",
+      "route_table": "rt-data"
+    }
+  ],
+  "route_tables": [
+    {
+      "id": "rt-public",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        },
+        {
+          "destination": "0.0.0.0/0",
+          "target": "igw-beacon"
+        }
+      ]
+    },
+    {
+      "id": "rt-api-a",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        }
+      ]
+    },
+    {
+      "id": "rt-api-b",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        }
+      ]
+    },
+    {
+      "id": "rt-worker-a",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        },
+        {
+          "destination": "0.0.0.0/0",
+          "target": "nat-a"
+        }
+      ]
+    },
+    {
+      "id": "rt-worker-b",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        },
+        {
+          "destination": "0.0.0.0/0",
+          "target": "nat-b"
+        }
+      ]
+    },
+    {
+      "id": "rt-data",
+      "routes": [
+        {
+          "destination": "10.40.0.0/16",
+          "target": "local"
+        }
+      ]
+    }
+  ],
+  "gateways": [
+    {
+      "id": "igw-beacon",
+      "type": "internet"
+    },
+    {
+      "id": "nat-a",
+      "type": "nat",
+      "subnet": "pub-a"
+    },
+    {
+      "id": "nat-b",
+      "type": "nat",
+      "subnet": "pub-b"
+    }
+  ],
+  "endpoints": [
+    {
+      "id": "vpce-s3",
+      "service": "s3",
+      "type": "gateway",
+      "route_tables": [
+        "rt-api-a",
+        "rt-api-b",
+        "rt-worker-a",
+        "rt-worker-b"
+      ]
+    },
+    {
+      "id": "vpce-ecr-api",
+      "service": "ecr.api",
+      "type": "interface",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "private_dns": true
+    },
+    {
+      "id": "vpce-ecr-dkr",
+      "service": "ecr.dkr",
+      "type": "interface",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "private_dns": true
+    },
+    {
+      "id": "vpce-logs",
+      "service": "logs",
+      "type": "interface",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "private_dns": true
+    },
+    {
+      "id": "vpce-secrets",
+      "service": "secretsmanager",
+      "type": "interface",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "private_dns": true
+    },
+    {
+      "id": "vpce-kms",
+      "service": "kms",
+      "type": "interface",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "private_dns": true
+    }
+  ],
+  "external": [
+    {
+      "id": "partner-hooks",
+      "kind": "internet-api",
+      "host": "hooks.partner.lab",
+      "used_for": "worker posts processed-status webhooks"
+    }
+  ],
+  "components": [
+    {
+      "id": "alb",
+      "kind": "load_balancer",
+      "subnets": [
+        "pub-a",
+        "pub-b"
+      ],
+      "public": true,
+      "needs": [
+        "api"
+      ],
+      "notes": "HTTPS listener for sensors; forwards to api targets"
+    },
+    {
+      "id": "api",
+      "kind": "container_service",
+      "platform": "ecs-fargate",
+      "subnets": [
+        "api-a",
+        "api-b"
+      ],
+      "desired_tasks": 2,
+      "role": "role-api-task",
+      "needs": [
+        "ecr",
+        "logs",
+        "secretsmanager",
+        "kms",
+        "db"
+      ],
+      "stateless": true
+    },
+    {
+      "id": "worker",
+      "kind": "container_service",
+      "platform": "ecs-fargate",
+      "subnets": [
+        "worker-a",
+        "worker-b"
+      ],
+      "desired_tasks": 2,
+      "role": "role-worker-task",
+      "needs": [
+        "ecr",
+        "logs",
+        "s3",
+        "kms",
+        "db",
+        "partner-hooks"
+      ],
+      "stateless": true
+    },
+    {
+      "id": "db",
+      "kind": "database",
+      "engine": "rds-postgresql-16",
+      "subnets": [
+        "data-a",
+        "data-b"
+      ],
+      "multi_az": true,
+      "backup_retention_days": 7,
+      "pitr": true,
+      "storage_encrypted": true,
+      "kms_key": "alias/beacon-data"
+    }
+  ],
+  "iam_roles": [
+    {
+      "id": "role-api-task",
+      "trust": "ecs-tasks.amazonaws.com",
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "resources": [
+            "arn:aws:secretsmanager:us-west-2:111122223333:secret:beacon/db-*"
+          ]
+        },
+        {
+          "effect": "Allow",
+          "actions": [
+            "kms:Decrypt"
+          ],
+          "resources": [
+            "arn:aws:kms:us-west-2:111122223333:key/0b1e2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "role-worker-task",
+      "trust": "ecs-tasks.amazonaws.com",
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": [
+            "s3:PutObject"
+          ],
+          "resources": [
+            "arn:aws:s3:::beacon-archive-lab/processed/*"
+          ]
+        },
+        {
+          "effect": "Allow",
+          "actions": [
+            "secretsmanager:GetSecretValue"
+          ],
+          "resources": [
+            "arn:aws:secretsmanager:us-west-2:111122223333:secret:beacon/db-*"
+          ]
+        },
+        {
+          "effect": "Allow",
+          "actions": [
+            "kms:Decrypt",
+            "kms:GenerateDataKey"
+          ],
+          "resources": [
+            "arn:aws:kms:us-west-2:111122223333:key/0b1e2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "role-task-execution",
+      "trust": "ecs-tasks.amazonaws.com",
+      "statements": [
+        {
+          "effect": "Allow",
+          "actions": [
+            "ecr:GetAuthorizationToken"
+          ],
+          "resources": [
+            "*"
+          ]
+        },
+        {
+          "effect": "Allow",
+          "actions": [
+            "ecr:BatchGetImage",
+            "ecr:GetDownloadUrlForLayer"
+          ],
+          "resources": [
+            "arn:aws:ecr:us-west-2:111122223333:repository/beacon"
+          ]
+        },
+        {
+          "effect": "Allow",
+          "actions": [
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          "resources": [
+            "arn:aws:logs:us-west-2:111122223333:log-group:/beacon/*"
+          ]
+        }
+      ]
+    }
+  ],
+  "failure_analysis": {
+    "single_points_of_failure": [],
+    "az_loss": ""
+  },
+  "cost": {
+    "network_fixed_monthly_usd": null,
+    "monthly_estimate_usd": null,
+    "drivers": [],
+    "assumptions": ""
+  },
+  "recovery": {
+    "rpo_minutes": null,
+    "rto_minutes": null,
+    "backup": "",
+    "restore_procedure": "",
+    "region_loss": ""
+  }
+}

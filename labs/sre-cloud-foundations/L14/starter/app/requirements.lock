@@ -1,0 +1,14 @@
+# Beacon image extras, pinned and hash-checked (pip --require-hashes).
+# Hashes are the PyPI sha256 of each wheel for CPython 3.12 on glibc Linux,
+# linux/arm64 (aarch64) and linux/amd64 (x86_64). Resolved 2026-10-13.
+# To bump: pip download --only-binary=:all: --python-version 3.12 --platform <tag> ...
+#          then sha256sum the wheels, and record the change in your notes.
+psycopg[binary]==3.2.3 \
+    --hash=sha256:644d3973fe26908c73d4be746074f6e5224b03c1101d302d9a53bf565ad64907
+psycopg-binary==3.2.3 \
+    --hash=sha256:cb987f14af7da7c24f803111dbc7392f5070fd350146af3345103f76ea82e339 \
+    --hash=sha256:64a607e630d9f4b2797f641884e52b9f8e239d35943f51bef817a384ec1678fe
+typing-extensions==4.12.2 \
+    --hash=sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d
+redis==5.2.1 \
+    --hash=sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4

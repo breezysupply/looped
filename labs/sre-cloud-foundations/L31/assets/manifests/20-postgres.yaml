@@ -1,0 +1,58 @@
+# PostgreSQL for the capstone: one replica, data on a PersistentVolumeClaim (kind's local-path
+# StorageClass "standard"), password from the Secret beacon-db-auth that rebuild.sh generates.
+# Runs as the image's postgres user (999) so the restricted Pod Security profile admits it.
+apiVersion: v1
+kind: Service
+metadata: {name: beacon-db, namespace: __NAMESPACE__, labels: {app: beacon-db, looped.lab/id: L31}}
+spec:
+  selector: {app: beacon-db}
+  ports: [{name: postgres, port: 5432, targetPort: postgres}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: beacon-db, namespace: __NAMESPACE__, labels: {app: beacon-db, looped.lab/id: L31}}
+spec:
+  serviceName: beacon-db
+  replicas: 1
+  selector: {matchLabels: {app: beacon-db}}
+  template:
+    metadata: {labels: {app: beacon-db, looped.lab/id: L31}}
+    spec:
+      serviceAccountName: beacon-db
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: postgres
+          image: __POSTGRES_IMAGE__
+          env:
+            - {name: POSTGRES_USER, value: beacon}
+            - {name: POSTGRES_DB, value: beacon}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: beacon-db-auth, key: POSTGRES_PASSWORD}}
+          ports: [{name: postgres, containerPort: 5432}]
+          readinessProbe:
+            exec: {command: ["pg_isready", "-U", "beacon", "-d", "beacon", "-h", "127.0.0.1"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 384Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: run, mountPath: /var/run/postgresql}
+      volumes:
+        - name: run
+          emptyDir: {sizeLimit: 16Mi}
+  volumeClaimTemplates:
+    - metadata: {name: data, labels: {looped.lab/id: L31}}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: {requests: {storage: 1Gi}}

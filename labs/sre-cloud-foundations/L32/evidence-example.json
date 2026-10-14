@@ -1,0 +1,26 @@
+{
+  "note": "EXAMPLE of the evidence schema for L32 — not a result. Real reports come from validate.py with your draw, your lab evidence and your running L31 rebuild.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L32",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "l32-5e0c19a2",
+  "startedAt": "2027-03-02T18:00:00Z",
+  "completedAt": "2027-03-02T18:03:40Z",
+  "environment": { "profile": "kind-basic", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "draw_seed": "l32-5e0c19a2", "singles": ["F-L16-c", "F-L23-a"], "incident": "C2" },
+  "checks": [
+    { "id": "draw", "passed": true, "observed": "seed 'l32-5e0c19a2' drawn 2027-02-23T18:01:12Z: singles ['F-L16-c', 'F-L23-a'], incident C2; reproduced; catalogue unchanged; 31 seen variants excluded" },
+    { "id": "single-1", "passed": true, "observed": "F-L16-c: evidence L16 seed variant-c completed 2027-02-23T19:10:02Z assistance independent; 6/6 checks passed" },
+    { "id": "single-2", "passed": true, "observed": "F-L23-a: evidence L23 seed variant-a completed 2027-02-23T20:02:45Z assistance independent; 7/7 checks passed" },
+    { "id": "service", "passed": true, "observed": "workloads ready; /ready 200; /version reports 1.4.0; write+read through the API ok" },
+    { "id": "data", "passed": true, "observed": "seed rows/fingerprint 240 2281018160bb2c736124981dbf0919d1 (expected ...); post-backup records 12 ... (expected 12 ...)" },
+    { "id": "least-privilege", "passed": true, "observed": "deployer may ['patch deployments.apps', 'get pods/log', 'list pods']; must not, but may: none; broad RoleBindings: none" },
+    { "id": "scoped-cleanup-cluster", "passed": true, "observed": "L32-labelled objects left: none; scratch databases left: none" },
+    { "id": "report-structure", "passed": true, "observed": "sections thin/missing: none; timeline timestamps: 9 (need 6)" },
+    { "id": "rubric", "passed": false, "observed": "reviewer self; below 3/4: ['iac 2/4']; domains without an existing evidence path: none" }
+  ],
+  "explanation": "C2: database password rotated on one side only plus deleted history for three sensors. Made the password match the Secret, restarted the API, selective restore kept the 12 newer rows.",
+  "cleanupStatus": "verified"
+}

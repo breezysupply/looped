@@ -1,0 +1,34 @@
+# Additions to L18's segmentation (default-deny, DNS, api->db) for the two workloads L18 did
+# not have: the queue and the worker. Enforced only on a policy-enabled cluster (looped-policy);
+# on kind-basic (kindnet) these objects are accepted but NOT enforced.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: api-egress-to-queue, namespace: __NAMESPACE__, labels: {looped.lab/id: L31}}
+spec:
+  podSelector: {matchLabels: {app: beacon-api}}
+  policyTypes: ["Egress"]
+  egress:
+    - to: [{podSelector: {matchLabels: {app: beacon-queue}}}]
+      ports: [{protocol: TCP, port: 6379}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: worker-egress-to-queue, namespace: __NAMESPACE__, labels: {looped.lab/id: L31}}
+spec:
+  podSelector: {matchLabels: {app: beacon-worker}}
+  policyTypes: ["Egress"]
+  egress:
+    - to: [{podSelector: {matchLabels: {app: beacon-queue}}}]
+      ports: [{protocol: TCP, port: 6379}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: queue-ingress, namespace: __NAMESPACE__, labels: {looped.lab/id: L31}}
+spec:
+  podSelector: {matchLabels: {app: beacon-queue}}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app: beacon-api}}
+        - podSelector: {matchLabels: {app: beacon-worker}}
+      ports: [{protocol: TCP, port: 6379}]

@@ -1,0 +1,5 @@
+[
+  { "targets": ["looped-l21-api:8080"], "labels": { "job": "beacon-l21-api", "lab": "L21" } },
+  { "targets": ["looped-l21-worker:9101"], "labels": { "job": "beacon-l21-worker", "lab": "L21" } },
+  { "targets": ["looped-l21-registry:8081"], "labels": { "job": "beacon-l21-registry", "lab": "L21" } }
+]

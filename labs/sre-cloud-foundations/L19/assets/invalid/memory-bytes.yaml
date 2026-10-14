@@ -1,0 +1,7 @@
+# must be refused: a bare number for memory means BYTES to Kubernetes
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256

@@ -1,0 +1,10 @@
+; corp.lab — the lab's parent zone, served by ns1.corp.lab (10.55.2.53)
+$ORIGIN corp.lab.
+$TTL 300
+@          IN SOA ns1.corp.lab. hostmaster.corp.lab. 2026091001 3600 600 86400 60
+@          IN NS  ns1.corp.lab.
+ns1        IN A   10.55.2.53
+www        IN A   10.55.2.80
+; beacon.corp.lab is its own zone, run by the Beacon team on ns1.beacon.corp.lab
+beacon     IN NS  ns1.beacon.corp.lab.
+ns1.beacon IN A   10.55.2.54

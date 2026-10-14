@@ -1,0 +1,63 @@
+# Beacon on kind (L15): three replicas managed by a Deployment.
+# Deployment -> ReplicaSet (one per pod-template revision) -> Pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beacon
+  namespace: beacon
+  labels:
+    app.kubernetes.io/name: beacon
+    app.kubernetes.io/part-of: looped
+    looped.lab/id: L15
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: beacon
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: beacon
+        looped.lab/id: L15
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: registry.lab/beacon:1.4.0
+          imagePullPolicy: IfNotPresent   # loaded into the nodes by kind load; never pulled
+          args: ["api"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: BEACON_APP_ENVIRONMENT
+              value: kind-lab
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

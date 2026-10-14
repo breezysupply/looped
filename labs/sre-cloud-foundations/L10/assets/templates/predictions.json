@@ -1,0 +1,10 @@
+{
+  "_how": "Before running iameval, write your predicted decision for each case in assets/cases/predict: Allow, ExplicitDeny, ImplicitDeny or ExpiredToken, and one line of why. Then run the evaluator and correct any you got wrong, keeping a note of what you missed in evidence/L10-notes.md.",
+  "P1": {"decision": "", "why": ""},
+  "P2": {"decision": "", "why": ""},
+  "P3": {"decision": "", "why": ""},
+  "P4": {"decision": "", "why": ""},
+  "P5": {"decision": "", "why": ""},
+  "P6": {"decision": "", "why": ""},
+  "P7": {"decision": "", "why": ""}
+}

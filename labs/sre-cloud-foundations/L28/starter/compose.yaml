@@ -1,0 +1,87 @@
+# L28 — Beacon's primary database, the status API, and two OPTIONAL empty
+# PostgreSQL servers you may use during the rehearsal:
+#   restore  (profile "restore") a new server with its own volume, a candidate new primary
+#   scratch  (profile "scratch") a throw-away server on tmpfs, for trying a backup first
+# Compose project looped-l28 (scripts pass -p looped-l28 -f work/compose.yaml).
+# The database password is a lab placeholder, not a secret.
+name: looped-l28
+
+x-pg: &pg
+  image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+  environment:
+    POSTGRES_USER: beacon
+    POSTGRES_PASSWORD: lab-l28-db-not-a-real-secret
+    POSTGRES_DB: beacon
+  healthcheck:
+    test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "beacon", "-d", "beacon"]
+    interval: 2s
+    timeout: 3s
+    retries: 30
+    start_period: 60s
+  restart: "no"
+  labels:
+    looped.lab/id: L28
+
+services:
+  db:
+    <<: *pg
+    container_name: looped-l28-db
+    volumes:
+      - primary:/var/lib/postgresql/data
+      - ../assets/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:15028:5432"
+
+  restore:
+    <<: *pg
+    container_name: looped-l28-restore
+    profiles: ["restore"]
+    volumes:
+      - restored:/var/lib/postgresql/data
+      - ./backups:/backups:ro
+    ports:
+      - "127.0.0.1:15029:5432"
+
+  scratch:
+    <<: *pg
+    container_name: looped-l28-scratch
+    profiles: ["scratch"]
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./backups:/backups:ro
+
+  api:
+    image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+    container_name: looped-l28-api
+    user: "65534:65534"
+    read_only: true
+    restart: unless-stopped
+    command: ["python3", "-u", "/lab/statusapi.py"]
+    env_file: [api.env]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DB_PASSWORD: lab-l28-db-not-a-real-secret
+    volumes:
+      - ../assets/statusapi.py:/lab/statusapi.py:ro
+      - ../assets/pgmini.py:/lab/pgmini.py:ro
+    ports:
+      - "127.0.0.1:18028:8080"
+    labels:
+      looped.lab/id: L28
+
+volumes:
+  primary:
+    name: looped-l28-primary
+    labels:
+      looped.lab/id: L28
+  restored:
+    name: looped-l28-restored
+    labels:
+      looped.lab/id: L28
+
+networks:
+  default:
+    name: looped-l28-net
+    labels:
+      looped.lab/id: L28

@@ -1,0 +1,25 @@
+{
+  "note": "EXAMPLE of the evidence schema for L06 — not a result. Real reports come from validate.py on your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L06",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-11-24T18:00:00Z",
+  "completedAt": "2026-11-24T19:30:00Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3", "openssl": "OpenSSL 3.0.13 30 Jan 2024" },
+  "checks": [
+    { "id": "backend-healthy", "passed": true, "observed": "GET http://127.0.0.1:8086/healthz -> 200 ok" },
+    { "id": "trust-anchor", "passed": true, "observed": "/opt/beacon-l06/ca/ca.pem: 1 certificate(s), sha256 5696826b08619865… matches the CA created at setup" },
+    { "id": "verified-handshake", "passed": true, "observed": "TLSv1.3 verified for beacon.corp.lab; issuer=Looped Lab Root CA L06" },
+    { "id": "leaf-sane", "passed": true, "observed": "SAN=['beacon.corp.lab'] CA=False issuer=O = Looped Lab, CN = Looped Lab Root CA L06 lifetime=90d openssl verify -verify_hostname beacon.corp.lab: OK" },
+    { "id": "user-path", "passed": true, "observed": "GET /healthz -> 200 'ok'; GET /version -> 200 version='1.4.0'; X-Request-Id present" },
+    { "id": "backend-port", "passed": true, "observed": "proxy upstream='http://127.0.0.1:8086'; listener on 8086: python3 (Beacon); last /healthz access: host=beacon.corp.lab:8446 status=200 upstream_status=200" },
+    { "id": "no-verification-bypass", "passed": true, "observed": "verification intact: lab CA passed explicitly, system store untouched, no insecure flags in notes" },
+    { "id": "notes", "passed": true, "observed": "notes quote handshake/proxy evidence; 1135 chars" }
+  ],
+  "explanation": "curl reported no SAN matching beacon.corp.lab; the served certificate's SAN was beacon.corp.local although its CN was right. Issued a new P-256 certificate from the lab CA with DNS:beacon.corp.lab and restarted the proxy.",
+  "cleanupStatus": "reported"
+}

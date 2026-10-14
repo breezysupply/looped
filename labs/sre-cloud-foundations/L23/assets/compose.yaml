@@ -1,0 +1,68 @@
+# L23 — PostgreSQL 16 with a synthetic Beacon dataset, plus two fault fixtures.
+# Compose project: looped-l23 (always run through setup.sh / the `dc` helper,
+# which passes -p looped-l23). Ports bind to 127.0.0.1 only. The password is a
+# lab placeholder, not a secret.
+name: looped-l23
+
+x-python: &python
+  image: python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d
+  user: "${LOOPED_UID:-65534}:${LOOPED_GID:-65534}"   # setup.sh passes your uid so status files stay yours
+  read_only: true
+  tmpfs:
+    - /tmp
+  environment: &pyenv
+    PYTHONDONTWRITEBYTECODE: "1"
+    L23_DSN: postgresql://beacon:lab-l23-db-not-a-real-secret@db:5432/beacon?sslmode=disable
+    L23_VARIANT: ${L23_VARIANT:-variant-a}
+  depends_on:
+    db:
+      condition: service_healthy
+  labels:
+    looped.lab/id: L23
+
+services:
+  db:
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+    container_name: looped-l23-db
+    environment:
+      POSTGRES_USER: beacon
+      POSTGRES_PASSWORD: lab-l23-db-not-a-real-secret
+      POSTGRES_DB: beacon
+    # log_lock_waits: a session waiting longer than deadlock_timeout is logged with the pid holding the lock
+    command: ["postgres", "-c", "max_connections=30", "-c", "log_lock_waits=on", "-c", "deadlock_timeout=1s", "-c", "shared_buffers=128MB"]
+    ports:
+      - "127.0.0.1:15423:5432"
+    volumes:
+      - looped-l23-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beacon -d beacon -h 127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    labels:
+      looped.lab/id: L23
+
+  # Two sessions started by inject.sh: a "backfill" and a long "report".
+  fixtures:
+    <<: *python
+    container_name: looped-l23-fixtures
+    profiles: ["fault"]
+    command: ["python3", "-u", "/lab/assets/fixture_sessions.py"]
+    volumes:
+      - .:/lab/assets:ro
+
+  # The API's write path: a bounded pool of 5 connections shared by 8 threads.
+  pool:
+    <<: *python
+    container_name: looped-l23-pool
+    profiles: ["fault"]
+    command: ["python3", "-u", "/lab/assets/poolclient.py", "--status", "/work/pool-status.json"]
+    volumes:
+      - .:/lab/assets:ro
+      - ../work/pool:/work
+
+volumes:
+  looped-l23-data:
+    name: looped-l23-data
+    labels:
+      looped.lab/id: L23

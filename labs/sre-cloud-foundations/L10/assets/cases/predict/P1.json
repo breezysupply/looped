@@ -1,0 +1,18 @@
+{
+  "id": "P1",
+  "description": "worker writes a processed archive object through the S3 endpoint",
+  "request": {
+    "principal": "beacon-worker",
+    "action": "s3:PutObject",
+    "resource": "arn:aws:s3:::beacon-archive-lab/processed/2026/10/13/r-001.json",
+    "context": {
+      "aws:CurrentTime": "2026-10-13T15:00:00Z",
+      "aws:SourceVpce": "vpce-0a1b2c3d4e5f60718"
+    },
+    "session": {
+      "role": "beacon-worker",
+      "issued": "2026-10-13T14:30:00Z",
+      "expires": "2026-10-13T15:30:00Z"
+    }
+  }
+}

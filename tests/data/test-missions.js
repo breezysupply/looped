@@ -10,6 +10,9 @@ LX.missions.forEach(function (m) {
   /* onsite labs wait on a clock and derive reveals from state; they are played
      through several paths in test-onsite-labs.js instead */
   if (m.track === 'onsite') return;
+  /* SRE incidents build their world from a seed; test-sre-scenarios.js plays
+     every variant through the ladder, an alternative path and the shortcuts */
+  if (m.track === 'sre') return;
   var w = LXShell.createWorld(m.world);
   var ctx = { w: w, ran: [], out: [], code: [], last: null };
   var met = {}, order = [];

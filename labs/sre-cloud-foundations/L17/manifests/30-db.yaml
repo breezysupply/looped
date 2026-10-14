@@ -1,0 +1,81 @@
+# PostgreSQL for Beacon on a PersistentVolumeClaim. kind's default StorageClass is "standard"
+# (rancher local-path provisioner, WaitForFirstConsumer): the volume is a directory on ONE node.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: beacon-db-auth
+  namespace: beacon
+  labels: {app: beacon-db, looped.lab/id: L17}
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: lab-l17-db-password-not-a-real-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beacon-db
+  namespace: beacon
+  labels: {app: beacon-db, looped.lab/id: L17}
+spec:
+  clusterIP: None
+  selector: {app: beacon-db}
+  ports:
+    - {name: postgres, port: 5432, targetPort: postgres}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: beacon-db
+  namespace: beacon
+  labels: {app: beacon-db, looped.lab/id: L17}
+spec:
+  serviceName: beacon-db
+  replicas: 1
+  selector:
+    matchLabels: {app: beacon-db}
+  template:
+    metadata:
+      labels: {app: beacon-db, looped.lab/id: L17}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      # Pod Security "restricted" (enforced on namespace beacon by the kind-basic profile): the
+      # official image runs fine as its postgres user (uid 999) without root or capabilities.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: postgres
+          image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          env:
+            - {name: POSTGRES_DB, value: beacon}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: beacon-db-auth, key: POSTGRES_PASSWORD}
+          ports:
+            - {name: postgres, containerPort: 5432}
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "beacon"]
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels: {app: beacon-db, looped.lab/id: L17}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests: {storage: 1Gi}

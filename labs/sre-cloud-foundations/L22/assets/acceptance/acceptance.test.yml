@@ -1,0 +1,166 @@
+# L22 acceptance tests (run by validate.py against YOUR rules; do not edit).
+# They check outcomes, not wording: alert state is read from the ALERTS series
+# with `count(...) or vector(0)`, so annotations and rule order are yours to choose.
+rule_files:
+  - ../rules/beacon-slo.rules.yml
+evaluation_interval: 1m
+
+tests:
+  - name: sli-math numerator and denominator
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+398x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0+2x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="400"}'
+        values: '0+50x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status/{sensor}",code="404"}'
+        values: '0+30x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/healthz",code="200"}'
+        values: '0+60x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/healthz",code="503"}'
+        values: '0+6x30'
+      - series: 'beacon_http_requests_total{job="beacon",route="/metrics",code="200"}'
+        values: '0+12x30'
+      - series: 'beacon_http_request_duration_seconds_bucket{job="beacon",route="/status",le="0.3"}'
+        values: '0+380x30'
+      - series: 'beacon_http_request_duration_seconds_bucket{job="beacon",route="/status",le="+Inf"}'
+        values: '0+400x30'
+      - series: 'beacon_http_request_duration_seconds_count{job="beacon",route="/status"}'
+        values: '0+400x30'
+      - series: 'beacon_http_request_duration_seconds_bucket{job="beacon",route="/healthz",le="0.3"}'
+        values: '0+66x30'
+      - series: 'beacon_http_request_duration_seconds_count{job="beacon",route="/healthz"}'
+        values: '0+66x30'
+    promql_expr_test:
+      - expr: round(beacon:sli_eligible:rate5m * 60)
+        eval_time: 20m
+        exp_samples:
+          - value: 400
+      - expr: round(beacon:sli_errors:rate5m * 60)
+        eval_time: 20m
+        exp_samples:
+          - value: 2
+      - expr: round(beacon:sli_error_ratio:rate1h * 100000)
+        eval_time: 20m
+        exp_samples:
+          - value: 500
+      - expr: round(beacon:sli_latency_good_ratio:rate5m * 1000)
+        eval_time: 20m
+        exp_samples:
+          - value: 950
+
+  - name: no errors at all is a ratio of 0, not no data
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+400x30'
+    promql_expr_test:
+      - expr: sum(beacon:sli_error_ratio:rate5m)
+        eval_time: 20m
+        exp_samples:
+          - value: 0
+
+  - name: missing series fires the no-data alert, not a healthy zero
+    interval: 1m
+    input_series:
+      - series: 'up{job="beacon",instance="beacon-api:8080"}'
+        values: '1x40'
+    promql_expr_test:
+      - expr: count(beacon:sli_error_ratio:rate5m) or vector(0)
+        eval_time: 15m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertname="BeaconSLINoData",alertstate="firing"}) or vector(0)
+        eval_time: 5m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertname="BeaconSLINoData",alertstate="firing",severity="ticket"}) or vector(0)
+        eval_time: 15m
+        exp_samples:
+          - value: 1
+      - expr: count(ALERTS{alertname=~"BeaconErrorBudgetBurn.*",alertstate="firing"}) or vector(0)
+        eval_time: 15m
+        exp_samples:
+          - value: 0
+
+  - name: short spike does not page
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+400x420'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0x360 200+200x2 600x57'
+    promql_expr_test:
+      - expr: count(ALERTS{alertname=~"BeaconErrorBudgetBurn.*",alertstate="firing"}) or vector(0)
+        eval_time: 363m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertname=~"BeaconErrorBudgetBurn.*",alertstate="firing"}) or vector(0)
+        eval_time: 366m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertname=~"BeaconErrorBudgetBurn.*",alertstate="firing"}) or vector(0)
+        eval_time: 400m
+        exp_samples:
+          - value: 0
+
+  - name: sustained fast burn pages, then clears after recovery
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+400x480'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0x360 40+40x69 2800x50'
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="BeaconErrorBudgetBurnFast",alertstate="firing"}) or vector(0)
+        eval_time: 390m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertname="BeaconErrorBudgetBurnFast",alertstate="firing",severity="page"}) or vector(0)
+        eval_time: 415m
+        exp_samples:
+          - value: 1
+      - expr: count(ALERTS{alertname="BeaconErrorBudgetBurnFast",alertstate="firing"}) or vector(0)
+        eval_time: 445m
+        exp_samples:
+          - value: 0
+
+  - name: sustained slow burn opens a ticket, does not page
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0+400x420'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0x60 16+16x359'
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="BeaconErrorBudgetBurnSlow",alertstate="firing",severity="ticket"}) or vector(0)
+        eval_time: 380m
+        exp_samples:
+          - value: 1
+      - expr: count(ALERTS{alertname="BeaconErrorBudgetBurnFast",alertstate="firing"}) or vector(0)
+        eval_time: 380m
+        exp_samples:
+          - value: 0
+
+  - name: zero eligible traffic is neither an outage nor missing data
+    interval: 1m
+    input_series:
+      - series: 'beacon_http_requests_total{job="beacon",route="/healthz",code="200"}'
+        values: '0+60x90'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="401"}'
+        values: '0+300x90'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="201"}'
+        values: '0x90'
+      - series: 'beacon_http_requests_total{job="beacon",route="/status",code="503"}'
+        values: '0x90'
+    promql_expr_test:
+      - expr: sum(beacon:sli_eligible:rate5m)
+        eval_time: 60m
+        exp_samples:
+          - value: 0
+      - expr: count(ALERTS{alertstate="firing"}) or vector(0)
+        eval_time: 80m
+        exp_samples:
+          - value: 0

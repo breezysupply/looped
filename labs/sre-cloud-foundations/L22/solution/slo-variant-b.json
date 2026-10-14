@@ -1,0 +1,25 @@
+{
+  "objective": 0.995,
+  "window_days": 30,
+  "availability_sli": {
+    "numerator": "bad events: beacon_http_requests_total{job=\"beacon\"} with code 5xx on every route except /healthz and /metrics",
+    "denominator": "eligible events: beacon_http_requests_total{job=\"beacon\"} on every route except /healthz and /metrics, excluding 4xx",
+    "exclusions": [
+      "/healthz and /metrics: probes and scrapes, not user requests",
+      "4xx client errors (400, 401, 404, 429): the caller's request was invalid or throttled by policy; tracked separately"
+    ]
+  },
+  "latency_sli": {
+    "threshold_s": 0.3,
+    "numerator": "eligible requests answered within 300 ms: beacon_http_request_duration_seconds_bucket{le=\"0.3\"} excluding /healthz and /metrics",
+    "denominator": "all eligible requests: beacon_http_request_duration_seconds_count excluding /healthz and /metrics"
+  },
+  "budget": {
+    "eligible": 13903015,
+    "bad": 79745,
+    "allowed_bad": 69515.1,
+    "consumed_pct": 114.72,
+    "remaining_bad": -10229.9
+  },
+  "decision": "The budget is overspent (about 115%): freeze non-urgent releases, put the 503/504 sources on the reliability backlog first, and keep paging only on fast burn so on-call is not flooded."
+}

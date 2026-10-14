@@ -1,0 +1,16 @@
+{
+  "report": "work/patch/vuln-report.json",
+  "triaged_by": "your name or handle",
+  "triaged_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "findings": [
+    {
+      "id": "copy the finding id from the report",
+      "package": "the package the finding is about",
+      "decision": "fix | not-applicable | already-fixed | unknown",
+      "reason": "why, in a sentence or two: the code path or configuration that makes it (not) reachable, or the version that already contains the fix",
+      "evidence": "what you looked at: file and function, config key, command and its output",
+      "owner": "required for unknown: who follows up",
+      "next": "required for unknown: the next concrete step and when"
+    }
+  ]
+}

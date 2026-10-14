@@ -1,0 +1,99 @@
+{
+  "note": "EXAMPLE of the evidence schema for L23 \u2014 not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L23",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-03-08T17:00:00Z",
+  "completedAt": "2027-03-08T19:20:41Z",
+  "environment": {
+    "profile": "compose",
+    "arch": "arm64",
+    "os": "Darwin",
+    "python": "3.12.7",
+    "docker": "Docker version 28.x",
+    "variant_file": "variant-a",
+    "server_version": "16",
+    "pool_acquire_timeouts": 282,
+    "index_used": "readings_sensor_ts"
+  },
+  "checks": [
+    {
+      "id": "db-up",
+      "passed": true,
+      "observed": "server_version 16.4 (Debian 16.4-1.pgdg120+2)"
+    },
+    {
+      "id": "dataset-intact",
+      "passed": true,
+      "observed": "200000 seeded rows, md5 0ee304340372 (setup recorded 0ee304340372)"
+    },
+    {
+      "id": "plan-uses-index",
+      "passed": true,
+      "observed": "plan: Sort > Bitmap Heap Scan > Bitmap Index Scan; index used: readings_sensor_ts"
+    },
+    {
+      "id": "plan-cheaper",
+      "passed": true,
+      "observed": "total cost 142.41 vs baseline 4931.85 (2.9%)"
+    },
+    {
+      "id": "index-fits",
+      "passed": true,
+      "observed": "1 new index(es) on readings: btree (sensor_id, ts); used index leads with sensor_id"
+    },
+    {
+      "id": "before-plan",
+      "passed": true,
+      "observed": "notes contain a 'Seq Scan on readings' plan"
+    },
+    {
+      "id": "fault-ran",
+      "passed": true,
+      "observed": "inject.sh ran"
+    },
+    {
+      "id": "no-lock-waits",
+      "passed": true,
+      "observed": "no session waits on a lock"
+    },
+    {
+      "id": "blocker-ended",
+      "passed": true,
+      "observed": "the lock holder (pid 2552) is gone"
+    },
+    {
+      "id": "blocker-named",
+      "passed": true,
+      "observed": "notes name pid 2552; the lock holder was pid 2552"
+    },
+    {
+      "id": "report-kept",
+      "passed": true,
+      "observed": "report session pid 2561 still active"
+    },
+    {
+      "id": "pool-kept",
+      "passed": true,
+      "observed": "pool's 5 original connections still open; reconnects=0"
+    },
+    {
+      "id": "intended-writes",
+      "passed": true,
+      "observed": "12/12 updates committed once; sensors last_status {'s-0007': 'ok', 's-0113': 'fault', 's-0042': 'degraded'}"
+    },
+    {
+      "id": "notes",
+      "passed": true,
+      "observed": "7/7 sections, 4209 chars"
+    }
+  ],
+  "explanation": "Composite index (sensor_id, ts) replaced a parallel seq scan. pg_blocking_pids() named one idle-in-transaction session holding row locks on three sensors; terminating only that pid let all five waiting pool connections commit.",
+  "cleanupStatus": "pending",
+  "notes": [],
+  "evidenceRefs": []
+}

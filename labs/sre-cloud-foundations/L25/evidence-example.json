@@ -1,0 +1,31 @@
+{
+  "note": "EXAMPLE of the evidence schema for L25 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L25",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-03-02T17:00:00Z",
+  "completedAt": "2027-03-02T18:41:12Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "docker": "Docker version 28.x", "variant_file": "variant-a", "compose_project": "looped-l25" },
+  "checks": [
+    { "id": "stack-up", "passed": true, "observed": "db ready; consumers: exporter running, ingest running" },
+    { "id": "old-revoked", "passed": true, "observed": "exposed credential (fp 1f0c2a9e7b44) as beacon_app: rejected (28P01 password authentication failed for user \"beacon_app\")" },
+    { "id": "new-credential-works", "passed": true, "observed": "exporter [file, fp 8d21e04c55aa]: login succeeded; ingest [file, fp 8d21e04c55aa]: login succeeded" },
+    { "id": "consumers-writing", "passed": true, "observed": "exporter: last heartbeat 1s ago with fp 8d21e04c55aa; ingest: last heartbeat 2s ago with fp 8d21e04c55aa" },
+    { "id": "no-credential-exposure", "passed": true, "observed": "searched 2 credential values in container config/logs and 7 files: none found" },
+    { "id": "secret-files", "passed": true, "observed": "exporter: work/secrets/db.txt mode 0o600; ingest: work/secrets/db.txt mode 0o600" },
+    { "id": "least-privilege", "passed": true, "observed": "beacon_app: no elevated attributes, no access to records" },
+    { "id": "triage-complete", "passed": true, "observed": "6 findings, 6 triaged" },
+    { "id": "lock-pinned", "passed": true, "observed": "3 exact pins: jinja2==3.1.4, markupsafe==3.0.2, idna==3.10" },
+    { "id": "patched-image", "passed": true, "observed": "looped-l25-report:patched: built from the current lock; installed idna==3.10, jinja2==3.1.4, markupsafe==3.0.2" },
+    { "id": "triage-correct", "passed": true, "observed": "decisions consistent with code, config and versions" },
+    { "id": "image-tests", "passed": true, "observed": "Ran 6 tests in 0.020s — OK" },
+    { "id": "sbom-matches-image", "passed": false, "observed": "CycloneDX 1.5, 3 components; differs from the image: idna==3.10, idna==3.6" },
+    { "id": "notes", "passed": true, "observed": "5/5 sections, 1180 chars beyond the template" }
+  ],
+  "explanation": "Exporter read a stale copy of the secret; moved it to the shared file, rotated in place with a SCRAM verifier, proved 28P01 for the old value. SBOM was generated before the rebuild and had to be regenerated.",
+  "cleanupStatus": "pending"
+}

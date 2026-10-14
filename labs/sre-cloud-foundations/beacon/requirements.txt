@@ -1,0 +1,7 @@
+# Extras for the container image only. Pinned with hashes so a build is
+# reproducible; regenerate with `pip hash` / pip-compile if you bump versions
+# and record the change in docs/sre-cloud-foundations/version-matrix.md.
+# (hashes are resolved during L13 setup: labs/sre-cloud-foundations/L13/setup.sh
+#  runs `pip download` for linux/arm64 and linux/amd64 and fills them in.)
+psycopg[binary]==3.2.3
+redis==5.2.1

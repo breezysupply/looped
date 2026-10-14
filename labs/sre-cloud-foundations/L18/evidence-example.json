@@ -1,0 +1,32 @@
+{
+  "note": "EXAMPLE of the evidence schema for L18 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L18",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-02-08T17:00:00Z",
+  "completedAt": "2027-02-08T18:52:31Z",
+  "environment": { "profile": "kind-policy", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "kubectl": "v1.33.1", "kind": "kind v0.29.0", "cni": "calico", "calico_node_ready": 2, "variant_file": "variant-a" },
+  "checks": [
+    { "id": "cluster", "passed": true, "observed": "https://127.0.0.1:51902" },
+    { "id": "cni-enforcing", "passed": true, "observed": "calico-node 2/2 ready on 2 nodes; kindnet pods=0" },
+    { "id": "workloads-ready", "passed": true, "observed": "beacon-api 1/1; beacon-report 1/1; beacon-db 1/1" },
+    { "id": "rbac-allowed", "passed": true, "observed": "get deployments.apps=yes, list deployments.apps=yes, watch deployments.apps=yes, patch deployments.apps=yes, list pods=yes, get pods=yes, get pods/log=yes" },
+    { "id": "rbac-denied", "passed": true, "observed": "all 11 out-of-scope requests denied" },
+    { "id": "rbac-shape", "passed": true, "observed": "role rules=5 wildcard rules=0; binding roleRef=Role/beacon-deployer subjects=['beacon-deployer']; ClusterRoleBindings naming beacon SAs=none; ClusterRole bindings for the bot=none" },
+    { "id": "deploy-bot", "passed": true, "observed": "get=ok; patch=ok; watch=ok; logs=ok; get secrets=Forbidden" },
+    { "id": "default-deny", "passed": true, "observed": "default-deny policies: ['default-deny']; all policies: ['allow-dns-egress', 'api-egress-to-db', 'db-ingress-from-api', 'default-deny']" },
+    { "id": "no-allow-all", "passed": true, "observed": "4 policies, no allow-all rule" },
+    { "id": "dns-allowed", "passed": true, "observed": "api resolves beacon-db.beacon.svc.cluster.local.: ok; report resolves kubernetes.default: ok" },
+    { "id": "api-to-db", "passed": true, "observed": "{\"target\": \"beacon-db.beacon.svc.cluster.local.:5432\", \"dns\": \"ok\", \"ip\": \"10.96.41.7\", \"tcp\": \"open\", \"pg\": \"N\"}" },
+    { "id": "report-to-db-denied", "passed": true, "observed": "{\"target\": \"10.96.41.7:5432\", \"dns\": \"ok\", \"ip\": \"10.96.41.7\", \"tcp\": \"timeout\"}" },
+    { "id": "api-to-report-denied", "passed": true, "observed": "{\"target\": \"10.96.200.18:9090\", \"dns\": \"ok\", \"ip\": \"10.96.200.18\", \"tcp\": \"timeout\"}" },
+    { "id": "api-to-kube-api-denied", "passed": true, "observed": "{\"target\": \"10.96.0.1:443\", \"dns\": \"ok\", \"ip\": \"10.96.0.1\", \"tcp\": \"timeout\"}" },
+    { "id": "notes", "passed": false, "observed": "sections={'RBAC': True, 'Policy': True, 'Proof': False} words=88" }
+  ],
+  "explanation": "Bot lacked patch on deployments; added it only. Default-deny cut DNS (no egress to kube-dns); added a port-53 rule to CoreDNS. Deny rows time out; API reaches PostgreSQL.",
+  "cleanupStatus": "pending"
+}

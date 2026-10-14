@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L27 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L27",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2027-03-23T17:00:00Z",
+  "completedAt": "2027-03-23T18:52:40Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.12.7", "docker": "Docker version 28.x", "variant_file": "variant-a", "compose_project": "looped-l27", "api_replicas": 1 },
+  "checks": [
+    { "id": "fixtures-intact", "passed": true, "observed": "fixture files unchanged; WRITE_COST_MS on replicas: [25]" },
+    { "id": "stack-up", "passed": true, "observed": "db ready; api replicas 1, answering 1" },
+    { "id": "limits-bounded", "passed": true, "observed": "replicas [W4/Q16/T300ms/P4]; waiting bounded; pools total 4 of 27 usable connections" },
+    { "id": "client-policy-bounded", "passed": true, "observed": "client.env: BACKOFF_MS=200, DEADLINE_MS=2000, HONOR_RETRY_AFTER=1, JITTER=1, RETRIES=2, RETRY_BUDGET_PCT=20, REUSE_KEY=1, TIMEOUT_MS=1000" },
+    { "id": "saturation-measured", "passed": true, "observed": "step run 'step': offered [10, 20, 30, 40, 50, 60, 70], goodput [10, 20, 30, 39.6, 41.2, 39.9, 41]; measured capacity ~41.2/s; notes name 40/s" },
+    { "id": "replica-experiment", "passed": true, "observed": "run 'replicas-start' served by 3 replicas: goodput [9.3], codes {'201': 185, '0': 2042, '503': 3316}; best single-replica goodput 41.2/s" },
+    { "id": "user-impact-improved", "passed": true, "observed": "baseline goodput 6.4/s, success 11%, x4.7 -> now 38.3/s (need >= 16.4), success 64%, p99(ok) 1684 ms, x1.2" },
+    { "id": "no-duplicate-writes", "passed": true, "observed": "run validate-1a2b3c4d: 778 rows for 778 logical requests (0 duplicates)" },
+    { "id": "acked-writes-present", "passed": true, "observed": "778 acknowledged requests, 0 missing from records" },
+    { "id": "ledger-consistent", "passed": true, "observed": "running total 6325 vs records 6325" },
+    { "id": "notes", "passed": false, "observed": "4/5 sections with substance" }
+  ],
+  "explanation": "Writes serialise on the single ledger row (~40/s). Bounded the queue and pool, bounded retries with jitter, same key and a 20% budget; replicas only added connections.",
+  "cleanupStatus": "pending"
+}

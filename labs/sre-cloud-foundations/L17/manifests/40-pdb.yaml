@@ -1,0 +1,12 @@
+# Disruption budget for the API: voluntary evictions (kubectl drain, node upgrades) must leave
+# at least this many beacon-api pods available.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: beacon-api
+  namespace: beacon
+  labels: {app: beacon-api, looped.lab/id: L17}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: {app: beacon-api}

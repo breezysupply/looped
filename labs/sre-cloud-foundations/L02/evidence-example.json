@@ -1,0 +1,28 @@
+{
+  "note": "EXAMPLE of the evidence schema for L02 — not a result. Real reports come from validate.py on your VM.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L02",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-b",
+  "startedAt": "2026-10-27T18:05:00Z",
+  "completedAt": "2026-10-27T18:58:40Z",
+  "environment": { "profile": "linux-arm64", "arch": "aarch64", "os": "Linux", "distro": "Ubuntu 24.04.1 LTS", "python": "3.12.3" },
+  "checks": [
+    { "id": "repo-state", "passed": true, "observed": "branch=main operation-in-progress=False unmerged=none uncommitted=none" },
+    { "id": "branch-merged", "passed": true, "observed": "ticket-142 commit ed62f0398b is in main's history" },
+    { "id": "history-kept", "passed": true, "observed": "all original main commits still reachable" },
+    { "id": "no-conflict-markers", "passed": true, "observed": "no conflict markers at HEAD" },
+    { "id": "config-valid", "passed": true, "observed": "Beacon parser and json accept both files" },
+    { "id": "both-changes", "passed": true, "observed": "main's change: port=8081 listen_port=8081 (kept); ticket-142: environment='staging-lab' server.request_timeout_s=15 (kept)" },
+    { "id": "ports-agree", "passed": true, "observed": "config server.port=8081 deploy listen_port=8081" },
+    { "id": "reverted", "passed": true, "observed": "revert commit naming 13ad109ec6: found; inject.ready_fail at HEAD=False" },
+    { "id": "focused-diff", "passed": true, "observed": "net change since the last good main commit: config/beacon.yaml" },
+    { "id": "behaviour", "passed": true, "observed": "GET /ready on :8081 -> 200 (deploy expects 200); /version='1.4.0' (deploy expects '1.4.0')" },
+    { "id": "notes", "passed": true, "observed": "evidence/L02-notes.md: 1210 chars" }
+  ],
+  "explanation": "The merge conflicted on the server block: ops moved the port to 8081 with service.json, the ticket raised the timeout on the next line. Kept both. git log -p showed the maintenance commit set ready_fail; reverted it.",
+  "cleanupStatus": "reported"
+}

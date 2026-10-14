@@ -1,0 +1,32 @@
+{
+  "note": "EXAMPLE of the evidence schema for L13 — not a result. Real reports come from validate.py on your machine.",
+  "schemaVersion": "1.0",
+  "trackId": "sre-cloud-foundations",
+  "activityId": "L13",
+  "contentVersion": "1.0",
+  "executionMode": "local",
+  "assistance": "independent",
+  "seed": "variant-a",
+  "startedAt": "2026-11-02T18:05:40Z",
+  "completedAt": "2026-11-02T18:06:31Z",
+  "environment": { "profile": "compose", "arch": "arm64", "os": "Darwin", "python": "3.9.6", "docker": "Docker version 27.3.1", "engine_arch": "arm64", "image_platform": "linux/arm64", "image_id": "sha256:0f4c3e1d9a2b", "base": "python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d", "variant_file": "variant-a" },
+  "checks": [
+    { "id": "image-present", "passed": true, "observed": "looped-l13-beacon:1.4.0 id=sha256:0f4c3e1d9a2b label looped.lab/id=L13" },
+    { "id": "base-pinned", "passed": true, "observed": "FROM python:3.12.7-slim-bookworm@sha256:60d9996b…" },
+    { "id": "base-digest", "passed": true, "observed": "digest-pinned" },
+    { "id": "architecture", "passed": true, "observed": "image linux/arm64, engine linux/arm64" },
+    { "id": "non-root-config", "passed": true, "observed": "USER=10001:10001" },
+    { "id": "exec-entrypoint", "passed": true, "observed": "Entrypoint=[\"python3\", \"-m\", \"beacon\"] Cmd=[\"api\"]" },
+    { "id": "healthcheck", "passed": true, "observed": "Healthcheck=[\"CMD\", \"python3\", \"-c\", …]" },
+    { "id": "container-running", "passed": true, "observed": "status=running exit=0 label=L13" },
+    { "id": "runs-as-non-root", "passed": true, "observed": "id -u -> 10001" },
+    { "id": "pid1-is-app", "passed": true, "observed": "PID 1: python3 -m beacon api" },
+    { "id": "healthy", "passed": true, "observed": "health=healthy" },
+    { "id": "user-path", "passed": true, "observed": "GET 127.0.0.1:18013/healthz -> 200; /version -> 200 1.4.0" },
+    { "id": "logs-visible", "passed": true, "observed": "request l13-validate-1793642791 found in docker logs" },
+    { "id": "no-secret-in-image", "passed": true, "observed": "no secret-shaped history/env and no .env/.pem/.git under /app (12 paths listed)" },
+    { "id": "notes", "passed": true, "observed": "notes filled in with the image record" }
+  ],
+  "explanation": "Observation: host curl reset while the container reported healthy. docker port showed the mapping to 8080 was right; the startup log said listening on 127.0.0.1:8080, so only the container's loopback answered. Set server.listen to 0.0.0.0 in the image config and rebuilt; host /healthz 200.",
+  "cleanupStatus": "reported"
+}

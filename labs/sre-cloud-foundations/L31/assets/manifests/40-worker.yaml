@@ -1,0 +1,47 @@
+# Beacon worker: consumes the Redis queue with idempotency on; effects are written to a
+# local JSON-lines file and exported as metrics on :9101 (/metrics, /healthz).
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: beacon-worker, namespace: __NAMESPACE__, labels: {app: beacon-worker, looped.lab/id: L31}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: beacon-worker}}
+  template:
+    metadata: {labels: {app: beacon-worker, looped.lab/id: L31}}
+    spec:
+      serviceAccountName: beacon-worker
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: worker
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          args: ["worker", "--metrics-port", "9101"]
+          env:
+            - {name: BEACON_QUEUE_KIND, value: redis}
+            - {name: BEACON_QUEUE_URL, value: "redis://beacon-queue:6379/0"}
+            - {name: BEACON_WORKER_EFFECTS_PATH, value: /var/lib/beacon/effects/effects.jsonl}
+            - {name: BEACON_APP_ENVIRONMENT, value: capstone}
+          ports: [{name: metrics, containerPort: 9101}]
+          readinessProbe:
+            httpGet: {path: /healthz, port: metrics}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: effects, mountPath: /var/lib/beacon/effects}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: effects
+          emptyDir: {sizeLimit: 32Mi}
+        - name: tmp
+          emptyDir: {sizeLimit: 16Mi}

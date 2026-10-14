@@ -1,0 +1,23 @@
+# Beacon configuration — a YAML subset (nested maps and scalars; no lists).
+# Validate: python3 -m beacon validate-config --config beacon.yaml
+server:
+  listen: 0.0.0.0        # 127.0.0.1 would be reachable only from this host/container
+  port: 8080
+app:
+  version: "1.4.0"
+  environment: lab
+  admin_enabled: true    # /admin/inject and /debug/config; never true outside a lab
+store:
+  kind: sqlite           # memory | sqlite | postgres
+  path: /var/lib/beacon/beacon.db
+queue:
+  kind: dir              # none | dir | redis
+  dir: /var/lib/beacon/queue
+inject:
+  delay_ms: 0
+  fail_rate: 0.0
+  ready_fail: false
+worker:
+  poll_s: 1.0
+  idempotency: true
+  effects_path: /var/lib/beacon/effects.jsonl
