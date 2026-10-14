@@ -1,0 +1,10 @@
+{
+  "bundle": "beacon-1.4.0",
+  "signing_key": "keys/release.key",
+  "include_public_key": false,
+  "images": [
+    { "name": "beacon-api", "ref": "looped-l26/beacon-api:1.4.0", "tag": "1.4.0" },
+    { "name": "postgres", "ref": "postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412", "tag": "16.4" }
+  ],
+  "files": ["deploy/compose.yaml", "config/api.env"]
+}
