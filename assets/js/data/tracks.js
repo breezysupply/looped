@@ -172,6 +172,22 @@ LX.tracks = [
       reliability: 'Reliability & Incidents', multicloud: 'Azure/GCP & API Support',
       capstone: 'Capstone', scenario: 'Simulated Incidents'
     }
+  },
+  {
+    id: 'anduril', name: 'Anduril Round 1: Networking + AWS Terraform', short: 'AR1', ico: '⌁',
+    blurb: 'A 6-hour interview sprint (3-hour triage route available): networking from packet to request, AWS VPC investigations on a simulated network, Terraform written from a blank editor, light Bash, and two timed mock interviews. Invented practice — not real Anduril questions.',
+    /* The prep hub (assets/js/ar1.js) is an engine and loads eagerly; these
+       are the simulators (VPC model + tools, LXSim for DNS) and the content.
+       ar1-quiz.js maps the retrieval items into LX.quiz/LX.drills last. */
+    files: [
+      'assets/js/sre-sim.js', 'assets/js/ar1-net.js', 'assets/js/ar1-tools.js', 'assets/js/ar1-hcl.js',
+      'assets/js/data/ar1-path.js', 'assets/js/data/ar1-lessons.js', 'assets/js/data/ar1-items.js',
+      'assets/js/data/ar1-tf-src.js', 'assets/js/data/ar1-tf.js', 'assets/js/data/ar1-bash.js', 'assets/js/data/ar1-mocks.js',
+      'assets/js/data/ar1-scenarios.js', 'assets/js/data/ar1-quiz.js'
+    ],
+    cats: {
+      net: 'Network fundamentals', awsnet: 'AWS networking', tf: 'Terraform', bash: 'Bash', mock: 'Mock interviews'
+    }
   }
 ];
 
@@ -281,6 +297,7 @@ LX.trackCounts = {
   entra: 64,
   iac: 69,
   onsite: 60,
-  sre: 15
+  sre: 15,
+  anduril: 11
 };
 /* /generated */

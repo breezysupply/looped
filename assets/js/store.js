@@ -46,6 +46,8 @@
               /* the SRE & Cloud Deployment Foundations track: learner attempts,
                  evidence, reviews — never content */
               'lx.sre',
+              /* the Anduril Round 1 prep path: drafts, attempts, hints, timers */
+              'lx.anduril',
               /* a snapshot of every key taken before a schema migration, so a bad
                  upgrade can be rolled back with LXStore.rollback() */
               'lx.backup'];

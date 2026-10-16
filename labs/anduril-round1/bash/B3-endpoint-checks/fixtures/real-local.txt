@@ -1,0 +1,5 @@
+# For manual use with real local services (see README):
+#   python3 -m http.server 8000 --bind 127.0.0.1
+127.0.0.1:8000
+# nothing listens here, so it should FAIL fast (connection refused)
+127.0.0.1:8001

@@ -279,6 +279,8 @@
     while (hops++ < 8) {
       res = dnsAuthoritative(st, cur, name, type);
       if (!res) { res = { status: 'SERVFAIL' }; break; }
+      /* an authority that refuses (e.g. a deleted zone's old servers) is a lame delegation: resolvers answer SERVFAIL */
+      if (res.status === 'REFUSED') { res = { status: 'SERVFAIL', why: 'the delegated server ' + cur + ' refused the query (lame delegation)' }; break; }
       if (res.status === 'REFERRAL') {
         var nsList = res.ns.filter(function (x) { return st.dns.servers[x]; });
         if (!nsList.length) { res = { status: 'SERVFAIL', why: 'delegation to ' + res.ns.join(',') + ' points at nothing that answers' }; break; }

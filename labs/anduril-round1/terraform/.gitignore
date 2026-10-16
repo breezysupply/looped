@@ -1,0 +1,6 @@
+.terraform/
+.terraform.lock.hcl
+.plugin-cache/
+*.tfstate
+*.tfstate.*
+*.tfplan

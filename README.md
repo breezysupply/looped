@@ -19,6 +19,7 @@ studying never dilutes the one you are. **All tracks** mixes them deliberately.
 | **Linux** | 131 commands, 22 playbooks, 35 scenarios, 45 drills, 6 labs, 8 typed missions |
 | **Containers & Networking** | 48 commands, 9 playbooks with sample output for every step, 20 drills, 12 hazard questions, 15 recall items, 5 typed missions against a simulated cluster |
 | **Gallatin Onsite** | A preparation track for one final onsite: a Prep hub (study path, 16 lessons, 60 questions, 4 design scenarios, 3 Python exercises, 10 real kind labs, 5 experience stories, mock sessions, progress, notes) plus 10 incident labs on a reconciling cluster model — see below |
+| **Anduril Round 1: Networking + AWS Terraform** | A 6-hour interview sprint (3-hour triage route): networking lessons and retrieval, four VPC investigations on a simulated network plus two evidence cards, Terraform labs graded structurally (with the real-CLI-validated references in `labs/anduril-round1/terraform`), local Bash exercises, and timed mock interviews — see [`docs/anduril-round1`](docs/anduril-round1/README.md) |
 
 Tracks planned after that: AWS core, Identity & M365, IaC & automation, Security & compliance,
 Azure, AI platform administration. Content is tagged to certification objectives (CKA, AWS SAA,

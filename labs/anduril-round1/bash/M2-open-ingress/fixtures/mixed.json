@@ -1,0 +1,111 @@
+{
+  "SecurityGroups": [
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60001",
+      "GroupName": "bastion",
+      "Description": "SSH jump host",
+      "OwnerId": "111122223333",
+      "VpcId": "vpc-0a1b2c3d4e5f00001",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 22, "ToPort": 22,
+          "IpRanges": [
+            { "CidrIp": "203.0.113.10/32", "Description": "office" },
+            { "CidrIp": "0.0.0.0/0", "Description": "temporary - remove" }
+          ],
+          "Ipv6Ranges": [], "PrefixListIds": [], "UserIdGroupPairs": []
+        },
+        {
+          "IpProtocol": "tcp", "FromPort": 5432, "ToPort": 5432,
+          "IpRanges": [ { "CidrIp": "10.20.0.0/16" } ],
+          "Ipv6Ranges": [], "PrefixListIds": [], "UserIdGroupPairs": []
+        }
+      ],
+      "IpPermissionsEgress": [
+        { "IpProtocol": "-1", "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ], "Ipv6Ranges": [] }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60002",
+      "GroupName": "web-https",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ],
+          "Ipv6Ranges": [ { "CidrIpv6": "::/0" } ]
+        },
+        {
+          "IpProtocol": "udp", "FromPort": 443, "ToPort": 443,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0", "Description": "HTTP/3" } ],
+          "Ipv6Ranges": []
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60003",
+      "GroupName": "web-http",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ],
+          "Ipv6Ranges": []
+        },
+        {
+          "IpProtocol": "tcp", "FromPort": 80, "ToPort": 443,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ],
+          "Ipv6Ranges": []
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60004",
+      "GroupName": "debug-all",
+      "IpPermissions": [
+        {
+          "IpProtocol": "-1",
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ],
+          "Ipv6Ranges": [ { "CidrIpv6": "::/0" } ]
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60005",
+      "GroupName": "app-range",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 8000, "ToPort": 8100,
+          "Ipv6Ranges": [ { "CidrIpv6": "::/0" } ]
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60006",
+      "GroupName": "empty-default",
+      "Description": "no ingress rules at all"
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60007",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 0, "ToPort": 65535,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ]
+        },
+        {
+          "IpProtocol": "tcp", "FromPort": 22, "ToPort": 22,
+          "UserIdGroupPairs": [ { "GroupId": "sg-0a1b2c3d4e5f60001", "UserId": "111122223333" } ]
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-0a1b2c3d4e5f60008",
+      "GroupName": "internal-https",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443,
+          "IpRanges": [ { "CidrIp": "10.0.0.0/8" } ],
+          "Ipv6Ranges": []
+        }
+      ]
+    }
+  ]
+}

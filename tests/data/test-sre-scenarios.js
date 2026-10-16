@@ -23,7 +23,8 @@ const H = require('../helpers');
 H.loadContent({ shell: true });
 
 const only = process.argv[2];
-const SCEN = LX.missions.filter(m => m.track === 'sre' && m.sre);
+/* the SRE course's incidents and the Anduril Round 1 prep path's VPC investigations share the scenario machinery */
+const SCEN = LX.missions.filter(m => (m.track === 'sre' || m.track === 'anduril') && m.sre);
 let fails = 0, passes = 0;
 function ok(cond, label, detail) { if (cond) { passes++; return; } fails++; console.log('FAIL ' + label + (detail ? '\n  ' + String(detail).slice(0, 600).replace(/\n/g, '\n  ') : '')); }
 

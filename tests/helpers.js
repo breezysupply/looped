@@ -54,6 +54,10 @@ function loadContent(extra) {
     });
     /* the SRE scenarios' simulators (DNS, HTTP/TLS, git, fixture scripts) */
     require(repoFile('assets/js/sre-sim.js'));
+    /* the Anduril Round 1 prep path: VPC model, its tools, the HCL grader */
+    require(repoFile('assets/js/ar1-net.js'));
+    require(repoFile('assets/js/ar1-tools.js'));
+    require(repoFile('assets/js/ar1-hcl.js'));
   }
   const dir = repoFile('assets/js/data');
   order().forEach(function (f) {

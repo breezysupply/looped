@@ -1,0 +1,24 @@
+{
+  "SecurityGroups": [
+    {
+      "GroupId": "sg-0c1d2e3f4a5b60011",
+      "GroupName": "public-web",
+      "IpPermissions": [
+        { "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ], "Ipv6Ranges": [ { "CidrIpv6": "::/0" } ] },
+        { "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80,
+          "IpRanges": [ { "CidrIp": "0.0.0.0/0" } ], "Ipv6Ranges": [ { "CidrIpv6": "::/0" } ] }
+      ]
+    },
+    {
+      "GroupId": "sg-0c1d2e3f4a5b60012",
+      "GroupName": "admin-ssh",
+      "IpPermissions": [
+        { "IpProtocol": "tcp", "FromPort": 22, "ToPort": 22,
+          "IpRanges": [ { "CidrIp": "198.51.100.0/24", "Description": "VPN egress" } ], "Ipv6Ranges": [] },
+        { "IpProtocol": "-1",
+          "UserIdGroupPairs": [ { "GroupId": "sg-0c1d2e3f4a5b60012" } ] }
+      ]
+    }
+  ]
+}
