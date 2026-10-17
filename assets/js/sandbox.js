@@ -14,6 +14,9 @@
   /* the graded block: onsite labs and SRE scenarios share the mode/hint UI */
   function blk(m) { return (m || run.mission).onsite || (m || run.mission).sre; }
   function isSre() { return !!(run && run.mission.sre); }
+  /* The course hub that owns a scenario's seeds, attempts and debrief: the SRE
+     course by default, or another track's hub named by sre.hub (e.g. LXAr1). */
+  function hubOf(m) { var h = m && m.sre && m.sre.hub; return (h && window[h]) || window.LXSre || null; }
 
   /* man / apropos / guide read the same library the rest of the app uses */
   if (window.LXShell && window.LX) LXShell.setLibrary(window.LX);
@@ -54,6 +57,8 @@
       if (!intro.dataset.base) intro.dataset.base = intro.innerHTML;
       intro.innerHTML = tr === 'onsite'
         ? 'Incident labs on a <b>simulated</b> Kubernetes namespace with a bounded kubectl command set — nothing here touches a real cluster. Each lab runs in <b>Guided</b> or <b>Independent</b> mode; objectives are met by evidence and repaired state, never by typing the expected text. Stuck? Type <code>/hint</code>.'
+        : tr === 'anduril'
+        ? 'Practice scenarios N1–N4 on a <b>simulated</b> AWS VPC (route tables, security groups, network ACLs, NAT, DNS) — a deterministic model, not your AWS account and not a packet capture. Work it as <b>hypothesis → evidence → interpretation → minimal fix → verification</b>. Guided shows the objectives and hints; Independent hides them. Invented practice, not real Anduril questions.'
         : tr === 'sre'
         ? 'Simulated incidents S01–S32 on <b>bounded models</b> (a Linux box, DNS, TLS, Terraform, a reconciling cluster, …) — practice with a model, not a real shell and not proof of real execution. Each runs <b>Guided</b> or <b>Independent</b> with a seeded variant; objectives are met by evidence and repaired state, an unsafe shortcut fails the attempt, and <code>/variant</code> starts a fresh independent variant. Type <code>/hint</code> when stuck and <code>help</code> for the supported tools.'
         : intro.dataset.base;
@@ -418,8 +423,9 @@
   /* a fresh independent variant: new seed, previous attempt kept */
   function variantBox() {
     if (!isSre()) { print('/variant is for the SRE scenarios; use /reset here.', 'term-out term-meta'); return; }
-    if (window.LXSre && metCount() > 0) window.LXSre.recordScenario(run, { outcome: 'abandoned-for-variant' });
-    var seed = window.LXSre ? window.LXSre.nextSeed(run.mission, run.seed) : run.seed;
+    var hub = hubOf(run.mission);
+    if (hub && metCount() > 0) hub.recordScenario(run, { outcome: 'abandoned-for-variant' });
+    var seed = hub ? hub.nextSeed(run.mission, run.seed) : run.seed;
     open(run.mission.id, { mode: 'independent', seed: seed });
     print('Fresh independent variant (seed ' + U().esc(seed) + '). The previous attempt is kept in your evidence.', 'term-out term-meta');
   }
@@ -460,7 +466,7 @@
     if (run && run.finishTimer) clearTimeout(run.finishTimer);
     if ((m.onsite || m.sre) && !opts.mode) { run = null; pickMode(m); return; }
     if ($('#sbModePick')) $('#sbModePick').hidden = true;
-    var seed = opts.seed || (m.sre && window.LXSre ? window.LXSre.firstSeed(m, opts.mode) : null);
+    var seed = opts.seed || (m.sre && hubOf(m) ? hubOf(m).firstSeed(m, opts.mode) : null);
     run = { mission: m, seed: seed, w: LXShell.createWorld(worldOf(m, seed)), ran: [], out: [], code: [],
             last: null, met: {}, metAt: {}, revealed: 0, hintsUsed: 0, hist: [], histIdx: 0, hintLevel: {},
             mode: (m.onsite || m.sre) ? opts.mode : null, critical: [], startedAt: Date.now() };
@@ -539,7 +545,7 @@
       store[m.id].clean = prev.clean || (run.revealed === 0 && run.hintsUsed === 0);
     }
     U().LS.set('lx.sandbox', store);
-    if (m.sre && window.LXSre) window.LXSre.recordScenario(run, { outcome: run.critical.length ? 'critical-failed' : 'passed' });
+    if (m.sre && hubOf(m)) hubOf(m).recordScenario(run, { outcome: run.critical.length ? 'critical-failed' : 'passed' });
     if (window.LXReview) { window.LXReview.noteStudy(0, 0); window.LXReview.render(); }
   }
 
@@ -619,7 +625,7 @@
       : (run.hintsUsed || run.revealed ? 'Completed with ' + run.hintsUsed + ' hint' + (run.hintsUsed === 1 ? '' : 's') + (run.revealed ? ' including ' + run.revealed + ' at rung 3–4' : '') + '. ' : 'Completed without hints. ') +
         'This is simulation evidence: it shows you can reason through the mechanism in a bounded model, not that you have operated it in production.';
     var html = '';
-    try { html = window.LXSre ? window.LXSre.scenarioDebrief(run, { scorecard: scorecard(), risky: riskyLog() }) : ''; }
+    try { html = hubOf(m) ? hubOf(m).scenarioDebrief(run, { scorecard: scorecard(), risky: riskyLog() }) : ''; }
     catch (e) { html = '<p class="empty">Debrief could not render: ' + esc(e.message) + '</p>'; }
     $('#sbDebrief').innerHTML = html +
       '<p class="section-label">Your session</p>' +

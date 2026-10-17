@@ -997,3 +997,17 @@ table.tiers select { max-width: 100%; height: 36px; background: var(--bg-elev-2)
 input.notes-input { min-height: var(--tap); }
 .checklist label { display: block; padding: 4px 0; font-size: 14px; }
 .order-slots { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+
+/* ── Anduril Round 1 prep hub ───────────────────────────────── */
+.ar1-editor { font-family: var(--mono); font-size: 13px; line-height: 1.45; white-space: pre; overflow: auto; tab-size: 2; min-height: 18em; }
+.ar1 .mock-timer.over { color: var(--red); }
+.ar1 select.notes-input { min-height: var(--tap); }
+.ar1 .seg-row { flex-wrap: wrap; }
+.ar1 .seg-row .seg { white-space: normal; height: auto; text-align: left; }
+.ar1 .table-wrap { overflow-x: auto; }
+.ar1 .rubric > span { flex: 1 1 180px; }
+.ar1 .stat-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ar1 .stat-tile { text-align: left; padding: 10px; }
+.ar1 .stat-l { font-size: 12px; }
+.ar1 .stat-tile p { margin: 4px 0; }
+.ar1 a { color: var(--blue); }

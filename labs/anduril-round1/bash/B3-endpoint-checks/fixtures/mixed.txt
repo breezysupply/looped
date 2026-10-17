@@ -1,0 +1,10 @@
+# Fictional internal services. In the tests the mock checker decides the
+# result from the host name prefix (ok-, fail-, hang-).
+ok-api.internal:443
+
+fail-db.internal:5432
+   # an indented comment
+hang-cache.internal:6379
+  ok-queue.internal:5672
+not-an-endpoint
+ok-bad-port.internal:99999

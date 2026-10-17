@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-f439a83b';
+var CACHE = 'looped-3a5c9612';
 var ASSETS = [
   './',
   './index.html',
@@ -34,6 +34,7 @@ var ASSETS = [
   './assets/js/review.js',
   './assets/js/onsite.js',
   './assets/js/sre.js',
+  './assets/js/ar1.js',
   './assets/js/app.js',
   './assets/js/shell-containers.js',
   './assets/js/data/containers-docker.js',
@@ -121,7 +122,19 @@ var ASSETS = [
   './assets/js/data/sre-scenarios-5.js',
   './assets/js/data/sre-scenarios-6.js',
   './assets/js/data/sre-scenarios-7.js',
-  './assets/js/data/sre-quiz.js'
+  './assets/js/data/sre-quiz.js',
+  './assets/js/ar1-net.js',
+  './assets/js/ar1-tools.js',
+  './assets/js/ar1-hcl.js',
+  './assets/js/data/ar1-path.js',
+  './assets/js/data/ar1-lessons.js',
+  './assets/js/data/ar1-items.js',
+  './assets/js/data/ar1-tf-src.js',
+  './assets/js/data/ar1-tf.js',
+  './assets/js/data/ar1-bash.js',
+  './assets/js/data/ar1-mocks.js',
+  './assets/js/data/ar1-scenarios.js',
+  './assets/js/data/ar1-quiz.js'
 ];
 
 self.addEventListener('install', function (e) {

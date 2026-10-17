@@ -30,7 +30,7 @@ const uniq = (list) => new Set(list).size === list.length;
 const T = D.sreTrack, MODS = D.sreModules || [], OBJ = D.sreObjectives || [], LES = D.sreLessons || [], Q = D.sreQuestions || [];
 const LABS = D.sreLabs || [], DES = D.sreDesigns || [], WEEKS = D.sreWeeks || [], SRC = D.sreSources || [], ROLES = D.sreRoles || [];
 const REV = D.sreReviews || [], BR = D.sreBranches || [], CL = D.sreCloud || [], DIAG = D.sreDiagnostic;
-const SCEN = (D.missions || []).filter(m => m.sre);
+const SCEN = (D.missions || []).filter(m => m.sre && m.track === 'sre');
 const modIds = ids(MODS), objIds = ids(OBJ), lesIds = ids(LES), labIds = ids(LABS), desIds = ids(DES), srcIds = ids(SRC);
 const scenIds = SCEN.map(m => m.sre.scenarioId);
 const range = (p, n) => { const out = []; for (let i = 1; i <= n; i++) out.push(p + (i < 10 ? '0' + i : i)); return out; };
