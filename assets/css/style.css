@@ -1011,3 +1011,25 @@ input.notes-input { min-height: var(--tap); }
 .ar1 .stat-l { font-size: 12px; }
 .ar1 .stat-tile p { margin: 4px 0; }
 .ar1 a { color: var(--blue); }
+
+/* ── Terraform + AWS tech-screen course ─────────────────────── */
+.tfs .tfs-code { white-space: pre; overflow-x: auto; font-size: 12.5px; }
+.tfs .tfs-mode { margin-right: 4px; }
+.tfs .tfs-mode-sim { color: var(--amber); border-color: var(--amber); }
+.tfs .tfs-mode-local { color: var(--blue); border-color: var(--blue); }
+.tfs .tfs-mode-aws { color: var(--red); border-color: var(--red); }
+.tfs .tfs-term { max-height: 360px; overflow: auto; }
+.tfs .tfs-term pre.term-out { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 8px; font-size: 12px; }
+.tfs .sb-inputrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+.tfs .sb-inputrow input { flex: 1 1 200px; font-family: var(--mono); }
+.tfs .tfs-diff table { table-layout: fixed; width: 100%; }
+.tfs .tfs-diff td { vertical-align: top; padding: 1px 4px; }
+.tfs .tfs-diff td code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11.5px; }
+.tfs .tfs-diff tr.tfs-chg td { background: var(--accent-dim); }
+.tfs .tfs-remedy { margin: 2px 0 6px; }
+.tfs .mock-timer.over { color: var(--red); }
+.tfs .seg-row { flex-wrap: wrap; }
+.tfs .seg-row .seg { white-space: normal; height: auto; text-align: left; }
+.tfs .rubric > span { flex: 1 1 200px; }
+.tfs a { color: var(--blue); }
+.tfs .tfs-course-card h2 { font-size: 18px; margin: 2px 0 6px; }

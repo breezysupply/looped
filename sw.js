@@ -1,5 +1,5 @@
 /* Offline cache. Bump CACHE when any asset below changes. */
-var CACHE = 'looped-3a5c9612';
+var CACHE = 'looped-3b52fe06';
 var ASSETS = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ var ASSETS = [
   './assets/js/onsite.js',
   './assets/js/sre.js',
   './assets/js/ar1.js',
+  './assets/js/tfs.js',
   './assets/js/app.js',
   './assets/js/shell-containers.js',
   './assets/js/data/containers-docker.js',
@@ -134,7 +135,16 @@ var ASSETS = [
   './assets/js/data/ar1-bash.js',
   './assets/js/data/ar1-mocks.js',
   './assets/js/data/ar1-scenarios.js',
-  './assets/js/data/ar1-quiz.js'
+  './assets/js/data/ar1-quiz.js',
+  './assets/js/tfs-sim.js',
+  './assets/js/data/tfs-course.js',
+  './assets/js/data/tfs-src.js',
+  './assets/js/data/tfs-kit.js',
+  './assets/js/data/tfs-lessons.js',
+  './assets/js/data/tfs-labs.js',
+  './assets/js/data/tfs-debug.js',
+  './assets/js/data/tfs-mocks.js',
+  './assets/js/data/tfs-quiz.js'
 ];
 
 self.addEventListener('install', function (e) {

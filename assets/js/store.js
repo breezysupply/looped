@@ -48,6 +48,9 @@
               'lx.sre',
               /* the Anduril Round 1 prep path: drafts, attempts, hints, timers */
               'lx.anduril',
+              /* the Terraform + AWS tech-screen course: enrollment, attempts
+                 (files, timers, assistance), mistakes, simulator state */
+              'lx.tfaws',
               /* a snapshot of every key taken before a schema migration, so a bad
                  upgrade can be rolled back with LXStore.rollback() */
               'lx.backup'];

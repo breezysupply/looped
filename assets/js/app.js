@@ -15,22 +15,23 @@
       { v: 'prep',      label: 'Prep', track: 'onsite' },
       { v: 'sre',       label: 'Course', track: 'sre' },
       { v: 'ar1',       label: 'Prep', track: 'anduril' },
+      { v: 'tfs',       label: 'Course', track: 'tfaws' },
       /* the onsite and SRE tracks teach through their own hub and have no
          command reference, playbooks or multiple-choice labs, so those pages
          would be empty */
-      { v: 'commands',  label: 'Commands',  hideFor: ['onsite', 'sre', 'anduril'] },
-      { v: 'playbooks', label: 'Playbooks', hideFor: ['onsite', 'sre', 'anduril'] },
+      { v: 'commands',  label: 'Commands',  hideFor: ['onsite', 'sre', 'anduril', 'tfaws'] },
+      { v: 'playbooks', label: 'Playbooks', hideFor: ['onsite', 'sre', 'anduril', 'tfaws'] },
       { v: 'drills',    label: 'Drills'    }
     ] },
     { id: 'practice', label: 'Practice', views: [
-      { v: 'labs',    label: 'Labs', hideFor: ['onsite', 'sre', 'anduril'] },
+      { v: 'labs',    label: 'Labs', hideFor: ['onsite', 'sre', 'anduril', 'tfaws'] },
       { v: 'sandbox', label: 'Sandbox' }
     ] },
     { id: 'quiz',     label: 'Quiz',     views: [ { v: 'quiz',   label: 'Quiz'   } ] },
     { id: 'review',   label: 'Review',   views: [ { v: 'review', label: 'Review' } ] }
   ];
   /* a track whose Learn tab lands on its own page rather than Commands */
-  var HOME = { onsite: 'prep', sre: 'sre', anduril: 'ar1' };
+  var HOME = { onsite: 'prep', sre: 'sre', anduril: 'ar1', tfaws: 'tfs' };
   function visibleViews(g) {
     return g.views.filter(function (x) {
       return (!x.track || x.track === state.track) && (!x.hideFor || x.hideFor.indexOf(state.track) === -1);
@@ -332,6 +333,7 @@
     if (window.LXOnsite && state.track === 'onsite') window.LXOnsite.render();
     if (window.LXSre && state.track === 'sre') window.LXSre.render();
     if (window.LXAr1 && state.track === 'anduril') window.LXAr1.render();
+    if (window.LXTfs && state.track === 'tfaws') window.LXTfs.render();
   }
 
   /* the quiz and seed dropdowns list the active track's categories */

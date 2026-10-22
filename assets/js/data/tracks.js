@@ -188,6 +188,21 @@ LX.tracks = [
     cats: {
       net: 'Network fundamentals', awsnet: 'AWS networking', tf: 'Terraform', bash: 'Bash', mock: 'Mock interviews'
     }
+  },
+  {
+    id: 'tfaws', name: 'Terraform + AWS: Guided Builds to Live Tech Screen', short: 'TF', ico: '⧉',
+    blurb: 'Course terraform-aws-tech-screen: Terraform from the basics to a blank-editor screen. Nine modules (7 h 15 min, or a 5 h 5 min minimum path): local warm-up, guided S3, public EC2, private subnet + NAT, debugging, an independent build and two timed mock screens. Simulated, local and optional AWS modes are always labelled. Representative practice — not known Anduril questions.',
+    /* The course hub (assets/js/tfs.js) is an engine and loads eagerly;
+       these are the HCL parser, the simulated CLI and the content.
+       tfs-quiz.js also maps its items into LX.quiz/LX.drills. */
+    files: [
+      'assets/js/ar1-hcl.js', 'assets/js/tfs-sim.js',
+      'assets/js/data/tfs-course.js', 'assets/js/data/tfs-src.js', 'assets/js/data/tfs-kit.js', 'assets/js/data/tfs-lessons.js',
+      'assets/js/data/tfs-labs.js', 'assets/js/data/tfs-debug.js', 'assets/js/data/tfs-mocks.js', 'assets/js/data/tfs-quiz.js'
+    ],
+    cats: {
+      foundations: 'Terraform foundations', s3: 'S3 build', network: 'Public EC2 network', nat: 'Private subnet + NAT', debug: 'Variables and debugging', interview: 'Interview'
+    }
   }
 ];
 
@@ -298,6 +313,7 @@ LX.trackCounts = {
   iac: 69,
   onsite: 60,
   sre: 15,
-  anduril: 11
+  anduril: 11,
+  tfaws: 19
 };
 /* /generated */

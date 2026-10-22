@@ -238,14 +238,14 @@
       if (peek('(')) { p++; var e = expr(); eat(')'); return e; }
       if (peek('[')) {
         p++;
-        if (toks[p] && toks[p].k === 'id' && toks[p].v === 'for') { skipFor(']'); return { t: 'unknown', why: 'for expression' }; }
+        if (toks[p] && toks[p].k === 'id' && toks[p].v === 'for') { return { t: 'unknown', why: 'for expression', inner: skipFor(']') }; }
         var items = [];
         while (!peek(']')) { items.push(expr()); if (peek(',')) p++; else break; }
         eat(']'); return { t: 'list', items: items };
       }
       if (peek('{')) {
         p++;
-        if (toks[p] && toks[p].k === 'id' && toks[p].v === 'for') { skipFor('}'); return { t: 'unknown', why: 'for expression' }; }
+        if (toks[p] && toks[p].k === 'id' && toks[p].v === 'for') { return { t: 'unknown', why: 'for expression', inner: skipFor('}') }; }
         var props = [];
         while (!peek('}')) {
           var kt = toks[p], key;
@@ -258,8 +258,28 @@
       }
       throw new HclError('unexpected "' + x.v + '" in expression', line0);
     }
+    /* skip a for expression, returning the traversals it mentions (a.b.c)
+       so references inside it still count */
     function skipFor(close) {
-      var depth = 1; while (p < toks.length) { var x = toks[p++]; if (x.k === 'op' && (x.v === '[' || x.v === '{' || x.v === '(')) depth++; if (x.k === 'op' && (x.v === ']' || x.v === '}' || x.v === ')')) { depth--; if (!depth) { if (x.v !== close) throw new HclError('mismatched brackets', line0); return; } } }
+      var depth = 1, start = p, refs = [];
+      while (p < toks.length) {
+        var x = toks[p++];
+        if (x.k === 'op' && (x.v === '[' || x.v === '{' || x.v === '(')) depth++;
+        if (x.k === 'op' && (x.v === ']' || x.v === '}' || x.v === ')')) {
+          depth--;
+          if (!depth) {
+            if (x.v !== close) throw new HclError('mismatched brackets', line0);
+            for (var i = start; i < p - 1; i++) {
+              var t0 = toks[i];
+              if (t0.k !== 'id' || ['for', 'in', 'if'].indexOf(t0.v) !== -1 || (toks[i - 1] && toks[i - 1].k === 'op' && toks[i - 1].v === '.')) continue;
+              var node = { t: 'var', name: t0.v }, j = i + 1;
+              while (toks[j] && toks[j].k === 'op' && toks[j].v === '.' && toks[j + 1] && toks[j + 1].k === 'id') { node = { t: 'get', o: node, name: toks[j + 1].v }; j += 2; }
+              if (node.t === 'get') refs.push(node);
+            }
+            return refs;
+          }
+        }
+      }
       throw new HclError('unclosed for expression', line0);
     }
     var out = expr();
@@ -305,13 +325,29 @@
     merge: function (a) { if (!a.every(known)) return UNKNOWN; var o = {}; a.forEach(function (x) { Object.keys(x || {}).forEach(function (k) { o[k] = x[k]; }); }); return o; },
     format: function (a) { if (!a.every(known)) return UNKNOWN; var i = 1; return String(a[0]).replace(/%[sdv]/g, function () { return String(a[i++]); }); },
     coalesce: function (a) { for (var i = 0; i < a.length; i++) if (known(a[i]) && a[i] != null && a[i] !== '') return a[i]; return UNKNOWN; },
-    try: function (a) { for (var i = 0; i < a.length; i++) if (known(a[i])) return a[i]; return UNKNOWN; }
+    try: function (a) { for (var i = 0; i < a.length; i++) if (known(a[i])) return a[i]; return UNKNOWN; },
+    /* can(): our evaluator returns UNKNOWN for errors, so a known result means
+       "evaluated without error". Only meaningful when every input is known. */
+    can: function (a) { return known(a[0]); },
+    regex: function (a) { if (!known(a[0]) || !known(a[1])) return UNKNOWN; var m; try { m = new RegExp(a[0]).exec(String(a[1])); } catch (e) { return UNKNOWN; } return m ? m[0] : UNKNOWN; },
+    contains: function (a) { return known(a[0]) && known(a[1]) && Array.isArray(a[0]) ? a[0].indexOf(a[1]) !== -1 : UNKNOWN; },
+    split: function (a) { return known(a[0]) && known(a[1]) ? String(a[1]).split(a[0]) : UNKNOWN; },
+    keys: function (a) { return known(a[0]) && a[0] && typeof a[0] === 'object' ? Object.keys(a[0]).sort() : UNKNOWN; },
+    values: function (a) { return known(a[0]) && a[0] && typeof a[0] === 'object' ? Object.keys(a[0]).sort().map(function (k) { return a[0][k]; }) : UNKNOWN; },
+    startswith: function (a) { return known(a[0]) && known(a[1]) ? String(a[0]).indexOf(a[1]) === 0 : UNKNOWN; },
+    replace: function (a) { return a.every(known) ? String(a[0]).split(a[1]).join(a[2]) : UNKNOWN; },
+    min: function (a) { return a.every(known) ? Math.min.apply(null, a.map(Number)) : UNKNOWN; },
+    max: function (a) { return a.every(known) ? Math.max.apply(null, a.map(Number)) : UNKNOWN; }
   };
 
   /* ══ model ═══════════════════════════════════════════════════════ */
-  function Model(files) {
+  /* opts.vars: { name: value } — like -var on the command line, overriding
+     defaults (strings are coerced to the variable's declared number/bool type) */
+  function Model(files, opts) {
     var self = this;
     this.files = files;
+    this.vars = (opts && opts.vars) || {};
+    this._each = null;
     this.errors = [];
     this.resources = []; this.data = []; this.variables = {}; this.locals = {}; this.outputs = []; this.providers = []; this.terraform = []; this.modules = [];
     Object.keys(files).forEach(function (fname) {
@@ -327,6 +363,7 @@
         else if (b.type === 'provider') self.providers.push(b);
         else if (b.type === 'terraform') self.terraform.push(b);
         else if (b.type === 'module') self.modules.push(b);
+        else if (b.type === 'moved' || b.type === 'import' || b.type === 'removed' || b.type === 'check') { (self.meta = self.meta || []).push(b); }
         else self.errors.push({ file: fname, line: b.line, message: 'unknown top-level block "' + b.type + '"' });
       });
     });
@@ -359,6 +396,7 @@
           else if (r0 === 'local' && chain[1]) out.push({ kind: 'local', name: chain[1] });
           else if (r0 === 'data' && chain[2]) out.push({ kind: 'data', type: chain[1], name: chain[2], attr: chain[3] });
           else if (r0 === 'module' && chain[1]) out.push({ kind: 'module', name: chain[1], attr: chain[2] });
+          else if (r0 === 'each') out.push({ kind: 'each', name: chain[1], attr: chain[2] });
           else if (chain[1] && self.find(r0, chain[1])) out.push({ kind: 'resource', type: r0, name: chain[1], attr: chain[2] });
           else if (chain[1] && /^[a-z0-9]+_[a-z0-9_]+$/.test(r0)) out.push({ kind: 'missing', type: r0, name: chain[1], attr: chain[2] });
         }
@@ -386,6 +424,11 @@
     types = [].concat(types);
     var hits = this.refsOf(ast).filter(function (r) { return r.kind === 'resource' && types.indexOf(r.type) !== -1; });
     if (hits.length) return this.find(hits[0].type, hits[0].name);
+    /* each.value.<attr> where for_each iterates over another resource */
+    if (block.attrs.for_each && this.refsOf(ast).some(function (r) { return r.kind === 'each' && r.name === 'value'; })) {
+      var via = this.refsOf(block.attrs.for_each.ast).filter(function (r) { return r.kind === 'resource' && types.indexOf(r.type) !== -1; })[0];
+      if (via) return this.find(via.type, via.name);
+    }
     /* through a local that is itself a reference */
     var loc = this.refsOf(ast).filter(function (r) { return r.kind === 'local'; })[0];
     if (loc && this.locals[loc.name] && !this._pt) { this._pt = true; var res = this.points({ attrs: { x: this.locals[loc.name] } }, 'x', types); this._pt = false; return res; }
@@ -395,7 +438,11 @@
   Model.prototype.pointsAll = function (block, name, types) {
     var self = this, ast = this.ast(block, name); if (!ast) return [];
     types = [].concat(types);
-    return this.refsOf(ast).filter(function (r) { return r.kind === 'resource' && types.indexOf(r.type) !== -1; }).map(function (r) { return self.find(r.type, r.name); });
+    var out = this.refsOf(ast).filter(function (r) { return r.kind === 'resource' && types.indexOf(r.type) !== -1; }).map(function (r) { return self.find(r.type, r.name); });
+    if (!out.length && block.attrs && block.attrs.for_each && this.refsOf(ast).some(function (r) { return r.kind === 'each' && r.name === 'value'; })) {
+      this.refsOf(block.attrs.for_each.ast).forEach(function (r) { if (r.kind === 'resource' && types.indexOf(r.type) !== -1) out.push(self.find(r.type, r.name)); });
+    }
+    return out;
   };
   Model.prototype.val = function (block, name) { var ast = this.ast(block, name); return ast ? this.eval(ast, 0) : undefined; };
   Model.prototype.eval = function (e, depth) {
@@ -417,12 +464,17 @@
         var chain = traversal(e);
         if (!chain) return UNKNOWN;
         if (chain[0] === 'var') {
-          var v = self.variables[chain[1]]; if (!v || !v.attrs['default']) return UNKNOWN;
+          var v = self.variables[chain[1]];
+          if (v && Object.prototype.hasOwnProperty.call(self.vars, chain[1])) return pick(coerceVar(v, self.vars[chain[1]]), chain.slice(2), e);
+          if (!v || !v.attrs['default']) return UNKNOWN;
           var dv = self.eval(v.attrs['default'].ast, depth + 1);
           return pick(dv, chain.slice(2), e);
         }
+        if (chain[0] === 'each' && self._each) return pick(chain[1] === 'key' ? self._each.key : chain[1] === 'value' ? self._each.value : UNKNOWN, chain.slice(2), e);
+        if (chain[0] === 'count' && self._each && chain[1] === 'index') return self._each.key;
         if (chain[0] === 'local') { var lv = self.locals[chain[1]]; return lv ? pick(self.eval(lv.ast, depth + 1), chain.slice(2), e) : UNKNOWN; }
         var res = chain[1] && self.find(chain[0], chain[1]);
+        if (res && res.rtype === 'terraform_data' && chain[2] === 'output' && res.attrs.input && !res.attrs.count && !res.attrs.for_each) return pick(self.eval(res.attrs.input.ast, depth + 1), chain.slice(3), e);
         if (res && chain[2] && res.attrs[chain[2]] && !res.attrs.count && !res.attrs.for_each) return pick(self.eval(res.attrs[chain[2]].ast, depth + 1), chain.slice(3), e);
         return UNKNOWN;
       default: return UNKNOWN;
@@ -432,6 +484,39 @@
       for (var k = 0; k < rest.length; k++) { if (!known(v) || v == null || typeof v !== 'object') return UNKNOWN; v = v[rest[k]]; }
       return v === undefined ? UNKNOWN : v;
     }
+  };
+
+  function coerceVar(v, raw) {
+    var t = v.attrs.type ? v.attrs.type.raw : '';
+    if (t === 'number') return Number(raw);
+    if (t === 'bool') return raw === true || raw === 'true';
+    return raw;
+  }
+  /* evaluate with each.key / each.value (for_each) or count.index bound */
+  Model.prototype.evalIn = function (ast, each) { var prev = this._each; this._each = each; try { return this.eval(ast, 0); } finally { this._each = prev; } };
+  /* the instances a resource block expands to: [{ key, value }] — key null
+     for a single instance; UNKNOWN keys when the collection is not known */
+  Model.prototype.instancesOf = function (res, seen) {
+    seen = seen || {};
+    if (res.attrs.for_each) {
+      var v = this.eval(res.attrs.for_each.ast, 0);
+      if (!known(v)) {
+        var r = this.refsOf(res.attrs.for_each.ast).filter(function (x) { return x.kind === 'resource'; })[0];
+        var tgt = r && this.find(r.type, r.name);
+        if (tgt && !seen[tgt.rtype + '.' + tgt.name]) { seen[res.rtype + '.' + res.name] = 1; return this.instancesOf(tgt, seen).map(function (i) { return { key: i.key, value: UNKNOWN }; }); }
+        return null;
+      }
+      if (Array.isArray(v)) return v.map(function (x) { return { key: String(x), value: x }; });
+      if (v && typeof v === 'object') return Object.keys(v).sort().map(function (k) { return { key: k, value: v[k] }; });
+      return null;
+    }
+    if (res.attrs.count) {
+      var n = this.eval(res.attrs.count.ast, 0);
+      if (!known(n)) return null;
+      var out = []; for (var i = 0; i < Number(n); i++) out.push({ key: i, value: null });
+      return out;
+    }
+    return [{ key: null, value: null }];
   };
 
   /* ══ AWS networking views ════════════════════════════════════════ */
@@ -604,17 +689,20 @@
     var M = new Model(files);
     var res = { parsed: M.ok, errors: M.errors, results: [], label: 'Structural checks (local parser — not terraform validate, not AWS)' };
     if (!M.ok) return res;
-    checks = [{ id: 'refs', label: 'Every reference points at something declared', hint: 'Declare the variable, local, data source or resource, or fix the name.',
+    if (!(ctx && ctx.noRefs)) checks = [{ id: 'refs', label: 'Every reference points at something declared', hint: 'Declare the variable, local, data source or resource, or fix the name.',
       test: function (m) { var d = m.dangling(); return d.length ? 'undeclared: ' + d.join('; ') : true; } }].concat(checks);
     checks.forEach(function (c) {
       var r;
       try { r = c.test(M, ctx || {}); } catch (e) { r = 'checker could not evaluate this (' + e.message + ')'; }
-      var ok = r === true;
-      res.results.push({ id: c.id, label: c.label, sev: c.sev || 'required', defect: c.defect || null, ok: ok, why: ok ? '' : (typeof r === 'string' ? r : c.fail || 'not satisfied'), hint: c.hint || '' });
+      var ok = r === true, na = r === null;
+      res.results.push({ id: c.id, label: c.label, sev: c.sev || 'required', defect: c.defect || null, ok: ok, na: na,
+        why: ok ? '' : na ? 'cannot be assessed by the practice parser (a value is only known after apply) — review it yourself' : (typeof r === 'string' ? r : c.fail || 'not satisfied'),
+        hint: c.hint || '', cat: c.cat || null, dim: c.dim || null, lesson: c.lesson || null, critical: c.critical || null });
     });
     res.required = res.results.filter(function (r) { return r.sev === 'required'; });
-    res.critical = res.results.filter(function (r) { return r.sev === 'critical' && !r.ok; });
-    res.passed = res.required.every(function (r) { return r.ok; }) && !res.critical.length;
+    res.critical = res.results.filter(function (r) { return r.sev === 'critical' && !r.ok && !r.na; });
+    res.na = res.results.filter(function (r) { return r.na; });
+    res.passed = res.required.every(function (r) { return r.ok || r.na; }) && !res.critical.length;
     return res;
   }
 
